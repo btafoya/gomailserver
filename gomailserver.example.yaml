@@ -1,0 +1,54 @@
+# gomailserver Configuration Example
+
+server:
+  hostname: mail.example.com
+  domain: example.com
+
+database:
+  path: ./data/mailserver.db
+  wal_enabled: true
+
+logger:
+  level: info
+  format: json
+  output_path: stdout
+
+smtp:
+  submission_port: 587
+  relay_port: 25
+  smtps_port: 465
+  max_message_size: 52428800  # 50MB
+  hostname: mail.example.com
+
+imap:
+  port: 143
+  imaps_port: 993
+  idle_timeout: 1800  # 30 minutes
+
+tls:
+  # Manual TLS certificates
+  # cert_file: /path/to/cert.pem
+  # key_file: /path/to/key.pem
+
+  # Let's Encrypt ACME (automatic certificates)
+  acme:
+    enabled: false
+    email: admin@example.com
+    provider: cloudflare
+    api_token: your_cloudflare_api_token
+    cache_dir: ./data/acme
+
+security:
+  clamav:
+    enabled: true
+    socket_path: /var/run/clamav/clamd.ctl
+
+  spamassassin:
+    enabled: true
+    host: localhost
+    port: 783
+
+  greylisting:
+    enabled: true
+    delay_minutes: 5
+    expiry_days: 30

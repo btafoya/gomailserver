@@ -1,0 +1,73 @@
+# Binaries
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gomailserver
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+.env.local
+
+# Configuration files with secrets
+gomailserver.yaml
+!gomailserver.example.yaml
+
+# Data directories
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Log files
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+backups/
+
+# Web build artifacts
+web/*/dist/
+web/*/node_modules/
+web/*/.nuxt/
+web/*/.output/
+
+# TLS certificates (local development)
+*.pem
+*.key
+*.crt
+*.cert
+
+# ACME cache
+acme/
