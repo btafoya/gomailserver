@@ -1,7 +1,9 @@
 package database
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -99,11 +101,22 @@ func (db *DB) applyMigration(migration Migration) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			db.logger.Debug("transaction rollback after commit", zap.Error(err))
+		}
+	}()
 
-	// Execute migration
-	if _, err := tx.Exec(migration.Up); err != nil {
-		return fmt.Errorf("failed to execute migration: %w", err)
+	// Execute migration statements one by one
+	statements := splitSQL(migration.Up)
+	for i, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(context.Background(), stmt); err != nil {
+			return fmt.Errorf("failed to execute migration statement %d: %w\nStatement: %s", i+1, err, stmt)
+		}
 	}
 
 	// Record migration
@@ -168,11 +181,22 @@ func (db *DB) rollbackMigration(migration Migration) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			db.logger.Debug("transaction rollback after commit", zap.Error(err))
+		}
+	}()
 
-	// Execute rollback
-	if _, err := tx.Exec(migration.Down); err != nil {
-		return fmt.Errorf("failed to execute rollback: %w", err)
+	// Execute rollback statements one by one
+	statements := splitSQL(migration.Down)
+	for i, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(context.Background(), stmt); err != nil {
+			return fmt.Errorf("failed to execute rollback statement %d: %w", i+1, err)
+		}
 	}
 
 	// Remove migration record
@@ -188,4 +212,36 @@ func (db *DB) rollbackMigration(migration Migration) error {
 	}
 
 	return nil
+}
+
+// splitSQL splits a SQL migration into individual statements
+func splitSQL(sql string) []string {
+	var statements []string
+	var current strings.Builder
+
+	lines := strings.Split(sql, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "--") {
+			continue
+		}
+
+		current.WriteString(line)
+		current.WriteString("\n")
+
+		// Check if this line ends a statement
+		if strings.HasSuffix(line, ";") {
+			statements = append(statements, current.String())
+			current.Reset()
+		}
+	}
+
+	// Add any remaining SQL
+	if current.Len() > 0 {
+		statements = append(statements, current.String())
+	}
+
+	return statements
 }

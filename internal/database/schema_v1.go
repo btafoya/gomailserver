@@ -10,7 +10,7 @@ CREATE TABLE domains (
     max_mailbox_size INTEGER DEFAULT 0,  -- 0 = unlimited, in bytes
     default_quota INTEGER DEFAULT 1073741824,  -- 1GB default
     catchall_email TEXT,
-    backup_mx BOOLEAN DEFAULT FALSE,
+    backup_mx INTEGER DEFAULT 0,
     dkim_selector TEXT,
     dkim_private_key TEXT,
     dkim_public_key TEXT,
@@ -36,9 +36,9 @@ CREATE TABLE users (
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'disabled', 'suspended')),
     auth_method TEXT NOT NULL DEFAULT 'password' CHECK(auth_method IN ('password', 'totp')),
     totp_secret TEXT,
-    totp_enabled BOOLEAN DEFAULT FALSE,
+    totp_enabled INTEGER DEFAULT 0,
     forward_to TEXT,
-    auto_reply_enabled BOOLEAN DEFAULT FALSE,
+    auto_reply_enabled INTEGER DEFAULT 0,
     auto_reply_subject TEXT,
     auto_reply_body TEXT,
     spam_threshold REAL DEFAULT 5.0,
@@ -73,7 +73,7 @@ CREATE TABLE mailboxes (
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     parent_id INTEGER,
-    subscribed BOOLEAN DEFAULT TRUE,
+    subscribed INTEGER DEFAULT 1,
     special_use TEXT,  -- NULL or 'Inbox', 'Sent', 'Drafts', 'Trash', 'Spam', 'Archive'
     uidvalidity INTEGER NOT NULL,
     uidnext INTEGER NOT NULL DEFAULT 1,
@@ -106,7 +106,7 @@ CREATE TABLE messages (
     reply_to TEXT,
     message_id TEXT,
     in_reply_to TEXT,
-    references TEXT,
+    refs TEXT,
     headers TEXT,  -- JSON of all headers
     body_structure TEXT,  -- JSON of MIME structure
     storage_type TEXT NOT NULL DEFAULT 'blob' CHECK(storage_type IN ('blob', 'file')),
@@ -213,7 +213,7 @@ CREATE TABLE sieve_scripts (
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     content TEXT NOT NULL,
-    active BOOLEAN DEFAULT FALSE,
+    active INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -262,7 +262,7 @@ CREATE TABLE webhooks (
     url TEXT NOT NULL,
     events TEXT NOT NULL,  -- JSON array of event types
     auth_token TEXT,
-    active BOOLEAN DEFAULT TRUE,
+    active INTEGER DEFAULT 1,
     max_retries INTEGER DEFAULT 3,
     retry_delay INTEGER DEFAULT 60,  -- seconds
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

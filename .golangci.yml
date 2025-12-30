@@ -15,14 +15,13 @@ linters-settings:
     min-complexity: 15
   goimports:
     local-prefixes: github.com/btafoya/gomailserver
-  golint:
-    min-confidence: 0
-  gomnd:
+  mnd:
     settings:
       mnd:
         checks: argument,case,condition,return
   govet:
-    check-shadowing: true
+    enable:
+      - shadow
   lll:
     line-length: 140
   maligned:
@@ -34,17 +33,17 @@ linters:
   disable-all: true
   enable:
     - bodyclose
+    - copyloopvar
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - gofmt
     - goimports
-    - gomnd
+    - mnd
     - goprintffuncname
     - gosec
     - gosimple
@@ -68,14 +67,17 @@ issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
+        - mnd
         - goconst
         - dupl
         - lll
+    - path: internal/commands/root\.go
+      linters:
+        - gochecknoinits
+  exclude-dirs:
+    - vendor
+    - web
 
 run:
   timeout: 5m
   tests: false
-  skip-dirs:
-    - vendor
-    - web

@@ -27,13 +27,14 @@ func New(cfg Config, logger *zap.Logger) (*DB, error) {
 	// Ensure directory exists
 	dbDir := filepath.Dir(cfg.Path)
 	if dbDir != "." && dbDir != "/" {
-		if err := os.MkdirAll(dbDir, 0755); err != nil {
+		if err := os.MkdirAll(dbDir, 0o755); err != nil { //nolint:mnd // Standard Unix directory permissions
 			return nil, fmt.Errorf("failed to create database directory: %w", err)
 		}
 	}
 
-	// Open database connection
-	db, err := sql.Open("sqlite3", cfg.Path)
+	// Open database connection with multi-statement support
+	dsn := fmt.Sprintf("%s?_foreign_keys=1", cfg.Path)
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

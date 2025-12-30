@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -32,18 +31,18 @@ type DatabaseConfig struct {
 
 // TLSConfig holds TLS/certificate configuration
 type TLSConfig struct {
-	CertFile string `yaml:"cert_file" env:"TLS_CERT_FILE"`
-	KeyFile  string `yaml:"key_file" env:"TLS_KEY_FILE"`
+	CertFile string     `yaml:"cert_file" env:"TLS_CERT_FILE"`
+	KeyFile  string     `yaml:"key_file" env:"TLS_KEY_FILE"`
 	ACME     ACMEConfig `yaml:"acme"`
 }
 
 // ACMEConfig holds Let's Encrypt ACME configuration
 type ACMEConfig struct {
-	Enabled     bool   `yaml:"enabled" env:"ACME_ENABLED" default:"false"`
-	Email       string `yaml:"email" env:"ACME_EMAIL"`
-	Provider    string `yaml:"provider" env:"ACME_PROVIDER" default:"cloudflare"`
-	APIToken    string `yaml:"api_token" env:"CLOUDFLARE_API_TOKEN"`
-	CacheDir    string `yaml:"cache_dir" env:"ACME_CACHE_DIR" default:"./data/acme"`
+	Enabled  bool   `yaml:"enabled" env:"ACME_ENABLED" default:"false"`
+	Email    string `yaml:"email" env:"ACME_EMAIL"`
+	Provider string `yaml:"provider" env:"ACME_PROVIDER" default:"cloudflare"`
+	APIToken string `yaml:"api_token" env:"CLOUDFLARE_API_TOKEN"`
+	CacheDir string `yaml:"cache_dir" env:"ACME_CACHE_DIR" default:"./data/acme"`
 }
 
 // SMTPConfig holds SMTP server configuration
@@ -57,8 +56,8 @@ type SMTPConfig struct {
 
 // IMAPConfig holds IMAP server configuration
 type IMAPConfig struct {
-	Port      int  `yaml:"port" env:"IMAP_PORT" default:"143"`
-	IMAPSPort int  `yaml:"imaps_port" env:"IMAPS_PORT" default:"993"`
+	Port        int `yaml:"port" env:"IMAP_PORT" default:"143"`
+	IMAPSPort   int `yaml:"imaps_port" env:"IMAPS_PORT" default:"993"`
 	IdleTimeout int `yaml:"idle_timeout" env:"IMAP_IDLE_TIMEOUT" default:"1800"` // 30 minutes
 }
 
@@ -84,7 +83,7 @@ type SpamAssassinConfig struct {
 
 // GreylistingConfig holds greylisting configuration
 type GreylistingConfig struct {
-	Enabled     bool `yaml:"enabled" env:"GREYLISTING_ENABLED" default:"true"`
+	Enabled      bool `yaml:"enabled" env:"GREYLISTING_ENABLED" default:"true"`
 	DelayMinutes int  `yaml:"delay_minutes" env:"GREYLISTING_DELAY_MINUTES" default:"5"`
 	ExpiryDays   int  `yaml:"expiry_days" env:"GREYLISTING_EXPIRY_DAYS" default:"30"`
 }
@@ -123,17 +122,11 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Ensure database directory exists
-	if cfg.Database.Path != "" {
-		dbDir := filepath.Dir(cfg.Database.Path)
-		if dbDir != "." && dbDir != "/" {
-			// Directory creation will be handled by database package
-		}
-	}
-
+	// Database directory creation will be handled by database package
 	return &cfg, nil
 }
 
+//nolint:mnd // Default configuration values
 func setDefaults(v *viper.Viper) {
 	// Database
 	v.SetDefault("database.path", "./data/mailserver.db")
