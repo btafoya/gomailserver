@@ -252,12 +252,17 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Logging and configuration
 - [x] Database foundation
 
-### Phase 1: Core Mail Server (In Progress)
-- [ ] SMTP server implementation
-- [ ] IMAP server implementation
-- [ ] Message storage and handling
-- [ ] User authentication
-- [ ] TLS support
+### Phase 1: Core Mail Server ✅ (Unit Tests Complete - Ready for Integration Testing)
+- [x] SMTP server implementation (ports 25, 587, 465)
+- [x] IMAP server implementation (ports 143, 993)
+- [x] Message storage and handling (hybrid blob/filesystem)
+- [x] User authentication (bcrypt with PLAIN auth)
+- [x] TLS support (STARTTLS + implicit TLS)
+- [x] Service layer (UserService, MessageService, QueueService, MailboxService)
+- [x] SQLite repositories (5 repositories with full CRUD)
+- [x] Unit tests (58 tests, 55 passing, 3 skipped)
+- [ ] Integration tests (SMTP/IMAP end-to-end flows)
+- [ ] Manual testing with real clients
 
 ### Phase 2: Security Foundation
 - [ ] DKIM signing and verification
