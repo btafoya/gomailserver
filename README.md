@@ -1,5 +1,11 @@
 # gomailserver
 
+[![CI](https://github.com/btafoya/gomailserver/actions/workflows/ci.yml/badge.svg)](https://github.com/btafoya/gomailserver/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/btafoya/gomailserver)](https://go.dev/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/btafoya/gomailserver)](https://goreportcard.com/report/github.com/btafoya/gomailserver)
+[![codecov](https://codecov.io/gh/btafoya/gomailserver/branch/main/graph/badge.svg)](https://codecov.io/gh/btafoya/gomailserver)
+[![License](https://img.shields.io/badge/license-TBD-blue.svg)](LICENSE)
+
 A modern, composable, all-in-one mail server written in Go 1.23.5+. Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security features including DKIM, SPF, DMARC, antivirus, and anti-spam capabilities.
 
 ## Features
@@ -207,25 +213,35 @@ cp ./data/mailserver.db ./backups/mailserver-$(date +%Y%m%d).db
 
 ## Contributing
 
-This is a greenfield project following the PR.md requirements. See CLAUDE.md for autonomous work guidelines.
+Contributions are welcome! This is a greenfield project following the PR.md requirements. See CLAUDE.md for autonomous work guidelines.
+
+### GitHub Resources
+
+- **Issues**: [Report bugs or request features](https://github.com/btafoya/gomailserver/issues)
+- **Pull Requests**: [Submit changes](https://github.com/btafoya/gomailserver/pulls)
+- **Discussions**: [Ask questions or share ideas](https://github.com/btafoya/gomailserver/discussions)
+- **CI/CD**: [GitHub Actions workflows](https://github.com/btafoya/gomailserver/actions)
 
 ### Development Workflow
 
-1. Create feature branch
-2. Make changes following existing patterns
-3. Add tests for new functionality
-4. Run linter and tests
-5. Commit with descriptive messages
-6. Submit pull request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes following existing patterns
+4. Add tests for new functionality
+5. Run linter and tests (`make lint && make test`)
+6. Commit with descriptive messages
+7. Push to your fork (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
 ### Code Standards
 
 - Go 1.23.5+ idiomatic code
-- 80%+ test coverage
-- golangci-lint passing
+- 80%+ test coverage required
+- golangci-lint must pass (see `.golangci.yml`)
 - Comprehensive error handling
 - Context-based cancellation
-- Structured logging (zap)
+- Structured logging with zap
+- All CI checks must pass before merge
 
 ## Roadmap
 
@@ -265,21 +281,32 @@ This is a greenfield project following the PR.md requirements. See CLAUDE.md for
 - Webmail client
 - Webhooks
 
+## Repository Information
+
+- **GitHub**: [btafoya/gomailserver](https://github.com/btafoya/gomailserver)
+- **Issues**: [Bug Reports & Features](https://github.com/btafoya/gomailserver/issues)
+- **Documentation**: [Project Wiki](https://github.com/btafoya/gomailserver/wiki)
+- **CI/CD**: Automated testing via [GitHub Actions](https://github.com/btafoya/gomailserver/actions)
+- **Code Quality**: Monitored via [Go Report Card](https://goreportcard.com/report/github.com/btafoya/gomailserver)
+- **Coverage**: Tracked via [Codecov](https://codecov.io/gh/btafoya/gomailserver)
+
 ## License
 
 [License TBD]
 
 ## Author
 
-btafoya
+**btafoya** - [GitHub Profile](https://github.com/btafoya)
 
 ## Acknowledgments
 
-Built with:
-- [emersion/go-smtp](https://github.com/emersion/go-smtp) - SMTP library
-- [emersion/go-imap](https://github.com/emersion/go-imap) - IMAP library
-- [emersion/go-message](https://github.com/emersion/go-message) - MIME parsing
+Built with excellent open-source libraries:
+- [emersion/go-smtp](https://github.com/emersion/go-smtp) - SMTP server implementation
+- [emersion/go-imap](https://github.com/emersion/go-imap) - IMAP server implementation
+- [emersion/go-message](https://github.com/emersion/go-message) - MIME message parsing
 - [spf13/cobra](https://github.com/spf13/cobra) - CLI framework
-- [spf13/viper](https://github.com/spf13/viper) - Configuration
+- [spf13/viper](https://github.com/spf13/viper) - Configuration management
 - [uber-go/zap](https://github.com/uber-go/zap) - Structured logging
-- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) - SQLite driver
+- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) - SQLite database driver
+
+Special thanks to all contributors and the Go community!
