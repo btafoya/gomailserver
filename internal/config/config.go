@@ -8,25 +8,25 @@ import (
 
 // Config holds the entire application configuration
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Logger   LoggerConfig   `yaml:"logger"`
-	TLS      TLSConfig      `yaml:"tls"`
-	SMTP     SMTPConfig     `yaml:"smtp"`
-	IMAP     IMAPConfig     `yaml:"imap"`
-	Security SecurityConfig `yaml:"security"`
+	Server   ServerConfig   `mapstructure:"server" yaml:"server"`
+	Database DatabaseConfig `mapstructure:"database" yaml:"database"`
+	Logger   LoggerConfig   `mapstructure:"logger" yaml:"logger"`
+	TLS      TLSConfig      `mapstructure:"tls" yaml:"tls"`
+	SMTP     SMTPConfig     `mapstructure:"smtp" yaml:"smtp"`
+	IMAP     IMAPConfig     `mapstructure:"imap" yaml:"imap"`
+	Security SecurityConfig `mapstructure:"security" yaml:"security"`
 }
 
 // ServerConfig holds general server configuration
 type ServerConfig struct {
-	Hostname string `yaml:"hostname" env:"SERVER_HOSTNAME"`
-	Domain   string `yaml:"domain" env:"SERVER_DOMAIN"`
+	Hostname string `mapstructure:"hostname" yaml:"hostname" env:"SERVER_HOSTNAME"`
+	Domain   string `mapstructure:"domain" yaml:"domain" env:"SERVER_DOMAIN"`
 }
 
 // DatabaseConfig holds database configuration
 type DatabaseConfig struct {
-	Path       string `yaml:"path" env:"DB_PATH" default:"./data/mailserver.db"`
-	WALEnabled bool   `yaml:"wal_enabled" env:"DB_WAL_ENABLED" default:"true"`
+	Path       string `mapstructure:"path" yaml:"path" env:"DB_PATH" default:"./data/mailserver.db"`
+	WALEnabled bool   `mapstructure:"wal_enabled" yaml:"wal_enabled" env:"DB_WAL_ENABLED" default:"true"`
 }
 
 // TLSConfig holds TLS/certificate configuration
@@ -47,18 +47,18 @@ type ACMEConfig struct {
 
 // SMTPConfig holds SMTP server configuration
 type SMTPConfig struct {
-	SubmissionPort int    `yaml:"submission_port" env:"SMTP_SUBMISSION_PORT" default:"587"`
-	RelayPort      int    `yaml:"relay_port" env:"SMTP_RELAY_PORT" default:"25"`
-	SMTPSPort      int    `yaml:"smtps_port" env:"SMTPS_PORT" default:"465"`
-	MaxMessageSize int64  `yaml:"max_message_size" env:"SMTP_MAX_MESSAGE_SIZE" default:"52428800"` // 50MB
-	Hostname       string `yaml:"hostname" env:"SMTP_HOSTNAME"`
+	SubmissionPort int    `mapstructure:"submission_port" yaml:"submission_port" env:"SMTP_SUBMISSION_PORT" default:"587"`
+	RelayPort      int    `mapstructure:"relay_port" yaml:"relay_port" env:"SMTP_RELAY_PORT" default:"25"`
+	SMTPSPort      int    `mapstructure:"smtps_port" yaml:"smtps_port" env:"SMTPS_PORT" default:"465"`
+	MaxMessageSize int64  `mapstructure:"max_message_size" yaml:"max_message_size" env:"SMTP_MAX_MESSAGE_SIZE" default:"52428800"` // 50MB
+	Hostname       string `mapstructure:"hostname" yaml:"hostname" env:"SMTP_HOSTNAME"`
 }
 
 // IMAPConfig holds IMAP server configuration
 type IMAPConfig struct {
-	Port        int `yaml:"port" env:"IMAP_PORT" default:"143"`
-	IMAPSPort   int `yaml:"imaps_port" env:"IMAPS_PORT" default:"993"`
-	IdleTimeout int `yaml:"idle_timeout" env:"IMAP_IDLE_TIMEOUT" default:"1800"` // 30 minutes
+	Port        int `mapstructure:"port" yaml:"port" env:"IMAP_PORT" default:"143"`
+	IMAPSPort   int `mapstructure:"imaps_port" yaml:"imaps_port" env:"IMAPS_PORT" default:"993"`
+	IdleTimeout int `mapstructure:"idle_timeout" yaml:"idle_timeout" env:"IMAP_IDLE_TIMEOUT" default:"1800"` // 30 minutes
 }
 
 // SecurityConfig holds security-related configuration
