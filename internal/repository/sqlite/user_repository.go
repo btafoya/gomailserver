@@ -23,15 +23,15 @@ func NewUserRepository(db *database.DB) repository.UserRepository {
 func (r *userRepository) Create(user *domain.User) error {
 	query := `
 		INSERT INTO users (
-			email, domain_id, password_hash, full_name, display_name,
+			email, domain_id, password_hash, full_name, display_name, role,
 			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
 			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
 			spam_threshold, language, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(query,
-		user.Email, user.DomainID, user.PasswordHash, user.FullName, user.DisplayName,
+		user.Email, user.DomainID, user.PasswordHash, user.FullName, user.DisplayName, user.Role,
 		user.Quota, user.UsedQuota, user.Status, user.AuthMethod, user.TOTPSecret, user.TOTPEnabled,
 		user.ForwardTo, user.AutoReplyEnabled, user.AutoReplySubject, user.AutoReplyBody,
 		user.SpamThreshold, user.Language, time.Now(), time.Now(),
@@ -56,7 +56,7 @@ func (r *userRepository) Create(user *domain.User) error {
 func (r *userRepository) GetByID(id int64) (*domain.User, error) {
 	query := `
 		SELECT
-			id, email, domain_id, password_hash, full_name, display_name,
+			id, email, domain_id, password_hash, full_name, display_name, role,
 			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
 			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
 			spam_threshold, language, last_login, created_at, updated_at
@@ -68,7 +68,7 @@ func (r *userRepository) GetByID(id int64) (*domain.User, error) {
 	var lastLogin sql.NullTime
 
 	err := r.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName,
+		&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName, &user.Role,
 		&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
 		&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
 		&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,
@@ -91,7 +91,7 @@ func (r *userRepository) GetByID(id int64) (*domain.User, error) {
 func (r *userRepository) GetByEmail(email string) (*domain.User, error) {
 	query := `
 		SELECT
-			id, email, domain_id, password_hash, full_name, display_name,
+			id, email, domain_id, password_hash, full_name, display_name, role,
 			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
 			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
 			spam_threshold, language, last_login, created_at, updated_at
@@ -103,7 +103,7 @@ func (r *userRepository) GetByEmail(email string) (*domain.User, error) {
 	var lastLogin sql.NullTime
 
 	err := r.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName,
+		&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName, &user.Role,
 		&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
 		&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
 		&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,
@@ -126,7 +126,7 @@ func (r *userRepository) GetByEmail(email string) (*domain.User, error) {
 func (r *userRepository) Update(user *domain.User) error {
 	query := `
 		UPDATE users SET
-			email = ?, domain_id = ?, password_hash = ?, full_name = ?, display_name = ?,
+			email = ?, domain_id = ?, password_hash = ?, full_name = ?, display_name = ?, role = ?,
 			quota = ?, used_quota = ?, status = ?, auth_method = ?, totp_secret = ?, totp_enabled = ?,
 			forward_to = ?, auto_reply_enabled = ?, auto_reply_subject = ?, auto_reply_body = ?,
 			spam_threshold = ?, language = ?, updated_at = ?
@@ -134,7 +134,7 @@ func (r *userRepository) Update(user *domain.User) error {
 	`
 
 	_, err := r.db.Exec(query,
-		user.Email, user.DomainID, user.PasswordHash, user.FullName, user.DisplayName,
+		user.Email, user.DomainID, user.PasswordHash, user.FullName, user.DisplayName, user.Role,
 		user.Quota, user.UsedQuota, user.Status, user.AuthMethod, user.TOTPSecret, user.TOTPEnabled,
 		user.ForwardTo, user.AutoReplyEnabled, user.AutoReplySubject, user.AutoReplyBody,
 		user.SpamThreshold, user.Language, time.Now(), user.ID,
@@ -181,7 +181,7 @@ func (r *userRepository) Delete(id int64) error {
 func (r *userRepository) List(domainID int64, offset, limit int) ([]*domain.User, error) {
 	query := `
 		SELECT
-			id, email, domain_id, password_hash, full_name, display_name,
+			id, email, domain_id, password_hash, full_name, display_name, role,
 			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
 			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
 			spam_threshold, language, last_login, created_at, updated_at
@@ -203,7 +203,7 @@ func (r *userRepository) List(domainID int64, offset, limit int) ([]*domain.User
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName,
+			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName, &user.Role,
 			&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
 			&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
 			&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,
@@ -226,7 +226,7 @@ func (r *userRepository) List(domainID int64, offset, limit int) ([]*domain.User
 func (r *userRepository) ListAll() ([]*domain.User, error) {
 	query := `
 		SELECT
-			id, email, domain_id, password_hash, full_name, display_name,
+			id, email, domain_id, password_hash, full_name, display_name, role,
 			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
 			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
 			spam_threshold, language, last_login, created_at, updated_at
@@ -246,7 +246,7 @@ func (r *userRepository) ListAll() ([]*domain.User, error) {
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName,
+			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName, &user.Role,
 			&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
 			&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
 			&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,

@@ -38,6 +38,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV3Up,
 			Down:        migrationV3Down,
 		},
+		{
+			Version:     4,
+			Description: "Add role column to users table for admin/user distinction",
+			Up:          migrationV4Up,
+			Down:        migrationV4Down,
+		},
 	}
 }
 

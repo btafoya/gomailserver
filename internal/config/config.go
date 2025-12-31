@@ -65,7 +65,7 @@ type IMAPConfig struct {
 
 // APIConfig holds admin API server configuration
 type APIConfig struct {
-	Port           int      `mapstructure:"port" yaml:"port" env:"API_PORT" default:"8080"`
+	Port           int      `mapstructure:"port" yaml:"port" env:"API_PORT" default:"8980"`
 	ReadTimeout    int      `mapstructure:"read_timeout" yaml:"read_timeout" env:"API_READ_TIMEOUT" default:"15"`
 	WriteTimeout   int      `mapstructure:"write_timeout" yaml:"write_timeout" env:"API_WRITE_TIMEOUT" default:"15"`
 	MaxHeaderBytes int      `mapstructure:"max_header_bytes" yaml:"max_header_bytes" env:"API_MAX_HEADER_BYTES" default:"1048576"` // 1MB
@@ -170,7 +170,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("imap.idle_timeout", 1800) // 30 minutes
 
 	// Admin API
-	v.SetDefault("api.port", 8080)
+	v.SetDefault("api.port", 8980)
 	v.SetDefault("api.read_timeout", 15)
 	v.SetDefault("api.write_timeout", 15)
 	v.SetDefault("api.max_header_bytes", 1048576) // 1MB

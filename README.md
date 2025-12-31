@@ -90,6 +90,17 @@ tls:
     api_token: your_cloudflare_api_token
 ```
 
+### First-Time Setup
+
+Create the first admin user before starting the server:
+
+```bash
+# Create admin user interactively
+./build/gomailserver create-admin
+
+# Follow prompts for email, name, and password
+```
+
 ### Running
 
 ```bash
@@ -99,6 +110,49 @@ tls:
 # Or with default config path
 ./build/gomailserver run
 ```
+
+Access the admin UI at `http://localhost:8980/admin/` (or your configured API port).
+
+## CLI Commands
+
+```bash
+# Display help
+./build/gomailserver --help
+
+# Create first admin user (interactive)
+./build/gomailserver create-admin
+
+# Start mail server
+./build/gomailserver run [--config path/to/config.yaml]
+
+# Show version information
+./build/gomailserver version
+
+# Generate shell completion
+./build/gomailserver completion [bash|zsh|fish|powershell]
+```
+
+## API Endpoints
+
+The REST API is available at `http://localhost:8980/api/v1/` (default port).
+
+### Setup Wizard (No Authentication Required)
+- `GET /api/v1/setup/status` - Check if setup is complete
+- `GET /api/v1/setup/state` - Get current wizard state
+- `POST /api/v1/setup/admin` - Create first admin user
+- `POST /api/v1/setup/complete` - Mark setup as complete
+
+### Authentication
+- `POST /api/v1/auth/login` - Login with email/password
+- `POST /api/v1/auth/refresh` - Refresh JWT token
+
+### Protected Endpoints (JWT or API Key Required)
+- **Domains**: `/api/v1/domains` - CRUD operations for domains
+- **Users**: `/api/v1/users` - CRUD operations for users
+- **Aliases**: `/api/v1/aliases` - CRUD operations for aliases
+- **Queue**: `/api/v1/queue` - View and manage mail queue
+- **Statistics**: `/api/v1/stats` - Dashboard and domain/user stats
+- **Logs**: `/api/v1/logs` - Server log retrieval
 
 ## Development
 
@@ -164,25 +218,29 @@ gomailserver/
 ├── cmd/
 │   └── gomailserver/          # Main application entrypoint
 ├── internal/
-│   ├── commands/              # CLI commands
+│   ├── admin/                 # Admin UI handler (embedded Vue.js app)
+│   ├── api/                   # REST API (handlers, middleware, router)
+│   ├── caldav/                # CalDAV server (RFC 4791)
+│   ├── carddav/               # CardDAV server (RFC 6352)
+│   ├── commands/              # CLI commands (run, create-admin, version)
 │   ├── config/                # Configuration management
 │   ├── database/              # SQLite connection and migrations
 │   ├── domain/                # Domain models
-│   ├── repository/            # Data access layer
-│   ├── service/               # Business logic
-│   ├── smtp/                  # SMTP server
 │   ├── imap/                  # IMAP server
-│   ├── caldav/                # CalDAV server
-│   ├── carddav/               # CardDAV server
-│   ├── security/              # DKIM, SPF, DMARC, etc.
-│   ├── api/                   # REST API
-│   └── webmail/               # Webmail backend
+│   ├── repository/            # Data access layer
+│   │   ├── calendar/          # Calendar/Event repositories
+│   │   ├── contact/           # Addressbook/Contact repositories
+│   │   └── sqlite/            # SQLite implementations
+│   ├── security/              # DKIM, SPF, DMARC, ClamAV, SpamAssassin
+│   ├── service/               # Business logic (User, Domain, Queue, Setup, etc.)
+│   ├── smtp/                  # SMTP server
+│   └── webdav/                # WebDAV server (CalDAV/CardDAV integration)
 ├── pkg/
-│   └── sieve/                 # Sieve interpreter
+│   └── sieve/                 # Sieve interpreter (future)
 ├── web/
-│   ├── admin/                 # Admin UI (Vue.js)
-│   ├── portal/                # User portal (Vue.js)
-│   └── webmail/               # Webmail client (Vue.js)
+│   ├── admin/                 # Admin UI (Vue.js, Vite, TailwindCSS)
+│   ├── portal/                # User portal (future)
+│   └── webmail/               # Webmail client (future)
 ├── tests/                     # Integration tests
 ├── Makefile                   # Build automation
 ├── Dockerfile                 # Docker container
@@ -252,7 +310,7 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Logging and configuration
 - [x] Database foundation
 
-### Phase 1: Core Mail Server ✅ (Unit Tests Complete - Ready for Integration Testing)
+### Phase 1: Core Mail Server ✅
 - [x] SMTP server implementation (ports 25, 587, 465)
 - [x] IMAP server implementation (ports 143, 993)
 - [x] Message storage and handling (hybrid blob/filesystem)
@@ -261,30 +319,52 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Service layer (UserService, MessageService, QueueService, MailboxService)
 - [x] SQLite repositories (5 repositories with full CRUD)
 - [x] Unit tests (58 tests, 55 passing, 3 skipped)
-- [ ] Integration tests (SMTP/IMAP end-to-end flows)
-- [ ] Manual testing with real clients
 
-### Phase 2: Security Foundation
-- [ ] DKIM signing and verification
-- [ ] SPF validation
-- [ ] DMARC enforcement
-- [ ] ClamAV integration
-- [ ] SpamAssassin integration
-- [ ] Greylisting
+### Phase 2: Security Foundation ✅
+- [x] DKIM signing and verification (RSA-2048/4096, Ed25519)
+- [x] SPF validation with configurable DNS servers
+- [x] DMARC enforcement with policy validation
+- [x] ClamAV integration (virus scanning)
+- [x] SpamAssassin integration (spam filtering)
+- [x] Greylisting with configurable delays
+- [x] Rate limiting (SMTP, IMAP, Authentication)
+- [x] Brute force protection with IP blacklisting
+- [x] Per-domain security configuration
+- [x] Default security template system
 
-### Phase 3: Web Interfaces
-- [ ] REST API
-- [ ] Admin web UI
+### Phase 3: REST API & Admin Interface ✅
+- [x] REST API with JWT authentication
+- [x] API key authentication support
+- [x] Domain management endpoints
+- [x] User management endpoints
+- [x] Alias management endpoints
+- [x] Queue management endpoints
+- [x] Statistics and monitoring endpoints
+- [x] Admin web UI (Vue.js embedded)
+- [x] Setup wizard (CLI + API endpoints)
+- [x] Admin user creation (`create-admin` command)
+- [x] Role-based access control (admin/user)
 - [ ] User self-service portal
-- [ ] Let's Encrypt integration
-- [ ] Setup wizard
+- [ ] Let's Encrypt ACME integration
+
+### Phase 4: CalDAV/CardDAV ✅
+- [x] CalDAV server (RFC 4791) with HTTP Basic Auth
+- [x] CardDAV server (RFC 6352) with HTTP Basic Auth
+- [x] Calendar service (create, update, delete, list)
+- [x] Event service with timezone support
+- [x] Addressbook service (create, update, delete, list)
+- [x] Contact service with vCard 4.0 support
+- [x] WebDAV server integration
+- [x] Comprehensive test coverage
 
 ### Future Phases
-- CalDAV/CardDAV servers
-- Advanced security (DANE, MTA-STS, PGP)
-- Sieve filtering
+- Advanced TLS (DANE, MTA-STS)
+- PGP/GPG encryption support
+- Sieve filtering (RFC 5228)
 - Webmail client
-- Webhooks
+- Webhooks and event notifications
+- Integration tests (SMTP/IMAP end-to-end)
+- Manual testing with real mail clients
 
 ## Repository Information
 

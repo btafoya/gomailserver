@@ -71,3 +71,5 @@ web/*/.output/
 
 # ACME cache
 acme/
+
+.playwright-mcp/

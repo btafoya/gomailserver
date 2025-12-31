@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/btafoya/gomailserver/internal/admin"
 	"github.com/btafoya/gomailserver/internal/api/handlers"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
 	"github.com/btafoya/gomailserver/internal/repository"
@@ -37,6 +38,7 @@ type RouterConfig struct {
 	MailboxService  *service.MailboxService
 	MessageService  *service.MessageService
 	QueueService    *service.QueueService
+	SetupService    *service.SetupService
 	APIKeyRepo      repository.APIKeyRepository
 	RateLimitRepo   repository.RateLimitRepository
 	JWTSecret       string
@@ -99,6 +101,17 @@ func NewRouter(config RouterConfig) *Router {
 				config.Logger,
 			).Refresh)
 		})
+
+	// Setup wizard routes (no auth required - runs before admin user exists)
+	r.Group(func(r chi.Router) {
+		setupHandler := handlers.NewSetupHandler(config.SetupService, config.Logger)
+		r.Route("/setup", func(r chi.Router) {
+			r.Get("/status", setupHandler.GetStatus)
+			r.Get("/state", setupHandler.GetState)
+			r.Post("/admin", setupHandler.CreateAdmin)
+			r.Post("/complete", setupHandler.CompleteSetup)
+		})
+	})
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
@@ -166,6 +179,10 @@ func NewRouter(config RouterConfig) *Router {
 			r.Get("/logs", logHandler.List)
 		})
 	})
+
+	// Admin UI - must be last to act as catch-all for SPA routing
+	// Serves at /admin/* with embedded or proxied assets
+	r.Mount("/admin", admin.Handler(config.Logger))
 
 	return r
 }

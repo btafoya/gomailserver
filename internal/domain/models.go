@@ -89,6 +89,7 @@ type User struct {
 	PasswordHash     string     `json:"-"`
 	FullName         string     `json:"full_name,omitempty"`
 	DisplayName      string     `json:"display_name,omitempty"`
+	Role             string     `json:"role"`                     // admin or user
 	Quota            int64      `json:"quota"`
 	UsedQuota        int64      `json:"used_quota"`
 	Status           string     `json:"status"`

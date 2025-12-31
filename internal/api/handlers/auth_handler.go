@@ -92,10 +92,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		// For now, we'll skip TOTP validation
 	}
 
-	// Determine role (admin vs user)
-	role := "user"
-	// TODO: Check if user is admin (could be based on domain ownership or specific admin flag)
-	// For now, all users are regular users
+	// Get role from user model
+	role := user.Role
+	if role == "" {
+		role = "user" // default for users without role set
+	}
 
 	// Generate JWT token
 	token, err := middleware.GenerateJWT(user.ID, user.Email, role, &user.DomainID, h.jwtSecret)

@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/config"
+	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/service"
 )
@@ -25,6 +26,7 @@ type Server struct {
 // This is a wrapper around NewRouter for backward compatibility
 func NewServer(
 	cfg *config.APIConfig,
+	db *database.DB,
 	domainRepo repository.DomainRepository,
 	userRepo repository.UserRepository,
 	aliasRepo repository.AliasRepository,
@@ -42,6 +44,7 @@ func NewServer(
 	mailboxService := service.NewMailboxService(mailboxRepo, logger)
 	messageService := service.NewMessageService(messageRepo, "./data/mail", logger)
 	queueService := service.NewQueueService(queueRepo, logger)
+	setupService := service.NewSetupService(db, userRepo, domainRepo, logger)
 
 	// Create router with all dependencies
 	router := NewRouter(RouterConfig{
@@ -52,6 +55,7 @@ func NewServer(
 		MailboxService: mailboxService,
 		MessageService: messageService,
 		QueueService:   queueService,
+		SetupService:   setupService,
 		APIKeyRepo:     apiKeyRepo,
 		RateLimitRepo:  rateLimitRepo,
 		JWTSecret:      cfg.JWTSecret,

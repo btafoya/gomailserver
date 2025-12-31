@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import api from '@/api/axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -16,22 +16,22 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email, password) {
       try {
-        const response = await axios.post('/api/v1/auth/login', {
+        const response = await api.post('/api/v1/auth/login', {
           email,
           password
         })
 
-        this.token = response.data.token
-        this.refreshToken = response.data.refresh_token
-        this.user = response.data.user
+        this.token = response.data.data.token
+        this.refreshToken = response.data.data.refresh_token
+        this.user = response.data.data.user
 
         localStorage.setItem('token', this.token)
         localStorage.setItem('refreshToken', this.refreshToken)
 
         // Set default authorization header
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
 
-        return response.data
+        return response.data.data
       } catch (error) {
         throw error
       }
@@ -39,15 +39,15 @@ export const useAuthStore = defineStore('auth', {
 
     async refresh() {
       try {
-        const response = await axios.post('/api/v1/auth/refresh', {
+        const response = await api.post('/api/v1/auth/refresh', {
           refresh_token: this.refreshToken
         })
 
-        this.token = response.data.token
+        this.token = response.data.data.token
         localStorage.setItem('token', this.token)
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
 
-        return response.data
+        return response.data.data
       } catch (error) {
         this.logout()
         throw error
@@ -60,12 +60,12 @@ export const useAuthStore = defineStore('auth', {
       this.refreshToken = null
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
-      delete axios.defaults.headers.common['Authorization']
+      delete api.defaults.headers.common['Authorization']
     },
 
     initializeAuth() {
       if (this.token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
       }
     }
   }

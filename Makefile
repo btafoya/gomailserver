@@ -18,13 +18,18 @@ GOLINT=golangci-lint
 
 all: clean lint test build
 
-build:
+build: build-ui
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
 	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
-build-static:
+build-ui:
+	@echo "Building admin UI..."
+	@cd web/admin && npm install && npm run build
+	@echo "Admin UI build complete"
+
+build-static: build-ui
 	@echo "Building static binary..."
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -tags 'osusergo netgo static_build' \
