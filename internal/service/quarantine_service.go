@@ -1,63 +1,56 @@
 package service
 
 import (
-	"errors"
 	"time"
 
-	"github.com/btafoya/gomailserver/internal/config"
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	"go.uber.org/zap"
 )
 
-var ErrUnauthorized = errors.New("unauthorized")
-
 type QuarantineService struct {
-	repo           repository.QuarantineRepository
-	logger         *config.Logger
-	messageService MessageService
+	repo   repository.QuarantineRepository
+	logger *zap.Logger
 }
 
-func NewQuarantineService(repo repository.QuarantineRepository, logger *config.Logger, messageService MessageService) *QuarantineService {
+func NewQuarantineService(repo repository.QuarantineRepository, logger *zap.Logger) *QuarantineService {
 	return &QuarantineService{
-		repo:           repo,
-		logger:         logger,
-		messageService: messageService,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
-func (s *QuarantineService) Quarantine(userID int64, messageID int64, score float64) error {
-	item := &domain.QuarantineItem{
-		MessageID:     messageID,
-		UserID:        userID,
-		SpamScore:     score,
-		QuarantinedAt: time.Now(),
-		AutoDeleteAt:  time.Now().AddDate(0, 0, 30), // 30 days
+func (s *QuarantineService) Quarantine(messageID, sender, recipient, subject, reason, messagePath string, score float64) error {
+	message := &domain.QuarantineMessage{
+		MessageID:   messageID,
+		Sender:      sender,
+		Recipient:   recipient,
+		Subject:     subject,
+		Reason:      reason,
+		Score:       score,
+		MessagePath: messagePath,
+		Action:      "quarantined",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
-	return s.repo.Create(item)
+	return s.repo.Create(message)
 }
 
-func (s *QuarantineService) Release(userID int64, itemID int64) error {
-	item, err := s.repo.GetByID(itemID)
-	if err != nil {
+func (s *QuarantineService) Release(itemID int64) error {
+	return s.repo.UpdateAction(itemID, "released")
+}
+
+func (s *QuarantineService) Delete(itemID int64) error {
+	if err := s.repo.UpdateAction(itemID, "deleted"); err != nil {
 		return err
 	}
-
-	if item.UserID != userID {
-		return ErrUnauthorized
-	}
-
-	// Move message back to inbox
-	if err := s.messageService.MoveToInbox(item.MessageID); err != nil {
-		return err
-	}
-
-	return s.repo.MarkReleased(itemID)
+	return s.repo.Delete(itemID)
 }
 
-func (s *QuarantineService) ListForUser(userID int64) ([]*domain.QuarantineItem, error) {
-	return s.repo.ListByUser(userID)
+func (s *QuarantineService) List(offset, limit int) ([]*domain.QuarantineMessage, error) {
+	return s.repo.List(offset, limit)
 }
 
-func (s *QuarantineService) CleanupExpired() error {
-	return s.repo.DeleteExpired()
+func (s *QuarantineService) CleanupOld(age time.Duration) error {
+	return s.repo.DeleteOlderThan(age)
 }

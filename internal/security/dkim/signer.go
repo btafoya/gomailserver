@@ -2,6 +2,10 @@ package dkim
 
 import (
 	"bytes"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 
 	"github.com/emersion/go-msgauth/dkim"
 
@@ -41,10 +45,16 @@ func (s *Signer) Sign(domainName string, message []byte) ([]byte, error) {
 		return message, nil // Return unsigned if no DKIM config
 	}
 
+	// Parse the private key from PEM format
+	privateKey, err := parsePrivateKey(domainCfg.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
 	options := &dkim.SignOptions{
 		Domain:   domainName,
 		Selector: domainCfg.Selector,
-		Signer:   bytes.NewReader(domainCfg.PrivateKey),
+		Signer:   privateKey,
 		HeaderKeys: []string{
 			"From", "To", "Subject", "Date", "Message-ID",
 			"MIME-Version", "Content-Type",
@@ -58,4 +68,26 @@ func (s *Signer) Sign(domainName string, message []byte) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func parsePrivateKey(keyBytes []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block")
+	}
+
+	// Try parsing as PKCS1 (RSA PRIVATE KEY)
+	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		return key, nil
+	}
+
+	// Try parsing as PKCS8 (PRIVATE KEY)
+	if key, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
+		if rsaKey, ok := key.(*rsa.PrivateKey); ok {
+			return rsaKey, nil
+		}
+		return nil, fmt.Errorf("not an RSA private key")
+	}
+
+	return nil, fmt.Errorf("unable to parse private key")
 }

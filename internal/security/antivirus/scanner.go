@@ -1,10 +1,8 @@
 package antivirus
 
 import (
-	"go.uber.org/zap"
-
-	"github.com/btafoya/gomailserver/internal/config"
 	"github.com/btafoya/gomailserver/internal/domain"
+	"go.uber.org/zap"
 )
 
 // This is a placeholder for the actual service
@@ -32,11 +30,11 @@ const (
 	ActionTag        ScanAction = "tag"
 )
 
-func NewScanner(clamav *ClamAV, logger *config.Logger) *Scanner {
+func NewScanner(clamav *ClamAV, logger *zap.Logger) *Scanner {
 	return &Scanner{
 		clamav:        clamav,
 		domainService: &placeholderDomainService{},
-		logger:        logger.L,
+		logger:        logger,
 	}
 }
 

@@ -12,10 +12,20 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/btafoya/gomailserver/internal/api"
 	"github.com/btafoya/gomailserver/internal/config"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/imap"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
+	"github.com/btafoya/gomailserver/internal/security/antispam"
+	"github.com/btafoya/gomailserver/internal/security/antivirus"
+	"github.com/btafoya/gomailserver/internal/security/bruteforce"
+	"github.com/btafoya/gomailserver/internal/security/dkim"
+	"github.com/btafoya/gomailserver/internal/security/dmarc"
+	"github.com/btafoya/gomailserver/internal/security/greylist"
+	"github.com/btafoya/gomailserver/internal/security/ratelimit"
+	"github.com/btafoya/gomailserver/internal/security/spf"
+	"github.com/btafoya/gomailserver/internal/security/totp"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/btafoya/gomailserver/internal/smtp"
 	tlspkg "github.com/btafoya/gomailserver/internal/tls"
@@ -83,6 +93,7 @@ func run(cmd *cobra.Command, args []string) error {
 	mailboxRepo := sqlite.NewMailboxRepository(db)
 	messageRepo := sqlite.NewMessageRepository(db)
 	queueRepo := sqlite.NewQueueRepository(db)
+	domainRepo := sqlite.NewDomainRepository(db)
 
 	logger.Debug("repositories initialized")
 
@@ -91,14 +102,96 @@ func run(cmd *cobra.Command, args []string) error {
 	mailboxSvc := service.NewMailboxService(mailboxRepo, logger)
 	messageSvc := service.NewMessageService(messageRepo, "./data/mail", logger)
 	queueSvc := service.NewQueueService(queueRepo, logger)
+	domainSvc := service.NewDomainService(domainRepo)
 
 	logger.Debug("services initialized")
 
+	// Initialize default domain template
+	if err := domainSvc.EnsureDefaultTemplate(); err != nil {
+		return fmt.Errorf("failed to initialize default domain template: %w", err)
+	}
+	logger.Info("default domain template initialized")
+
+	// Create security repositories
+	greylistRepo := sqlite.NewGreylistRepository(db)
+	rateLimitRepo := sqlite.NewRateLimitRepository(db)
+	loginAttemptRepo := sqlite.NewLoginAttemptRepository(db)
+	ipBlacklistRepo := sqlite.NewIPBlacklistRepository(db)
+
+	logger.Debug("security repositories initialized")
+
+	// Create security services
+	// DKIM
+	dkimSigner := dkim.NewSigner()
+	dkimVerifier := dkim.NewVerifier()
+
+	// SPF/DMARC
+	spfResolver := spf.NewResolver()
+	spfValidator := spf.NewValidator(spfResolver)
+	dmarcResolver := dmarc.NewResolver()
+	dmarcEnforcer := dmarc.NewEnforcer(dmarcResolver)
+
+	// Greylisting
+	greylister := greylist.NewGreylister(greylistRepo)
+
+	// Rate limiting
+	rateLimiter := ratelimit.NewLimiter(rateLimitRepo)
+
+	// Brute force protection
+	bruteForce := bruteforce.NewProtection(loginAttemptRepo, ipBlacklistRepo)
+
+	// Antivirus (ClamAV)
+	clamav := antivirus.NewClamAV(cfg.Security.ClamAV.SocketPath)
+
+	// Antispam (SpamAssassin)
+	spamAssassin := antispam.NewSpamAssassin(
+		cfg.Security.SpamAssassin.Host,
+		cfg.Security.SpamAssassin.Port,
+	)
+
+	// TOTP
+	totpService := totp.NewTOTPService(cfg.Server.Hostname)
+
+	logger.Debug("security services initialized")
+
+	// Create SMTP backend with all security services
+	smtpBackend := smtp.NewBackend(
+		userSvc,
+		messageSvc,
+		queueSvc,
+		domainRepo,
+		dkimSigner,
+		dkimVerifier,
+		spfValidator,
+		dmarcEnforcer,
+		greylister,
+		rateLimiter,
+		bruteForce,
+		clamav,
+		spamAssassin,
+		logger,
+	)
+
 	// Create SMTP server
-	smtpServer := smtp.NewServer(&cfg.SMTP, tlsCfg, userSvc, messageSvc, queueSvc, logger)
+	smtpServer := smtp.NewServer(&cfg.SMTP, tlsCfg, smtpBackend, logger)
+
+	// Create IMAP backend with security services
+	imapBackend := imap.NewBackend(
+		userSvc,
+		mailboxSvc,
+		messageSvc,
+		domainRepo,
+		rateLimiter,
+		bruteForce,
+		totpService,
+		logger,
+	)
 
 	// Create IMAP server
-	imapServer := imap.NewServer(&cfg.IMAP, tlsCfg, userSvc, mailboxSvc, messageSvc, logger)
+	imapServer := imap.NewServer(&cfg.IMAP, tlsCfg, imapBackend, logger)
+
+	// Create Admin API server
+	apiServer := api.NewServer(&cfg.API, domainRepo, logger)
 
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
@@ -114,6 +207,11 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to start IMAP server: %w", err)
 	}
 
+	// Start Admin API server
+	if err := apiServer.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start admin API server: %w", err)
+	}
+
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -124,6 +222,7 @@ func run(cmd *cobra.Command, args []string) error {
 		zap.Int("smtps_port", cfg.SMTP.SMTPSPort),
 		zap.Int("imap_port", cfg.IMAP.Port),
 		zap.Int("imaps_port", cfg.IMAP.IMAPSPort),
+		zap.Int("api_port", cfg.API.Port),
 	)
 
 	// Wait for shutdown signal
@@ -146,6 +245,11 @@ func run(cmd *cobra.Command, args []string) error {
 	// Shutdown IMAP server
 	if err := imapServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error("IMAP server shutdown error", zap.Error(err))
+	}
+
+	// Shutdown Admin API server
+	if err := apiServer.Shutdown(shutdownCtx); err != nil {
+		logger.Error("admin API server shutdown error", zap.Error(err))
 	}
 
 	logger.Info("shutdown complete")

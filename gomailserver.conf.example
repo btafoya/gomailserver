@@ -1,0 +1,105 @@
+# gomailserver Bootstrap Configuration
+#
+# This file contains ONLY system-level bootstrap configuration.
+# All per-domain and per-user security settings are stored in SQLite.
+#
+# To configure security features for domains, use the admin API or
+# modify the domains table directly in SQLite. New domains automatically
+# inherit settings from the "_default" template domain.
+
+# Database Configuration
+database:
+  path: "./data/mailserver.db"
+  wal_enabled: true
+
+# Logging Configuration
+logger:
+  level: "info"  # Options: debug, info, warn, error
+  format: "json"  # Options: json, text
+  output_path: "stdout"  # Options: stdout, stderr, or file path
+
+# SMTP Configuration
+smtp:
+  submission_port: 587    # Port for authenticated message submission
+  relay_port: 25          # Port for receiving messages from other servers
+  smtps_port: 465         # Port for SMTP over TLS
+  max_message_size: 52428800  # 50MB maximum message size
+  hostname: "mail.example.com"  # Override server hostname for SMTP
+
+# IMAP Configuration
+imap:
+  port: 143               # Standard IMAP port
+  imaps_port: 993         # IMAP over TLS port
+  idle_timeout: 1800      # 30 minutes idle timeout
+
+# External Security Service Connections
+# Per-domain security policies are configured in SQLite
+security:
+  # ClamAV antivirus connection
+  clamav:
+    socket_path: "/var/run/clamav/clamd.ctl"
+    timeout: 60  # Scan timeout in seconds
+
+  # SpamAssassin connection
+  spamassassin:
+    host: "localhost"
+    port: 783
+    timeout: 30  # Scan timeout in seconds
+
+# TLS/ACME Configuration
+tls:
+  # Manual TLS certificates (if not using ACME)
+  # cert_file: "/path/to/cert.pem"
+  # key_file: "/path/to/key.pem"
+
+  # Let's Encrypt ACME automatic certificates
+  acme:
+    enabled: false
+    email: "admin@example.com"  # Required for ACME registration
+    provider: "cloudflare"      # DNS provider for DNS-01 challenge
+    api_token: "your-cloudflare-api-token"  # Provider API token
+    cache_dir: "./data/acme"    # Certificate cache directory
+    # domains:  # Domains to request certificates for
+    #   - "mail.example.com"
+
+# Environment Variable Overrides
+#
+# All settings can be overridden with environment variables:
+#   DB_PATH, DB_WAL_ENABLED
+#   LOGGER_LEVEL, LOGGER_FORMAT, LOGGER_OUTPUT_PATH
+#   SMTP_SUBMISSION_PORT, SMTP_RELAY_PORT, SMTPS_PORT, SMTP_MAX_MESSAGE_SIZE
+#   IMAP_PORT, IMAPS_PORT, IMAP_IDLE_TIMEOUT
+#   CLAMAV_SOCKET_PATH, CLAMAV_TIMEOUT
+#   SPAMASSASSIN_HOST, SPAMASSASSIN_PORT, SPAMASSASSIN_TIMEOUT
+#   ACME_ENABLED, ACME_EMAIL, ACME_PROVIDER, CLOUDFLARE_API_TOKEN
+
+# ============================================================================
+# DOMAIN SECURITY CONFIGURATION
+# ============================================================================
+#
+# All security features are configured per-domain in the SQLite database.
+# New domains automatically inherit settings from the "_default" template.
+#
+# Security features available per domain:
+#
+# - DKIM: Signing/verification, key generation, headers to sign
+# - SPF: Validation, DNS servers, lookup limits, action policies
+# - DMARC: Policy enforcement, reporting, alignment checking
+# - ClamAV: Virus scanning actions (reject/quarantine/tag)
+# - SpamAssassin: Scoring thresholds, learning, quarantine
+# - Greylisting: Delay periods, expiry, whitelisting
+# - Rate Limiting: Per-IP/user/domain limits for SMTP/IMAP/Auth
+# - Authentication: TOTP enforcement, brute force protection, IP blacklisting
+#
+# To configure these settings:
+# 1. Use the admin API to update domain settings
+# 2. Directly modify the "domains" table in SQLite
+# 3. Update the "_default" template domain to change defaults for new domains
+#
+# Example: Enable TOTP for a specific domain via SQL:
+#   UPDATE domains SET auth_totp_enforced = 1 WHERE name = 'example.com';
+#
+# Example: Adjust spam scores for a domain:
+#   UPDATE domains
+#   SET spam_reject_score = 15.0, spam_quarantine_score = 7.0
+#   WHERE name = 'example.com';

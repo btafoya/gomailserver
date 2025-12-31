@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/config"
-	"github.com/btafoya/gomailserver/internal/service"
 )
 
 // Server manages IMAP server instances
@@ -28,14 +27,7 @@ type Server struct {
 }
 
 // NewServer creates a new IMAP server manager
-func NewServer(cfg *config.IMAPConfig, tlsCfg *tls.Config, userSvc *service.UserService, mailboxSvc *service.MailboxService, messageSvc *service.MessageService, logger *zap.Logger) *Server {
-	backend := &Backend{
-		userService:    userSvc,
-		mailboxService: mailboxSvc,
-		messageService: messageSvc,
-		logger:         logger,
-	}
-
+func NewServer(cfg *config.IMAPConfig, tlsCfg *tls.Config, backend *Backend, logger *zap.Logger) *Server {
 	s := &Server{
 		backend: backend,
 		cfg:     cfg,

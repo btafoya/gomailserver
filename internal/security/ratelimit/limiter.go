@@ -3,6 +3,7 @@ package ratelimit
 import (
 	"time"
 
+	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
 )
 
@@ -30,23 +31,48 @@ func NewLimiter(repo repository.RateLimitRepository) *Limiter {
 func (l *Limiter) Check(limitType, key string) (bool, error) {
 	limit, ok := DefaultLimits[limitType]
 	if !ok {
-		// Or return an error
+		// Unknown limit type, fail open
 		return true, nil
 	}
 
-	count, err := l.repo.GetCount(limitType, key, limit.Window)
-	if err != nil {
-		return true, err // Fail open
+	entry, err := l.repo.Get(key, limitType)
+	if err != nil || entry == nil {
+		// No existing entry, create new one
+		now := time.Now()
+		entry = &domain.RateLimitEntry{
+			Key:         key,
+			Type:        limitType,
+			Count:       1,
+			WindowStart: now,
+		}
+		if err := l.repo.CreateOrUpdate(entry); err != nil {
+			return true, err // Fail open
+		}
+		return true, nil
 	}
 
-	if count >= limit.Count {
+	// Check if window has expired
+	if time.Since(entry.WindowStart) >= limit.Window {
+		// Reset window
+		entry.Count = 1
+		entry.WindowStart = time.Now()
+		if err := l.repo.CreateOrUpdate(entry); err != nil {
+			return true, err // Fail open
+		}
+		return true, nil
+	}
+
+	// Check if limit exceeded
+	if entry.Count >= limit.Count {
 		return false, nil // Rate limited
 	}
 
-	err = l.repo.Increment(limitType, key)
-	if err != nil {
+	// Increment count
+	entry.Count++
+	if err := l.repo.CreateOrUpdate(entry); err != nil {
 		return true, err // Fail open
 	}
+
 	return true, nil
 }
 

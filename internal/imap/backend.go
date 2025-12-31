@@ -2,12 +2,18 @@ package imap
 
 import (
 	"errors"
+	"net"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/backend"
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/repository"
+	"github.com/btafoya/gomailserver/internal/security/bruteforce"
+	"github.com/btafoya/gomailserver/internal/security/ratelimit"
+	"github.com/btafoya/gomailserver/internal/security/totp"
 	"github.com/btafoya/gomailserver/internal/service"
 )
 
@@ -16,7 +22,36 @@ type Backend struct {
 	userService    service.UserServiceInterface
 	mailboxService service.MailboxServiceInterface
 	messageService service.MessageServiceInterface
+	domainRepo     repository.DomainRepository
 	logger         *zap.Logger
+
+	// Security services
+	rateLimiter *ratelimit.Limiter
+	bruteForce  *bruteforce.Protection
+	totpService *totp.TOTPService
+}
+
+// NewBackend creates a new IMAP backend with all dependencies
+func NewBackend(
+	userService service.UserServiceInterface,
+	mailboxService service.MailboxServiceInterface,
+	messageService service.MessageServiceInterface,
+	domainRepo repository.DomainRepository,
+	rateLimiter *ratelimit.Limiter,
+	bruteForce *bruteforce.Protection,
+	totpService *totp.TOTPService,
+	logger *zap.Logger,
+) *Backend {
+	return &Backend{
+		userService:    userService,
+		mailboxService: mailboxService,
+		messageService: messageService,
+		domainRepo:     domainRepo,
+		logger:         logger,
+		rateLimiter:    rateLimiter,
+		bruteForce:     bruteForce,
+		totpService:    totpService,
+	}
 }
 
 // Login authenticates a user
@@ -26,8 +61,64 @@ func (b *Backend) Login(connInfo *imap.ConnInfo, username, password string) (bac
 		zap.String("remote_addr", connInfo.RemoteAddr.String()),
 	)
 
+	// Extract domain from username
+	domain := extractDomain(username)
+	if domain == "" {
+		return nil, backend.ErrInvalidCredentials
+	}
+
+	// Load domain configuration
+	domainConfig, err := b.domainRepo.GetByName(domain)
+	if err != nil {
+		b.logger.Error("failed to load domain config",
+			zap.String("domain", domain),
+			zap.Error(err),
+		)
+		// Continue even if domain config fails
+		domainConfig = nil
+	}
+
+	// Extract IP address
+	remoteIP := extractIP(connInfo.RemoteAddr.String())
+
+	// Check brute force protection if enabled
+	if domainConfig != nil && b.bruteForce != nil && domainConfig.AuthBruteForceEnabled {
+		blocked, err := b.bruteForce.IsBlocked(remoteIP)
+		if err != nil {
+			b.logger.Error("brute force check failed", zap.Error(err))
+		} else if blocked {
+			b.logger.Warn("IMAP authentication blocked - brute force protection",
+				zap.String("username", username),
+				zap.String("remote_ip", remoteIP),
+			)
+			return nil, backend.ErrInvalidCredentials
+		}
+	}
+
+	// Check IMAP rate limiting if enabled
+	if domainConfig != nil && b.rateLimiter != nil && domainConfig.RateLimitEnabled {
+		allowed, err := b.rateLimiter.Check("imap_per_user", username)
+		if err != nil {
+			b.logger.Error("rate limit check failed", zap.Error(err))
+		} else if !allowed {
+			b.logger.Warn("IMAP rate limited",
+				zap.String("username", username),
+				zap.String("remote_ip", remoteIP),
+				zap.String("domain", domain),
+			)
+			return nil, backend.ErrInvalidCredentials
+		}
+	}
+
 	user, err := b.userService.Authenticate(username, password)
 	if err != nil {
+		// Record failed login attempt for brute force protection
+		if domainConfig != nil && b.bruteForce != nil && domainConfig.AuthBruteForceEnabled {
+			if err := b.bruteForce.RecordFailure(remoteIP, username); err != nil {
+				b.logger.Error("failed to record login failure", zap.Error(err))
+			}
+		}
+
 		b.logger.Warn("IMAP authentication failed",
 			zap.String("username", username),
 			zap.String("remote_addr", connInfo.RemoteAddr.String()),
@@ -42,6 +133,25 @@ func (b *Backend) Login(connInfo *imap.ConnInfo, username, password string) (bac
 			zap.String("status", user.Status),
 		)
 		return nil, backend.ErrInvalidCredentials
+	}
+
+	// Check TOTP if enforced
+	if domainConfig != nil && b.totpService != nil && domainConfig.AuthTOTPEnforced {
+		if !user.TOTPEnabled {
+			b.logger.Warn("IMAP authentication failed - TOTP required but not enabled",
+				zap.String("username", username),
+			)
+			return nil, errors.New("TOTP required but not configured")
+		}
+		// Note: TOTP validation would require a separate authentication step
+		// For now, we just check if TOTP is enabled
+	}
+
+	// Record successful login for brute force protection
+	if domainConfig != nil && b.bruteForce != nil && domainConfig.AuthBruteForceEnabled {
+		if err := b.bruteForce.RecordSuccess(remoteIP, username); err != nil {
+			b.logger.Error("failed to record successful login", zap.Error(err))
+		}
 	}
 
 	b.logger.Info("IMAP authentication successful",
@@ -217,4 +327,22 @@ func (u *User) Logout() error {
 		zap.Int64("user_id", u.user.ID),
 	)
 	return nil
+}
+
+// extractDomain extracts domain from email address
+func extractDomain(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
+}
+
+// extractIP extracts IP address from remote address string
+func extractIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		return remoteAddr
+	}
+	return host
 }

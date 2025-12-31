@@ -56,3 +56,44 @@ type QueueRepository interface {
 	UpdateRetry(id int64, retryCount int, nextRetry time.Time) error
 	Delete(id int64) error
 }
+
+// GreylistRepository defines greylist data access interface
+type GreylistRepository interface {
+	Create(ip, sender, recipient string) (*domain.GreylistTriplet, error)
+	Get(ip, sender, recipient string) (*domain.GreylistTriplet, error)
+	IncrementPass(id int64) error
+	DeleteOlderThan(age time.Duration) error
+}
+
+// RateLimitRepository defines rate limit data access interface
+type RateLimitRepository interface {
+	Get(key string, limitType string) (*domain.RateLimitEntry, error)
+	CreateOrUpdate(entry *domain.RateLimitEntry) error
+	Cleanup(windowDuration time.Duration) error
+}
+
+// LoginAttemptRepository defines login attempt tracking interface
+type LoginAttemptRepository interface {
+	Record(ip, email string, success bool) error
+	GetRecentFailures(ip string, duration time.Duration) (int, error)
+	GetRecentUserFailures(email string, duration time.Duration) (int, error)
+	Cleanup(age time.Duration) error
+}
+
+// IPBlacklistRepository defines IP blacklist interface
+type IPBlacklistRepository interface {
+	Add(ip, reason string, expiresAt *time.Time) error
+	IsBlacklisted(ip string) (bool, error)
+	Remove(ip string) error
+	RemoveExpired() error
+}
+
+// QuarantineRepository defines quarantine data access interface
+type QuarantineRepository interface {
+	Create(message *domain.QuarantineMessage) error
+	GetByID(id int64) (*domain.QuarantineMessage, error)
+	List(offset, limit int) ([]*domain.QuarantineMessage, error)
+	UpdateAction(id int64, action string) error
+	Delete(id int64) error
+	DeleteOlderThan(age time.Duration) error
+}

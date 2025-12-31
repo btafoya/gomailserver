@@ -26,6 +26,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV1Up,
 			Down:        migrationV1Down,
 		},
+		{
+			Version:     2,
+			Description: "Add security configuration columns to domains table",
+			Up:          migrationV2Up,
+			Down:        migrationV2Down,
+		},
 	}
 }
 

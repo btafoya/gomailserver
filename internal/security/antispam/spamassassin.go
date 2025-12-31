@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/teamwork/spamc"
@@ -14,8 +15,9 @@ type SpamAssassin struct {
 }
 
 func NewSpamAssassin(host string, port int) *SpamAssassin {
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
 	return &SpamAssassin{
-		client: spamc.New(fmt.Sprintf("%s:%d", host, port), 10*time.Second),
+		client: spamc.New(fmt.Sprintf("%s:%d", host, port), dialer),
 	}
 }
 
@@ -29,19 +31,20 @@ func (s *SpamAssassin) Check(message []byte) (*SpamResult, error) {
 		Score:     reply.Score,
 		Threshold: reply.BaseScore,
 		IsSpam:    reply.IsSpam,
-		Rules:     parseRules(reply.Headers),
 	}, nil
 }
 
 func (s *SpamAssassin) Learn(message []byte, isSpam bool) error {
-	var cmd string
+	msgClass := "ham"
 	if isSpam {
-		cmd = "TELL -t 1 -C SPAM"
-	} else {
-		cmd = "TELL -t 1 -C HAM"
+		msgClass = "spam"
 	}
 
-	_, err := s.client.Tell(context.Background(), bytes.NewReader(message), cmd, nil)
+	header := spamc.Header{}.
+		Set("Message-class", msgClass).
+		Set("Set", "local")
+
+	_, err := s.client.Tell(context.Background(), bytes.NewReader(message), header)
 	return err
 }
 

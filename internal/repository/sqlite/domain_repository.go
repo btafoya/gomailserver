@@ -26,16 +26,30 @@ func (r *domainRepository) Create(dom *domain.Domain) error {
 			name, status, max_users, max_mailbox_size, default_quota,
 			catchall_email, backup_mx,
 			dkim_selector, dkim_private_key, dkim_public_key,
-			spf_record, dmarc_policy,
+			dkim_signing_enabled, dkim_verify_enabled, dkim_key_size, dkim_key_type, dkim_headers_to_sign,
+			spf_record, spf_enabled, spf_dns_server, spf_dns_timeout, spf_max_lookups, spf_fail_action, spf_softfail_action,
+			dmarc_policy, dmarc_enabled, dmarc_dns_server, dmarc_dns_timeout, dmarc_report_enabled, dmarc_report_email,
+			clamav_enabled, clamav_max_scan_size, clamav_virus_action, clamav_fail_action,
+			spam_enabled, spam_reject_score, spam_quarantine_score, spam_learning_enabled,
+			greylist_enabled, greylist_delay_minutes, greylist_expiry_days, greylist_cleanup_interval, greylist_whitelist_after,
+			ratelimit_enabled, ratelimit_smtp_per_ip, ratelimit_smtp_per_user, ratelimit_smtp_per_domain, ratelimit_auth_per_ip, ratelimit_imap_per_user, ratelimit_cleanup_interval,
+			auth_totp_enforced, auth_brute_force_enabled, auth_brute_force_threshold, auth_brute_force_window_minutes, auth_brute_force_block_minutes, auth_ip_blacklist_enabled, auth_cleanup_interval,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(query,
 		dom.Name, dom.Status, dom.MaxUsers, dom.MaxMailboxSize, dom.DefaultQuota,
 		dom.CatchallEmail, dom.BackupMX,
 		dom.DKIMSelector, dom.DKIMPrivateKey, dom.DKIMPublicKey,
-		dom.SPFRecord, dom.DMARCPolicy,
+		dom.DKIMSigningEnabled, dom.DKIMVerifyEnabled, dom.DKIMKeySize, dom.DKIMKeyType, dom.DKIMHeadersToSign,
+		dom.SPFRecord, dom.SPFEnabled, dom.SPFDNSServer, dom.SPFDNSTimeout, dom.SPFMaxLookups, dom.SPFFailAction, dom.SPFSoftFailAction,
+		dom.DMARCPolicy, dom.DMARCEnabled, dom.DMARCDNSServer, dom.DMARCDNSTimeout, dom.DMARCReportEnabled, dom.DMARCReportEmail,
+		dom.ClamAVEnabled, dom.ClamAVMaxScanSize, dom.ClamAVVirusAction, dom.ClamAVFailAction,
+		dom.SpamEnabled, dom.SpamRejectScore, dom.SpamQuarantineScore, dom.SpamLearningEnabled,
+		dom.GreylistEnabled, dom.GreylistDelayMinutes, dom.GreylistExpiryDays, dom.GreylistCleanupInterval, dom.GreylistWhitelistAfter,
+		dom.RateLimitEnabled, dom.RateLimitSMTPPerIP, dom.RateLimitSMTPPerUser, dom.RateLimitSMTPPerDomain, dom.RateLimitAuthPerIP, dom.RateLimitIMAPPerUser, dom.RateLimitCleanupInterval,
+		dom.AuthTOTPEnforced, dom.AuthBruteForceEnabled, dom.AuthBruteForceThreshold, dom.AuthBruteForceWindowMinutes, dom.AuthBruteForceBlockMinutes, dom.AuthIPBlacklistEnabled, dom.AuthCleanupInterval,
 		time.Now(), time.Now(),
 	)
 	if err != nil {
@@ -61,7 +75,14 @@ func (r *domainRepository) GetByID(id int64) (*domain.Domain, error) {
 			id, name, status, max_users, max_mailbox_size, default_quota,
 			catchall_email, backup_mx,
 			dkim_selector, dkim_private_key, dkim_public_key,
-			spf_record, dmarc_policy,
+			dkim_signing_enabled, dkim_verify_enabled, dkim_key_size, dkim_key_type, dkim_headers_to_sign,
+			spf_record, spf_enabled, spf_dns_server, spf_dns_timeout, spf_max_lookups, spf_fail_action, spf_softfail_action,
+			dmarc_policy, dmarc_enabled, dmarc_dns_server, dmarc_dns_timeout, dmarc_report_enabled, dmarc_report_email,
+			clamav_enabled, clamav_max_scan_size, clamav_virus_action, clamav_fail_action,
+			spam_enabled, spam_reject_score, spam_quarantine_score, spam_learning_enabled,
+			greylist_enabled, greylist_delay_minutes, greylist_expiry_days, greylist_cleanup_interval, greylist_whitelist_after,
+			ratelimit_enabled, ratelimit_smtp_per_ip, ratelimit_smtp_per_user, ratelimit_smtp_per_domain, ratelimit_auth_per_ip, ratelimit_imap_per_user, ratelimit_cleanup_interval,
+			auth_totp_enforced, auth_brute_force_enabled, auth_brute_force_threshold, auth_brute_force_window_minutes, auth_brute_force_block_minutes, auth_ip_blacklist_enabled, auth_cleanup_interval,
 			created_at, updated_at
 		FROM domains
 		WHERE id = ?
@@ -73,7 +94,14 @@ func (r *domainRepository) GetByID(id int64) (*domain.Domain, error) {
 		&dom.ID, &dom.Name, &dom.Status, &dom.MaxUsers, &dom.MaxMailboxSize, &dom.DefaultQuota,
 		&dom.CatchallEmail, &dom.BackupMX,
 		&dom.DKIMSelector, &dom.DKIMPrivateKey, &dom.DKIMPublicKey,
-		&dom.SPFRecord, &dom.DMARCPolicy,
+		&dom.DKIMSigningEnabled, &dom.DKIMVerifyEnabled, &dom.DKIMKeySize, &dom.DKIMKeyType, &dom.DKIMHeadersToSign,
+		&dom.SPFRecord, &dom.SPFEnabled, &dom.SPFDNSServer, &dom.SPFDNSTimeout, &dom.SPFMaxLookups, &dom.SPFFailAction, &dom.SPFSoftFailAction,
+		&dom.DMARCPolicy, &dom.DMARCEnabled, &dom.DMARCDNSServer, &dom.DMARCDNSTimeout, &dom.DMARCReportEnabled, &dom.DMARCReportEmail,
+		&dom.ClamAVEnabled, &dom.ClamAVMaxScanSize, &dom.ClamAVVirusAction, &dom.ClamAVFailAction,
+		&dom.SpamEnabled, &dom.SpamRejectScore, &dom.SpamQuarantineScore, &dom.SpamLearningEnabled,
+		&dom.GreylistEnabled, &dom.GreylistDelayMinutes, &dom.GreylistExpiryDays, &dom.GreylistCleanupInterval, &dom.GreylistWhitelistAfter,
+		&dom.RateLimitEnabled, &dom.RateLimitSMTPPerIP, &dom.RateLimitSMTPPerUser, &dom.RateLimitSMTPPerDomain, &dom.RateLimitAuthPerIP, &dom.RateLimitIMAPPerUser, &dom.RateLimitCleanupInterval,
+		&dom.AuthTOTPEnforced, &dom.AuthBruteForceEnabled, &dom.AuthBruteForceThreshold, &dom.AuthBruteForceWindowMinutes, &dom.AuthBruteForceBlockMinutes, &dom.AuthIPBlacklistEnabled, &dom.AuthCleanupInterval,
 		&dom.CreatedAt, &dom.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -93,7 +121,14 @@ func (r *domainRepository) GetByName(name string) (*domain.Domain, error) {
 			id, name, status, max_users, max_mailbox_size, default_quota,
 			catchall_email, backup_mx,
 			dkim_selector, dkim_private_key, dkim_public_key,
-			spf_record, dmarc_policy,
+			dkim_signing_enabled, dkim_verify_enabled, dkim_key_size, dkim_key_type, dkim_headers_to_sign,
+			spf_record, spf_enabled, spf_dns_server, spf_dns_timeout, spf_max_lookups, spf_fail_action, spf_softfail_action,
+			dmarc_policy, dmarc_enabled, dmarc_dns_server, dmarc_dns_timeout, dmarc_report_enabled, dmarc_report_email,
+			clamav_enabled, clamav_max_scan_size, clamav_virus_action, clamav_fail_action,
+			spam_enabled, spam_reject_score, spam_quarantine_score, spam_learning_enabled,
+			greylist_enabled, greylist_delay_minutes, greylist_expiry_days, greylist_cleanup_interval, greylist_whitelist_after,
+			ratelimit_enabled, ratelimit_smtp_per_ip, ratelimit_smtp_per_user, ratelimit_smtp_per_domain, ratelimit_auth_per_ip, ratelimit_imap_per_user, ratelimit_cleanup_interval,
+			auth_totp_enforced, auth_brute_force_enabled, auth_brute_force_threshold, auth_brute_force_window_minutes, auth_brute_force_block_minutes, auth_ip_blacklist_enabled, auth_cleanup_interval,
 			created_at, updated_at
 		FROM domains
 		WHERE name = ?
@@ -105,7 +140,14 @@ func (r *domainRepository) GetByName(name string) (*domain.Domain, error) {
 		&dom.ID, &dom.Name, &dom.Status, &dom.MaxUsers, &dom.MaxMailboxSize, &dom.DefaultQuota,
 		&dom.CatchallEmail, &dom.BackupMX,
 		&dom.DKIMSelector, &dom.DKIMPrivateKey, &dom.DKIMPublicKey,
-		&dom.SPFRecord, &dom.DMARCPolicy,
+		&dom.DKIMSigningEnabled, &dom.DKIMVerifyEnabled, &dom.DKIMKeySize, &dom.DKIMKeyType, &dom.DKIMHeadersToSign,
+		&dom.SPFRecord, &dom.SPFEnabled, &dom.SPFDNSServer, &dom.SPFDNSTimeout, &dom.SPFMaxLookups, &dom.SPFFailAction, &dom.SPFSoftFailAction,
+		&dom.DMARCPolicy, &dom.DMARCEnabled, &dom.DMARCDNSServer, &dom.DMARCDNSTimeout, &dom.DMARCReportEnabled, &dom.DMARCReportEmail,
+		&dom.ClamAVEnabled, &dom.ClamAVMaxScanSize, &dom.ClamAVVirusAction, &dom.ClamAVFailAction,
+		&dom.SpamEnabled, &dom.SpamRejectScore, &dom.SpamQuarantineScore, &dom.SpamLearningEnabled,
+		&dom.GreylistEnabled, &dom.GreylistDelayMinutes, &dom.GreylistExpiryDays, &dom.GreylistCleanupInterval, &dom.GreylistWhitelistAfter,
+		&dom.RateLimitEnabled, &dom.RateLimitSMTPPerIP, &dom.RateLimitSMTPPerUser, &dom.RateLimitSMTPPerDomain, &dom.RateLimitAuthPerIP, &dom.RateLimitIMAPPerUser, &dom.RateLimitCleanupInterval,
+		&dom.AuthTOTPEnforced, &dom.AuthBruteForceEnabled, &dom.AuthBruteForceThreshold, &dom.AuthBruteForceWindowMinutes, &dom.AuthBruteForceBlockMinutes, &dom.AuthIPBlacklistEnabled, &dom.AuthCleanupInterval,
 		&dom.CreatedAt, &dom.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -125,7 +167,14 @@ func (r *domainRepository) Update(dom *domain.Domain) error {
 			name = ?, status = ?, max_users = ?, max_mailbox_size = ?, default_quota = ?,
 			catchall_email = ?, backup_mx = ?,
 			dkim_selector = ?, dkim_private_key = ?, dkim_public_key = ?,
-			spf_record = ?, dmarc_policy = ?,
+			dkim_signing_enabled = ?, dkim_verify_enabled = ?, dkim_key_size = ?, dkim_key_type = ?, dkim_headers_to_sign = ?,
+			spf_record = ?, spf_enabled = ?, spf_dns_server = ?, spf_dns_timeout = ?, spf_max_lookups = ?, spf_fail_action = ?, spf_softfail_action = ?,
+			dmarc_policy = ?, dmarc_enabled = ?, dmarc_dns_server = ?, dmarc_dns_timeout = ?, dmarc_report_enabled = ?, dmarc_report_email = ?,
+			clamav_enabled = ?, clamav_max_scan_size = ?, clamav_virus_action = ?, clamav_fail_action = ?,
+			spam_enabled = ?, spam_reject_score = ?, spam_quarantine_score = ?, spam_learning_enabled = ?,
+			greylist_enabled = ?, greylist_delay_minutes = ?, greylist_expiry_days = ?, greylist_cleanup_interval = ?, greylist_whitelist_after = ?,
+			ratelimit_enabled = ?, ratelimit_smtp_per_ip = ?, ratelimit_smtp_per_user = ?, ratelimit_smtp_per_domain = ?, ratelimit_auth_per_ip = ?, ratelimit_imap_per_user = ?, ratelimit_cleanup_interval = ?,
+			auth_totp_enforced = ?, auth_brute_force_enabled = ?, auth_brute_force_threshold = ?, auth_brute_force_window_minutes = ?, auth_brute_force_block_minutes = ?, auth_ip_blacklist_enabled = ?, auth_cleanup_interval = ?,
 			updated_at = ?
 		WHERE id = ?
 	`
@@ -134,7 +183,14 @@ func (r *domainRepository) Update(dom *domain.Domain) error {
 		dom.Name, dom.Status, dom.MaxUsers, dom.MaxMailboxSize, dom.DefaultQuota,
 		dom.CatchallEmail, dom.BackupMX,
 		dom.DKIMSelector, dom.DKIMPrivateKey, dom.DKIMPublicKey,
-		dom.SPFRecord, dom.DMARCPolicy,
+		dom.DKIMSigningEnabled, dom.DKIMVerifyEnabled, dom.DKIMKeySize, dom.DKIMKeyType, dom.DKIMHeadersToSign,
+		dom.SPFRecord, dom.SPFEnabled, dom.SPFDNSServer, dom.SPFDNSTimeout, dom.SPFMaxLookups, dom.SPFFailAction, dom.SPFSoftFailAction,
+		dom.DMARCPolicy, dom.DMARCEnabled, dom.DMARCDNSServer, dom.DMARCDNSTimeout, dom.DMARCReportEnabled, dom.DMARCReportEmail,
+		dom.ClamAVEnabled, dom.ClamAVMaxScanSize, dom.ClamAVVirusAction, dom.ClamAVFailAction,
+		dom.SpamEnabled, dom.SpamRejectScore, dom.SpamQuarantineScore, dom.SpamLearningEnabled,
+		dom.GreylistEnabled, dom.GreylistDelayMinutes, dom.GreylistExpiryDays, dom.GreylistCleanupInterval, dom.GreylistWhitelistAfter,
+		dom.RateLimitEnabled, dom.RateLimitSMTPPerIP, dom.RateLimitSMTPPerUser, dom.RateLimitSMTPPerDomain, dom.RateLimitAuthPerIP, dom.RateLimitIMAPPerUser, dom.RateLimitCleanupInterval,
+		dom.AuthTOTPEnforced, dom.AuthBruteForceEnabled, dom.AuthBruteForceThreshold, dom.AuthBruteForceWindowMinutes, dom.AuthBruteForceBlockMinutes, dom.AuthIPBlacklistEnabled, dom.AuthCleanupInterval,
 		time.Now(), dom.ID,
 	)
 	if err != nil {
@@ -162,7 +218,14 @@ func (r *domainRepository) List(offset, limit int) ([]*domain.Domain, error) {
 			id, name, status, max_users, max_mailbox_size, default_quota,
 			catchall_email, backup_mx,
 			dkim_selector, dkim_private_key, dkim_public_key,
-			spf_record, dmarc_policy,
+			dkim_signing_enabled, dkim_verify_enabled, dkim_key_size, dkim_key_type, dkim_headers_to_sign,
+			spf_record, spf_enabled, spf_dns_server, spf_dns_timeout, spf_max_lookups, spf_fail_action, spf_softfail_action,
+			dmarc_policy, dmarc_enabled, dmarc_dns_server, dmarc_dns_timeout, dmarc_report_enabled, dmarc_report_email,
+			clamav_enabled, clamav_max_scan_size, clamav_virus_action, clamav_fail_action,
+			spam_enabled, spam_reject_score, spam_quarantine_score, spam_learning_enabled,
+			greylist_enabled, greylist_delay_minutes, greylist_expiry_days, greylist_cleanup_interval, greylist_whitelist_after,
+			ratelimit_enabled, ratelimit_smtp_per_ip, ratelimit_smtp_per_user, ratelimit_smtp_per_domain, ratelimit_auth_per_ip, ratelimit_imap_per_user, ratelimit_cleanup_interval,
+			auth_totp_enforced, auth_brute_force_enabled, auth_brute_force_threshold, auth_brute_force_window_minutes, auth_brute_force_block_minutes, auth_ip_blacklist_enabled, auth_cleanup_interval,
 			created_at, updated_at
 		FROM domains
 		ORDER BY created_at DESC
@@ -183,7 +246,14 @@ func (r *domainRepository) List(offset, limit int) ([]*domain.Domain, error) {
 			&dom.ID, &dom.Name, &dom.Status, &dom.MaxUsers, &dom.MaxMailboxSize, &dom.DefaultQuota,
 			&dom.CatchallEmail, &dom.BackupMX,
 			&dom.DKIMSelector, &dom.DKIMPrivateKey, &dom.DKIMPublicKey,
-			&dom.SPFRecord, &dom.DMARCPolicy,
+			&dom.DKIMSigningEnabled, &dom.DKIMVerifyEnabled, &dom.DKIMKeySize, &dom.DKIMKeyType, &dom.DKIMHeadersToSign,
+			&dom.SPFRecord, &dom.SPFEnabled, &dom.SPFDNSServer, &dom.SPFDNSTimeout, &dom.SPFMaxLookups, &dom.SPFFailAction, &dom.SPFSoftFailAction,
+			&dom.DMARCPolicy, &dom.DMARCEnabled, &dom.DMARCDNSServer, &dom.DMARCDNSTimeout, &dom.DMARCReportEnabled, &dom.DMARCReportEmail,
+			&dom.ClamAVEnabled, &dom.ClamAVMaxScanSize, &dom.ClamAVVirusAction, &dom.ClamAVFailAction,
+			&dom.SpamEnabled, &dom.SpamRejectScore, &dom.SpamQuarantineScore, &dom.SpamLearningEnabled,
+			&dom.GreylistEnabled, &dom.GreylistDelayMinutes, &dom.GreylistExpiryDays, &dom.GreylistCleanupInterval, &dom.GreylistWhitelistAfter,
+			&dom.RateLimitEnabled, &dom.RateLimitSMTPPerIP, &dom.RateLimitSMTPPerUser, &dom.RateLimitSMTPPerDomain, &dom.RateLimitAuthPerIP, &dom.RateLimitIMAPPerUser, &dom.RateLimitCleanupInterval,
+			&dom.AuthTOTPEnforced, &dom.AuthBruteForceEnabled, &dom.AuthBruteForceThreshold, &dom.AuthBruteForceWindowMinutes, &dom.AuthBruteForceBlockMinutes, &dom.AuthIPBlacklistEnabled, &dom.AuthCleanupInterval,
 			&dom.CreatedAt, &dom.UpdatedAt,
 		)
 		if err != nil {

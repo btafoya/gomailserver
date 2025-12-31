@@ -7,37 +7,38 @@ import (
 )
 
 type Protection struct {
-	repo      repository.FailedLoginRepository
-	blacklist repository.BlacklistRepository
-	threshold int           // Max failures before block
-	window    time.Duration // Time window for failures
-	blockTime time.Duration // How long to block
+	loginAttemptRepo repository.LoginAttemptRepository
+	blacklistRepo    repository.IPBlacklistRepository
+	threshold        int           // Max failures before block
+	window           time.Duration // Time window for failures
+	blockTime        time.Duration // How long to block
 }
 
-func NewProtection(repo repository.FailedLoginRepository, bl repository.BlacklistRepository) *Protection {
+func NewProtection(loginRepo repository.LoginAttemptRepository, blacklistRepo repository.IPBlacklistRepository) *Protection {
 	return &Protection{
-		repo:      repo,
-		blacklist: bl,
-		threshold: 5,
-		window:    15 * time.Minute,
-		blockTime: 1 * time.Hour,
+		loginAttemptRepo: loginRepo,
+		blacklistRepo:    blacklistRepo,
+		threshold:        5,
+		window:           15 * time.Minute,
+		blockTime:        1 * time.Hour,
 	}
 }
 
-func (p *Protection) RecordFailure(ip, username string) error {
-	err := p.repo.Create(ip, username)
+func (p *Protection) RecordFailure(ip, email string) error {
+	err := p.loginAttemptRepo.Record(ip, email, false)
 	if err != nil {
 		return err
 	}
 
 	// Check if threshold exceeded
-	count, err := p.repo.CountByIP(ip, p.window)
+	count, err := p.loginAttemptRepo.GetRecentFailures(ip, p.window)
 	if err != nil {
 		return err
 	}
 
 	if count >= p.threshold {
-		err = p.blacklist.Add(ip, "Brute force protection", time.Now().Add(p.blockTime))
+		expiresAt := time.Now().Add(p.blockTime)
+		err = p.blacklistRepo.Add(ip, "Brute force protection", &expiresAt)
 		if err != nil {
 			return err
 		}
@@ -46,10 +47,18 @@ func (p *Protection) RecordFailure(ip, username string) error {
 	return nil
 }
 
-func (p *Protection) IsBlocked(ip string) (bool, error) {
-	return p.blacklist.Exists(ip)
+func (p *Protection) RecordSuccess(ip, email string) error {
+	return p.loginAttemptRepo.Record(ip, email, true)
 }
 
-func (p *Protection) ClearOnSuccess(ip string) error {
-	return p.repo.DeleteByIP(ip)
+func (p *Protection) IsBlocked(ip string) (bool, error) {
+	return p.blacklistRepo.IsBlacklisted(ip)
+}
+
+func (p *Protection) Cleanup() error {
+	// Clean up old login attempts and expired blacklist entries
+	if err := p.loginAttemptRepo.Cleanup(7 * 24 * time.Hour); err != nil {
+		return err
+	}
+	return p.blacklistRepo.RemoveExpired()
 }
