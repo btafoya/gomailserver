@@ -26,6 +26,8 @@ type Server struct {
 // This is a wrapper around NewRouter for backward compatibility
 func NewServer(
 	cfg *config.APIConfig,
+	fullConfig *config.Config,
+	configPath string,
 	db *database.DB,
 	domainRepo repository.DomainRepository,
 	userRepo repository.UserRepository,
@@ -45,21 +47,23 @@ func NewServer(
 	messageService := service.NewMessageService(messageRepo, "./data/mail", logger)
 	queueService := service.NewQueueService(queueRepo, logger)
 	setupService := service.NewSetupService(db, userRepo, domainRepo, logger)
+	settingsService := service.NewSettingsService(fullConfig, configPath, logger)
 
 	// Create router with all dependencies
 	router := NewRouter(RouterConfig{
-		Logger:         logger,
-		DomainService:  domainService,
-		UserService:    userService,
-		AliasService:   aliasService,
-		MailboxService: mailboxService,
-		MessageService: messageService,
-		QueueService:   queueService,
-		SetupService:   setupService,
-		APIKeyRepo:     apiKeyRepo,
-		RateLimitRepo:  rateLimitRepo,
-		JWTSecret:      cfg.JWTSecret,
-		CORSOrigins:    cfg.CORSOrigins,
+		Logger:          logger,
+		DomainService:   domainService,
+		UserService:     userService,
+		AliasService:    aliasService,
+		MailboxService:  mailboxService,
+		MessageService:  messageService,
+		QueueService:    queueService,
+		SetupService:    setupService,
+		SettingsService: settingsService,
+		APIKeyRepo:      apiKeyRepo,
+		RateLimitRepo:   rateLimitRepo,
+		JWTSecret:       cfg.JWTSecret,
+		CORSOrigins:     cfg.CORSOrigins,
 	})
 
 	httpServer := &http.Server{

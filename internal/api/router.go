@@ -18,15 +18,16 @@ import (
 // Router configuration for the REST API
 type Router struct {
 	*chi.Mux
-	logger         *zap.Logger
-	domainService  *service.DomainService
-	userService    *service.UserService
-	aliasService   *service.AliasService
-	mailboxService *service.MailboxService
-	messageService *service.MessageService
-	queueService   *service.QueueService
-	apiKeyRepo     repository.APIKeyRepository
-	jwtSecret      string
+	logger          *zap.Logger
+	domainService   *service.DomainService
+	userService     *service.UserService
+	aliasService    *service.AliasService
+	mailboxService  *service.MailboxService
+	messageService  *service.MessageService
+	queueService    *service.QueueService
+	settingsService *service.SettingsService
+	apiKeyRepo      repository.APIKeyRepository
+	jwtSecret       string
 }
 
 // RouterConfig contains dependencies for the API router
@@ -39,6 +40,7 @@ type RouterConfig struct {
 	MessageService  *service.MessageService
 	QueueService    *service.QueueService
 	SetupService    *service.SetupService
+	SettingsService *service.SettingsService
 	APIKeyRepo      repository.APIKeyRepository
 	RateLimitRepo   repository.RateLimitRepository
 	JWTSecret       string
@@ -48,16 +50,17 @@ type RouterConfig struct {
 // NewRouter creates a new API router with all routes configured
 func NewRouter(config RouterConfig) *Router {
 	r := &Router{
-		Mux:            chi.NewRouter(),
-		logger:         config.Logger,
-		domainService:  config.DomainService,
-		userService:    config.UserService,
-		aliasService:   config.AliasService,
-		mailboxService: config.MailboxService,
-		messageService: config.MessageService,
-		queueService:   config.QueueService,
-		apiKeyRepo:     config.APIKeyRepo,
-		jwtSecret:      config.JWTSecret,
+		Mux:             chi.NewRouter(),
+		logger:          config.Logger,
+		domainService:   config.DomainService,
+		userService:     config.UserService,
+		aliasService:    config.AliasService,
+		mailboxService:  config.MailboxService,
+		messageService:  config.MessageService,
+		queueService:    config.QueueService,
+		settingsService: config.SettingsService,
+		apiKeyRepo:      config.APIKeyRepo,
+		jwtSecret:       config.JWTSecret,
 	}
 
 	// Global middleware
@@ -177,6 +180,17 @@ func NewRouter(config RouterConfig) *Router {
 			// Log retrieval
 			logHandler := handlers.NewLogHandler(config.Logger)
 			r.Get("/logs", logHandler.List)
+
+			// Settings management (admin only)
+			settingsHandler := handlers.NewSettingsHandler(config.SettingsService, config.Logger)
+			r.Route("/settings", func(r chi.Router) {
+				r.Get("/server", settingsHandler.GetServer)
+				r.Put("/server", settingsHandler.UpdateServer)
+				r.Get("/security", settingsHandler.GetSecurity)
+				r.Put("/security", settingsHandler.UpdateSecurity)
+				r.Get("/tls", settingsHandler.GetTLS)
+				r.Put("/tls", settingsHandler.UpdateTLS)
+			})
 		})
 	})
 

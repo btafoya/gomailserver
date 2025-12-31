@@ -214,6 +214,8 @@ func run(cmd *cobra.Command, args []string) error {
 	// Create Admin API server
 	apiServer := api.NewServer(
 		&cfg.API,
+		cfg,
+		cfgFile,
 		db,
 		domainRepo,
 		userRepo,
