@@ -10,8 +10,13 @@
 ## Overview
 
 Build the REST API foundation, Admin Web UI for server management, User Self-Service Portal, Let's Encrypt integration for automatic TLS certificates, and a web-based setup wizard for initial configuration.
-
 ---
+
+## Claude Instructions
+
+- Always use ui-ux-pro-max skill Admin for Web UI and User Self-Service Portal with this design: https://free-vue-demo.tailadmin.com
+- Vue
+- tailwindcss
 
 ## 3.1 REST API Foundation [MVP]
 
