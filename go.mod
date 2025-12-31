@@ -10,7 +10,10 @@ require (
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6 // indirect
 	github.com/emersion/go-smtp v0.24.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-chi/chi/v5 v5.2.3 // indirect
+	github.com/go-chi/cors v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.32 // indirect
 	github.com/miekg/dns v1.1.69 // indirect
