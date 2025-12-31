@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -30,7 +31,8 @@ type QueueItemResponse struct {
 	ID           int64    `json:"id"`
 	Sender       string   `json:"sender"`
 	Recipients   []string `json:"recipients"`
-	MessageID    int64    `json:"message_id"`
+	MessageID    string   `json:"message_id"`
+	MessagePath  string   `json:"message_path"`
 	Status       string   `json:"status"`
 	RetryCount   int      `json:"retry_count"`
 	MaxRetries   int      `json:"max_retries"`
@@ -46,7 +48,7 @@ func (h *QueueHandler) List(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 
 	// TODO: Add pagination support
-	var items []*domain.SMTPQueueItem
+	var items []*domain.QueueItem
 	var err error
 
 	if status != "" {
@@ -145,12 +147,19 @@ func (h *QueueHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // queueItemToResponse converts a queue item to API response format
-func queueItemToResponse(item *domain.SMTPQueueItem) *QueueItemResponse {
+func queueItemToResponse(item *domain.QueueItem) *QueueItemResponse {
+	// Parse recipients from JSON
+	var recipients []string
+	if item.Recipients != "" {
+		_ = json.Unmarshal([]byte(item.Recipients), &recipients)
+	}
+
 	response := &QueueItemResponse{
 		ID:           item.ID,
 		Sender:       item.Sender,
-		Recipients:   item.Recipients,
+		Recipients:   recipients,
 		MessageID:    item.MessageID,
+		MessagePath:  item.MessagePath,
 		Status:       item.Status,
 		RetryCount:   item.RetryCount,
 		MaxRetries:   item.MaxRetries,

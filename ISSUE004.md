@@ -62,14 +62,14 @@ Implementing Phase 3 - Web Interfaces for gomailserver, including REST API found
 ### Task Breakdown
 
 #### Epic 1: REST API Foundation
-**Story 1.1**: Core API Infrastructure
+**Story 1.1**: Core API Infrastructure ✅ **COMPLETED**
 - [x] Create API package structure
-- [ ] Implement JWT authentication middleware
-- [ ] Implement API key authentication
-- [ ] Create rate limiting middleware
-- [ ] Implement error handling middleware
-- [ ] Create response helpers
-- [ ] Set up CORS configuration
+- [x] Implement JWT authentication middleware (auth.go with JWT and API key support)
+- [x] Implement API key authentication (auth.go with bcrypt hash validation and expiry checking)
+- [x] Create rate limiting middleware (ratelimit.go with per-IP and per-user limits)
+- [x] Implement error handling middleware (Chi Recoverer middleware)
+- [x] Create response helpers (responses.go with JSON, error, success, paginated responses)
+- [x] Set up CORS configuration (router.go with configurable origins)
 
 **Story 1.2**: Domain Management API
 - [ ] POST /api/v1/domains - Create domain
@@ -107,13 +107,18 @@ Implementing Phase 3 - Web Interfaces for gomailserver, including REST API found
 - [ ] DELETE /api/v1/queue/:id - Remove from queue
 
 #### Epic 2: Admin Web UI (Vue.js 3 + Tailwind)
-**Story 2.1**: UI Foundation
-- [ ] Initialize Vue.js 3 project with Vite
-- [ ] Install and configure Tailwind CSS
-- [ ] Install shadcn-vue component library
-- [ ] Create layout components (sidebar, header, footer)
-- [ ] Implement routing (Vue Router)
-- [ ] Create authentication views (login, logout)
+**Story 2.1**: UI Foundation ✅ **COMPLETED**
+- [x] Initialize Vue.js 3 project with Vite
+- [x] Install and configure Tailwind CSS (v3)
+- [x] Install shadcn-vue component library
+- [x] Install Vue Router, Pinia, Axios
+- [x] Create layout components (AppLayout with sidebar and header)
+- [x] Implement routing (Vue Router with auth guards)
+- [x] Create authentication views (Login view)
+- [x] Create Dashboard view
+- [x] Create placeholder views for all routes
+- [x] Set up Pinia auth store
+- [x] Set up Axios API client with interceptors
 
 **Story 2.2**: Domain Management Views
 - [ ] Domain list view with search/filter

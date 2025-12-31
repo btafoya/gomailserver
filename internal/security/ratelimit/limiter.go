@@ -22,6 +22,8 @@ var DefaultLimits = map[string]Limit{
 	"smtp_per_domain": {Count: 1000, Window: time.Hour},
 	"auth_per_ip":     {Count: 10, Window: 15 * time.Minute},
 	"imap_per_user":   {Count: 1000, Window: time.Hour},
+	"api_per_ip":      {Count: 100, Window: time.Hour},     // API requests per IP per hour
+	"api_per_user":    {Count: 1000, Window: time.Hour},    // API requests per user per hour
 }
 
 func NewLimiter(repo repository.RateLimitRepository) *Limiter {

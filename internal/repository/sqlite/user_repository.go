@@ -221,3 +221,46 @@ func (r *userRepository) List(domainID int64, offset, limit int) ([]*domain.User
 
 	return users, rows.Err()
 }
+
+// ListAll lists all users
+func (r *userRepository) ListAll() ([]*domain.User, error) {
+	query := `
+		SELECT
+			id, email, domain_id, password_hash, full_name, display_name,
+			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
+			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
+			spam_threshold, language, last_login, created_at, updated_at
+		FROM users
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all users: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]*domain.User, 0)
+	for rows.Next() {
+		user := &domain.User{}
+		var lastLogin sql.NullTime
+
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName,
+			&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
+			&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
+			&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		if lastLogin.Valid {
+			user.LastLogin = &lastLogin.Time
+		}
+
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}

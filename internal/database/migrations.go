@@ -32,6 +32,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV2Up,
 			Down:        migrationV2Down,
 		},
+		{
+			Version:     3,
+			Description: "Add API keys, TLS certificates, and setup wizard tables",
+			Up:          migrationV3Up,
+			Down:        migrationV3Down,
+		},
 	}
 }
 

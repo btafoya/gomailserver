@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"time"
@@ -82,6 +83,53 @@ func generateMessageID() string {
 // GetPending retrieves all pending queue items
 func (s *QueueService) GetPending() ([]*domain.QueueItem, error) {
 	return s.repo.GetPending()
+}
+
+// GetPendingItems retrieves all pending queue items (API handler method)
+func (s *QueueService) GetPendingItems(ctx context.Context) ([]*domain.QueueItem, error) {
+	return s.repo.GetPending()
+}
+
+// GetByID retrieves a specific queue item by ID
+func (s *QueueService) GetByID(ctx context.Context, id int64) (*domain.QueueItem, error) {
+	return s.repo.GetByID(id)
+}
+
+// RetryItem resets a queue item for retry
+func (s *QueueService) RetryItem(ctx context.Context, id int64) error {
+	item, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Reset to pending status with retry count reset
+	if err := s.repo.UpdateStatus(id, "pending", ""); err != nil {
+		return err
+	}
+
+	s.logger.Info("queue item reset for retry",
+		zap.Int64("id", id),
+		zap.String("sender", item.Sender),
+	)
+
+	return nil
+}
+
+// DeleteItem removes a queue item
+func (s *QueueService) DeleteItem(ctx context.Context, id int64) error {
+	if err := s.repo.Delete(id); err != nil {
+		s.logger.Error("failed to delete queue item",
+			zap.Error(err),
+			zap.Int64("id", id),
+		)
+		return err
+	}
+
+	s.logger.Info("queue item deleted",
+		zap.Int64("id", id),
+	)
+
+	return nil
 }
 
 // MarkDelivered marks a queue item as successfully delivered

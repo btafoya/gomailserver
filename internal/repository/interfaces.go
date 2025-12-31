@@ -16,6 +16,7 @@ type UserRepository interface {
 	UpdatePassword(userID int64, passwordHash string) error
 	Delete(id int64) error
 	List(domainID int64, offset, limit int) ([]*domain.User, error)
+	ListAll() ([]*domain.User, error)
 }
 
 // MessageRepository defines message data access interface
@@ -45,6 +46,17 @@ type DomainRepository interface {
 	Update(domain *domain.Domain) error
 	Delete(id int64) error
 	List(offset, limit int) ([]*domain.Domain, error)
+}
+
+// AliasRepository defines alias data access interface
+type AliasRepository interface {
+	Create(alias *domain.Alias) error
+	GetByID(id int64) (*domain.Alias, error)
+	GetByEmail(email string) (*domain.Alias, error)
+	Update(alias *domain.Alias) error
+	Delete(id int64) error
+	ListAll() ([]*domain.Alias, error)
+	ListByDomain(domainID int64) ([]*domain.Alias, error)
 }
 
 // QueueRepository defines queue data access interface
@@ -96,4 +108,14 @@ type QuarantineRepository interface {
 	UpdateAction(id int64, action string) error
 	Delete(id int64) error
 	DeleteOlderThan(age time.Duration) error
+}
+
+// APIKeyRepository defines API key data access interface
+type APIKeyRepository interface {
+	Create(apiKey *domain.APIKey) error
+	GetByKeyHash(keyHash string) (*domain.APIKey, error)
+	GetByID(id int64) (*domain.APIKey, error)
+	ListByUser(userID int64) ([]*domain.APIKey, error)
+	UpdateLastUsed(id int64, ip string) error
+	Delete(id int64) error
 }

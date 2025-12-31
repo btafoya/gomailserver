@@ -86,12 +86,19 @@ func (h *AliasHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert destinations to JSON string
+	destinationsJSON, err := service.SetDestinations(req.Destinations)
+	if err != nil {
+		middleware.RespondError(w, http.StatusBadRequest, "Invalid destinations format")
+		return
+	}
+
 	// Convert request to alias model
 	newAlias := &domain.Alias{
-		Address:      req.Address,
-		Destinations: req.Destinations,
-		DomainID:     req.DomainID,
-		Status:       req.Status,
+		AliasEmail:        req.Address,
+		DestinationEmails: destinationsJSON,
+		DomainID:          req.DomainID,
+		Status:            req.Status,
 	}
 
 	// Set defaults
@@ -100,7 +107,7 @@ func (h *AliasHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create alias
-	err := h.service.Create(r.Context(), newAlias)
+	err = h.service.Create(r.Context(), newAlias)
 	if err != nil {
 		h.logger.Error("Failed to create alias",
 			zap.String("address", req.Address),
@@ -111,7 +118,7 @@ func (h *AliasHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.Info("Alias created",
-		zap.String("address", newAlias.Address),
+		zap.String("address", newAlias.AliasEmail),
 		zap.Int64("id", newAlias.ID),
 	)
 
@@ -160,10 +167,16 @@ func (h *AliasHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // aliasToResponse converts an alias model to API response format
 func aliasToResponse(a *domain.Alias) *AliasResponse {
+	// Parse destinations from JSON
+	destinations, err := service.GetDestinations(a.DestinationEmails)
+	if err != nil {
+		destinations = []string{} // Fallback to empty array on error
+	}
+
 	return &AliasResponse{
 		ID:           a.ID,
-		Address:      a.Address,
-		Destinations: a.Destinations,
+		Address:      a.AliasEmail,
+		Destinations: destinations,
 		DomainID:     a.DomainID,
 		Status:       a.Status,
 		CreatedAt:    a.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

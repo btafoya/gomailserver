@@ -50,6 +50,18 @@ func (m *mockUserService) Delete(id int64) error {
 	return nil
 }
 
+// mockDomainRepository for SMTP backend tests
+type mockDomainRepository struct{}
+
+func (m *mockDomainRepository) Create(domain *domain.Domain) error          { return nil }
+func (m *mockDomainRepository) GetByID(id int64) (*domain.Domain, error)    { return nil, nil }
+func (m *mockDomainRepository) GetByName(name string) (*domain.Domain, error) { return nil, nil }
+func (m *mockDomainRepository) Update(domain *domain.Domain) error          { return nil }
+func (m *mockDomainRepository) Delete(id int64) error                       { return nil }
+func (m *mockDomainRepository) List(offset, limit int) ([]*domain.Domain, error) { return nil, nil }
+func (m *mockDomainRepository) CreateTemplate(template *domain.Domain) error { return nil }
+func (m *mockDomainRepository) GetDefaultTemplate() (*domain.Domain, error) { return nil, nil }
+
 // mockMessageService for SMTP backend tests
 type mockMessageService struct {
 	storeFunc func(int64, int64, int64, []byte) (*domain.Message, error)
@@ -133,6 +145,7 @@ func TestSession_AuthPlain(t *testing.T) {
 			userService:    userSvc,
 			messageService: &mockMessageService{},
 			queueService:   &mockQueueService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -163,6 +176,7 @@ func TestSession_AuthPlain(t *testing.T) {
 			userService:    userSvc,
 			messageService: &mockMessageService{},
 			queueService:   &mockQueueService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -185,6 +199,7 @@ func TestSession_Mail(t *testing.T) {
 		userService:    &mockUserService{},
 		messageService: &mockMessageService{},
 		queueService:   &mockQueueService{},
+		domainRepo:     &mockDomainRepository{},
 		logger:         logger,
 	}
 
@@ -214,6 +229,7 @@ func TestSession_Rcpt(t *testing.T) {
 		userService:    &mockUserService{},
 		messageService: &mockMessageService{},
 		queueService:   &mockQueueService{},
+		domainRepo:     &mockDomainRepository{},
 		logger:         logger,
 	}
 
@@ -283,6 +299,7 @@ func TestSession_Data(t *testing.T) {
 			userService:    &mockUserService{},
 			messageService: &mockMessageService{},
 			queueService:   queueSvc,
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -325,6 +342,7 @@ This is a test message.`
 			userService:    &mockUserService{},
 			messageService: &mockMessageService{},
 			queueService:   queueSvc,
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -354,6 +372,7 @@ This is a test message.`
 			userService:    &mockUserService{},
 			messageService: &mockMessageService{},
 			queueService:   &mockQueueService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -381,6 +400,7 @@ func TestSession_Reset(t *testing.T) {
 		userService:    &mockUserService{},
 		messageService: &mockMessageService{},
 		queueService:   &mockQueueService{},
+		domainRepo:     &mockDomainRepository{},
 		logger:         logger,
 	}
 
@@ -414,6 +434,7 @@ func TestSession_Logout(t *testing.T) {
 		userService:    &mockUserService{},
 		messageService: &mockMessageService{},
 		queueService:   &mockQueueService{},
+		domainRepo:     &mockDomainRepository{},
 		logger:         logger,
 	}
 

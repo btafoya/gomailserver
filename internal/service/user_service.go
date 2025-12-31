@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -21,15 +22,17 @@ var (
 
 // UserService handles user operations
 type UserService struct {
-	repo   repository.UserRepository
-	logger *zap.Logger
+	repo       repository.UserRepository
+	domainRepo repository.DomainRepository
+	logger     *zap.Logger
 }
 
 // NewUserService creates a new user service
-func NewUserService(repo repository.UserRepository, logger *zap.Logger) *UserService {
+func NewUserService(repo repository.UserRepository, domainRepo repository.DomainRepository, logger *zap.Logger) *UserService {
 	return &UserService{
-		repo:   repo,
-		logger: logger,
+		repo:       repo,
+		domainRepo: domainRepo,
+		logger:     logger,
 	}
 }
 
@@ -115,27 +118,37 @@ func (s *UserService) Create(user *domain.User, password string) error {
 	return nil
 }
 
-// GetByID retrieves a user by ID
+// GetByID retrieves a user by ID (implements UserServiceInterface)
 func (s *UserService) GetByID(id int64) (*domain.User, error) {
 	return s.repo.GetByID(id)
 }
 
-// GetByEmail retrieves a user by email
+// GetByEmail retrieves a user by email (implements UserServiceInterface)
 func (s *UserService) GetByEmail(email string) (*domain.User, error) {
 	return s.repo.GetByEmail(email)
 }
 
-// Update updates a user
+// ListAll retrieves all users
+func (s *UserService) ListAll(ctx context.Context) ([]*domain.User, error) {
+	return s.repo.ListAll()
+}
+
+// CreateWithPassword creates a new user with a hashed password (for API handlers)
+func (s *UserService) CreateWithPassword(ctx context.Context, user *domain.User, password string) error {
+	return s.Create(user, password)
+}
+
+// Update updates a user (implements UserServiceInterface)
 func (s *UserService) Update(user *domain.User) error {
 	return s.repo.Update(user)
 }
 
-// Delete deletes a user
+// Delete deletes a user (implements UserServiceInterface)
 func (s *UserService) Delete(id int64) error {
 	return s.repo.Delete(id)
 }
 
-// UpdatePassword updates a user's password
+// UpdatePassword updates a user's password (implements UserServiceInterface)
 func (s *UserService) UpdatePassword(userID int64, newPassword string) error {
 	hash, err := s.HashPassword(newPassword)
 	if err != nil {
@@ -155,4 +168,9 @@ func (s *UserService) UpdatePassword(userID int64, newPassword string) error {
 	)
 
 	return nil
+}
+
+// GetDomainByID retrieves a domain by ID (helper for user operations that need domain info)
+func (s *UserService) GetDomainByID(ctx context.Context, domainID int64) (*domain.Domain, error) {
+	return s.domainRepo.GetByID(domainID)
 }

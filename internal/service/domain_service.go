@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/btafoya/gomailserver/internal/domain"
@@ -205,5 +206,49 @@ func (s *DomainService) UpdateDefaultTemplate(updates *domain.Domain) error {
 		return fmt.Errorf("failed to update default template: %w", err)
 	}
 
+	return nil
+}
+
+// List retrieves all domains with pagination
+func (s *DomainService) List(ctx context.Context) ([]*domain.Domain, error) {
+	// For now, return all domains without pagination
+	// TODO: Add pagination support with offset/limit
+	domains, err := s.repo.List(0, 1000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list domains: %w", err)
+	}
+	return domains, nil
+}
+
+// Create creates a new domain
+func (s *DomainService) Create(ctx context.Context, newDomain *domain.Domain) error {
+	if err := s.repo.Create(newDomain); err != nil {
+		return fmt.Errorf("failed to create domain: %w", err)
+	}
+	return nil
+}
+
+// GetByID retrieves a domain by ID
+func (s *DomainService) GetByID(ctx context.Context, id int64) (*domain.Domain, error) {
+	domain, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get domain: %w", err)
+	}
+	return domain, nil
+}
+
+// Update updates an existing domain
+func (s *DomainService) Update(ctx context.Context, domain *domain.Domain) error {
+	if err := s.repo.Update(domain); err != nil {
+		return fmt.Errorf("failed to update domain: %w", err)
+	}
+	return nil
+}
+
+// Delete deletes a domain
+func (s *DomainService) Delete(ctx context.Context, id int64) error {
+	if err := s.repo.Delete(id); err != nil {
+		return fmt.Errorf("failed to delete domain: %w", err)
+	}
 	return nil
 }

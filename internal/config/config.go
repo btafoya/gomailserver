@@ -15,6 +15,7 @@ type Config struct {
 	SMTP     SMTPConfig     `mapstructure:"smtp" yaml:"smtp"`
 	IMAP     IMAPConfig     `mapstructure:"imap" yaml:"imap"`
 	API      APIConfig      `mapstructure:"api" yaml:"api"`
+	WebDAV   WebDAVConfig   `mapstructure:"webdav" yaml:"webdav"`
 	Security SecurityConfig `mapstructure:"security" yaml:"security"`
 }
 
@@ -64,11 +65,21 @@ type IMAPConfig struct {
 
 // APIConfig holds admin API server configuration
 type APIConfig struct {
-	Port           int    `mapstructure:"port" yaml:"port" env:"API_PORT" default:"8080"`
-	ReadTimeout    int    `mapstructure:"read_timeout" yaml:"read_timeout" env:"API_READ_TIMEOUT" default:"15"`
-	WriteTimeout   int    `mapstructure:"write_timeout" yaml:"write_timeout" env:"API_WRITE_TIMEOUT" default:"15"`
-	MaxHeaderBytes int    `mapstructure:"max_header_bytes" yaml:"max_header_bytes" env:"API_MAX_HEADER_BYTES" default:"1048576"` // 1MB
-	AdminToken     string `mapstructure:"admin_token" yaml:"admin_token" env:"API_ADMIN_TOKEN"`                                   // Bearer token for admin endpoints
+	Port           int      `mapstructure:"port" yaml:"port" env:"API_PORT" default:"8080"`
+	ReadTimeout    int      `mapstructure:"read_timeout" yaml:"read_timeout" env:"API_READ_TIMEOUT" default:"15"`
+	WriteTimeout   int      `mapstructure:"write_timeout" yaml:"write_timeout" env:"API_WRITE_TIMEOUT" default:"15"`
+	MaxHeaderBytes int      `mapstructure:"max_header_bytes" yaml:"max_header_bytes" env:"API_MAX_HEADER_BYTES" default:"1048576"` // 1MB
+	AdminToken     string   `mapstructure:"admin_token" yaml:"admin_token" env:"API_ADMIN_TOKEN"`                                   // Bearer token for admin endpoints (deprecated, use JWT)
+	JWTSecret      string   `mapstructure:"jwt_secret" yaml:"jwt_secret" env:"API_JWT_SECRET"`                                      // Secret for signing JWT tokens
+	CORSOrigins    []string `mapstructure:"cors_origins" yaml:"cors_origins" env:"API_CORS_ORIGINS"`                                // Allowed CORS origins
+}
+
+// WebDAVConfig holds WebDAV/CalDAV/CardDAV server configuration
+type WebDAVConfig struct {
+	Enabled      bool `mapstructure:"enabled" yaml:"enabled" env:"WEBDAV_ENABLED" default:"true"`
+	Port         int  `mapstructure:"port" yaml:"port" env:"WEBDAV_PORT" default:"8800"`
+	ReadTimeout  int  `mapstructure:"read_timeout" yaml:"read_timeout" env:"WEBDAV_READ_TIMEOUT" default:"30"`
+	WriteTimeout int  `mapstructure:"write_timeout" yaml:"write_timeout" env:"WEBDAV_WRITE_TIMEOUT" default:"30"`
 }
 
 // SecurityConfig holds external security service connection configuration
@@ -163,6 +174,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("api.read_timeout", 15)
 	v.SetDefault("api.write_timeout", 15)
 	v.SetDefault("api.max_header_bytes", 1048576) // 1MB
+
+	// WebDAV/CalDAV/CardDAV
+	v.SetDefault("webdav.enabled", true)
+	v.SetDefault("webdav.port", 8800)
+	v.SetDefault("webdav.read_timeout", 30)
+	v.SetDefault("webdav.write_timeout", 30)
 
 	// Security - External service connections only
 	// All security policies are stored in SQLite per-domain

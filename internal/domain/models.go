@@ -242,3 +242,18 @@ type QuarantineMessage struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+// APIKey represents an API key for programmatic access
+type APIKey struct {
+	ID           int64      `json:"id"`
+	UserID       int64      `json:"user_id"`
+	DomainID     int64      `json:"domain_id"`
+	Name         string     `json:"name"`
+	KeyHash      string     `json:"-"`
+	Scopes       string     `json:"scopes"` // JSON array ["read","write"]
+	LastUsedAt   *time.Time `json:"last_used_at,omitempty"`
+	LastUsedIP   string     `json:"last_used_ip,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}

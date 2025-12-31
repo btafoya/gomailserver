@@ -35,28 +35,32 @@ type UserRequest struct {
 	DomainID        int64  `json:"domain_id"`
 	Quota           int64  `json:"quota,omitempty"`
 	Status          string `json:"status,omitempty"`
-	ForwardingRules string `json:"forwarding_rules,omitempty"`
-	AutoReply       string `json:"auto_reply,omitempty"`
-	SpamThreshold   int    `json:"spam_threshold,omitempty"`
+	ForwardTo        string `json:"forward_to,omitempty"`
+	AutoReplyEnabled bool   `json:"auto_reply_enabled"`
+	AutoReplySubject string `json:"auto_reply_subject,omitempty"`
+	AutoReplyBody    string `json:"auto_reply_body,omitempty"`
+	SpamThreshold    float64 `json:"spam_threshold,omitempty"`
 }
 
 // UserResponse represents a user in API responses
 type UserResponse struct {
-	ID              int64  `json:"id"`
-	Email           string `json:"email"`
-	FullName        string `json:"full_name"`
-	DisplayName     string `json:"display_name,omitempty"`
-	DomainID        int64  `json:"domain_id"`
-	DomainName      string `json:"domain_name,omitempty"`
-	Quota           int64  `json:"quota"`
-	CurrentUsage    int64  `json:"current_usage"`
-	Status          string `json:"status"`
-	ForwardingRules string `json:"forwarding_rules,omitempty"`
-	AutoReply       string `json:"auto_reply,omitempty"`
-	SpamThreshold   int    `json:"spam_threshold"`
-	TOTPEnabled     bool   `json:"totp_enabled"`
-	CreatedAt       string `json:"created_at"`
-	LastLogin       string `json:"last_login,omitempty"`
+	ID               int64   `json:"id"`
+	Email            string  `json:"email"`
+	FullName         string  `json:"full_name"`
+	DisplayName      string  `json:"display_name,omitempty"`
+	DomainID         int64   `json:"domain_id"`
+	DomainName       string  `json:"domain_name,omitempty"`
+	Quota            int64   `json:"quota"`
+	UsedQuota        int64   `json:"used_quota"`
+	Status           string  `json:"status"`
+	ForwardTo        string  `json:"forward_to,omitempty"`
+	AutoReplyEnabled bool    `json:"auto_reply_enabled"`
+	AutoReplySubject string  `json:"auto_reply_subject,omitempty"`
+	AutoReplyBody    string  `json:"auto_reply_body,omitempty"`
+	SpamThreshold    float64 `json:"spam_threshold"`
+	TOTPEnabled      bool    `json:"totp_enabled"`
+	CreatedAt        string  `json:"created_at"`
+	LastLogin        string  `json:"last_login,omitempty"`
 }
 
 // PasswordResetRequest represents a password reset request
@@ -78,7 +82,7 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Convert to response format
 	responses := make([]*UserResponse, len(users))
 	for i, u := range users {
-		responses[i] = h.userToResponse(r.Context(), u)
+		responses[i] = h.userToResponse(u)
 	}
 
 	middleware.RespondSuccess(w, responses, "Users retrieved successfully")
@@ -109,14 +113,16 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Convert request to user model
 	newUser := &domain.User{
 		Email:           req.Email,
-		FullName:        req.FullName,
-		DisplayName:     req.DisplayName,
-		DomainID:        req.DomainID,
-		Quota:           req.Quota,
-		Status:          req.Status,
-		ForwardingRules: req.ForwardingRules,
-		AutoReply:       req.AutoReply,
-		SpamThreshold:   req.SpamThreshold,
+		FullName:         req.FullName,
+		DisplayName:      req.DisplayName,
+		DomainID:         req.DomainID,
+		Quota:            req.Quota,
+		Status:           req.Status,
+		ForwardTo:        req.ForwardTo,
+		AutoReplyEnabled: req.AutoReplyEnabled,
+		AutoReplySubject: req.AutoReplySubject,
+		AutoReplyBody:    req.AutoReplyBody,
+		SpamThreshold:    req.SpamThreshold,
 	}
 
 	// Set defaults
@@ -124,7 +130,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		newUser.Status = "active"
 	}
 	if newUser.SpamThreshold == 0 {
-		newUser.SpamThreshold = 5 // Default spam threshold
+		newUser.SpamThreshold = 5.0 // Default spam threshold
 	}
 
 	// Create user (password will be hashed by service)
@@ -143,7 +149,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		zap.Int64("id", newUser.ID),
 	)
 
-	middleware.RespondCreated(w, h.userToResponse(r.Context(), newUser), "User created successfully")
+	middleware.RespondCreated(w, h.userToResponse(newUser), "User created successfully")
 }
 
 // Get retrieves a specific user
@@ -155,14 +161,14 @@ func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.GetByID(r.Context(), id)
+	user, err := h.service.GetByID(id)
 	if err != nil {
 		h.logger.Error("Failed to get user", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
-	middleware.RespondSuccess(w, h.userToResponse(r.Context(), user), "User retrieved successfully")
+	middleware.RespondSuccess(w, h.userToResponse(user), "User retrieved successfully")
 }
 
 // Update updates a user
@@ -181,7 +187,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing user
-	existingUser, err := h.service.GetByID(r.Context(), id)
+	existingUser, err := h.service.GetByID(id)
 	if err != nil {
 		middleware.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -200,18 +206,22 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.Status != "" {
 		existingUser.Status = req.Status
 	}
-	if req.ForwardingRules != "" {
-		existingUser.ForwardingRules = req.ForwardingRules
+	if req.ForwardTo != "" {
+		existingUser.ForwardTo = req.ForwardTo
 	}
-	if req.AutoReply != "" {
-		existingUser.AutoReply = req.AutoReply
+	existingUser.AutoReplyEnabled = req.AutoReplyEnabled
+	if req.AutoReplySubject != "" {
+		existingUser.AutoReplySubject = req.AutoReplySubject
+	}
+	if req.AutoReplyBody != "" {
+		existingUser.AutoReplyBody = req.AutoReplyBody
 	}
 	if req.SpamThreshold > 0 {
 		existingUser.SpamThreshold = req.SpamThreshold
 	}
 
 	// Update user
-	err = h.service.Update(r.Context(), existingUser)
+	err = h.service.Update(existingUser)
 	if err != nil {
 		h.logger.Error("Failed to update user", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to update user")
@@ -223,7 +233,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		zap.String("email", existingUser.Email),
 	)
 
-	middleware.RespondSuccess(w, h.userToResponse(r.Context(), existingUser), "User updated successfully")
+	middleware.RespondSuccess(w, h.userToResponse(existingUser), "User updated successfully")
 }
 
 // Delete deletes a user
@@ -235,7 +245,7 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.Delete(r.Context(), id)
+	err = h.service.Delete(id)
 	if err != nil {
 		h.logger.Error("Failed to delete user", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to delete user")
@@ -268,7 +278,7 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update password
-	err = h.service.UpdatePassword(r.Context(), id, req.NewPassword)
+	err = h.service.UpdatePassword(id, req.NewPassword)
 	if err != nil {
 		h.logger.Error("Failed to reset password", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to reset password")
@@ -281,21 +291,23 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // userToResponse converts a user model to API response format
-func (h *UserHandler) userToResponse(ctx any, u *domain.User) *UserResponse {
+func (h *UserHandler) userToResponse(u *domain.User) *UserResponse {
 	response := &UserResponse{
-		ID:              u.ID,
-		Email:           u.Email,
-		FullName:        u.FullName,
-		DisplayName:     u.DisplayName,
-		DomainID:        u.DomainID,
-		Quota:           u.Quota,
-		CurrentUsage:    u.CurrentUsage,
-		Status:          u.Status,
-		ForwardingRules: u.ForwardingRules,
-		AutoReply:       u.AutoReply,
-		SpamThreshold:   u.SpamThreshold,
-		TOTPEnabled:     u.TOTPSecret != "",
-		CreatedAt:       u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:               u.ID,
+		Email:            u.Email,
+		FullName:         u.FullName,
+		DisplayName:      u.DisplayName,
+		DomainID:         u.DomainID,
+		Quota:            u.Quota,
+		UsedQuota:        u.UsedQuota,
+		Status:           u.Status,
+		ForwardTo:        u.ForwardTo,
+		AutoReplyEnabled: u.AutoReplyEnabled,
+		AutoReplySubject: u.AutoReplySubject,
+		AutoReplyBody:    u.AutoReplyBody,
+		SpamThreshold:    u.SpamThreshold,
+		TOTPEnabled:      u.TOTPSecret != "",
+		CreatedAt:        u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	if u.LastLogin != nil {

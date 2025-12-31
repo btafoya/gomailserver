@@ -37,7 +37,7 @@ type DomainRequest struct {
 	DKIMPrivateKey    string `json:"dkim_private_key,omitempty"`
 	DKIMPublicKey     string `json:"dkim_public_key,omitempty"`
 	SPFRecord         string `json:"spf_record,omitempty"`
-	DMARCRecord       string `json:"dmarc_record,omitempty"`
+	DMARCPolicy       string `json:"dmarc_policy,omitempty"`
 	DMARCReportEmail  string `json:"dmarc_report_email,omitempty"`
 	DKIMSigningEnabled bool  `json:"dkim_signing_enabled"`
 	DKIMVerifyEnabled  bool  `json:"dkim_verify_enabled"`
@@ -54,7 +54,7 @@ type DomainResponse struct {
 	DKIMSelector       string `json:"dkim_selector,omitempty"`
 	DKIMPublicKey      string `json:"dkim_public_key,omitempty"`
 	SPFRecord          string `json:"spf_record,omitempty"`
-	DMARCRecord        string `json:"dmarc_record,omitempty"`
+	DMARCPolicy        string `json:"dmarc_policy,omitempty"`
 	DMARCReportEmail   string `json:"dmarc_report_email,omitempty"`
 	DKIMSigningEnabled bool   `json:"dkim_signing_enabled"`
 	DKIMVerifyEnabled  bool   `json:"dkim_verify_enabled"`
@@ -105,7 +105,7 @@ func (h *DomainHandler) Create(w http.ResponseWriter, r *http.Request) {
 		DKIMPrivateKey:     req.DKIMPrivateKey,
 		DKIMPublicKey:      req.DKIMPublicKey,
 		SPFRecord:          req.SPFRecord,
-		DMARCRecord:        req.DMARCRecord,
+		DMARCPolicy:        req.DMARCPolicy,
 		DMARCReportEmail:   req.DMARCReportEmail,
 		DKIMSigningEnabled: req.DKIMSigningEnabled,
 		DKIMVerifyEnabled:  req.DKIMVerifyEnabled,
@@ -202,8 +202,8 @@ func (h *DomainHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.SPFRecord != "" {
 		existingDomain.SPFRecord = req.SPFRecord
 	}
-	if req.DMARCRecord != "" {
-		existingDomain.DMARCRecord = req.DMARCRecord
+	if req.DMARCPolicy != "" {
+		existingDomain.DMARCPolicy = req.DMARCPolicy
 	}
 	if req.DMARCReportEmail != "" {
 		existingDomain.DMARCReportEmail = req.DMARCReportEmail
@@ -289,7 +289,7 @@ func domainToResponse(d *domain.Domain) *DomainResponse {
 		DKIMSelector:       d.DKIMSelector,
 		DKIMPublicKey:      d.DKIMPublicKey, // Don't expose private key
 		SPFRecord:          d.SPFRecord,
-		DMARCRecord:        d.DMARCRecord,
+		DMARCPolicy:        d.DMARCPolicy,
 		DMARCReportEmail:   d.DMARCReportEmail,
 		DKIMSigningEnabled: d.DKIMSigningEnabled,
 		DKIMVerifyEnabled:  d.DKIMVerifyEnabled,

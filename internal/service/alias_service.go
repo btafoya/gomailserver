@@ -22,37 +22,37 @@ func NewAliasService(repo repository.AliasRepository) *AliasService {
 
 // Create creates a new alias
 func (s *AliasService) Create(ctx context.Context, alias *domain.Alias) error {
-	return s.repo.Create(ctx, alias)
+	return s.repo.Create(alias)
 }
 
 // GetByID retrieves an alias by ID
 func (s *AliasService) GetByID(ctx context.Context, id int64) (*domain.Alias, error) {
-	return s.repo.GetByID(ctx, id)
+	return s.repo.GetByID(id)
 }
 
 // GetByEmail retrieves an alias by email address
 func (s *AliasService) GetByEmail(ctx context.Context, email string) (*domain.Alias, error) {
-	return s.repo.GetByEmail(ctx, email)
+	return s.repo.GetByEmail(email)
 }
 
 // ListAll retrieves all aliases
 func (s *AliasService) ListAll(ctx context.Context) ([]*domain.Alias, error) {
-	return s.repo.ListAll(ctx)
+	return s.repo.ListAll()
 }
 
 // ListByDomain retrieves all aliases for a domain
 func (s *AliasService) ListByDomain(ctx context.Context, domainID int64) ([]*domain.Alias, error) {
-	return s.repo.ListByDomain(ctx, domainID)
+	return s.repo.ListByDomain(domainID)
 }
 
 // Update updates an alias
 func (s *AliasService) Update(ctx context.Context, alias *domain.Alias) error {
-	return s.repo.Update(ctx, alias)
+	return s.repo.Update(alias)
 }
 
 // Delete deletes an alias
 func (s *AliasService) Delete(ctx context.Context, id int64) error {
-	return s.repo.Delete(ctx, id)
+	return s.repo.Delete(id)
 }
 
 // Helper methods for working with JSON destinations

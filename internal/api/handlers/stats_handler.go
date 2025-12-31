@@ -214,7 +214,7 @@ func (h *StatsHandler) User(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user
-	user, err := h.userService.GetByID(r.Context(), id)
+	user, err := h.userService.GetByID(id)
 	if err != nil {
 		h.logger.Error("Failed to get user", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "User not found")
@@ -224,7 +224,7 @@ func (h *StatsHandler) User(w http.ResponseWriter, r *http.Request) {
 	// Calculate quota percentage
 	quotaPercent := 0.0
 	if user.Quota > 0 {
-		quotaPercent = (float64(user.CurrentUsage) / float64(user.Quota)) * 100
+		quotaPercent = (float64(user.UsedQuota) / float64(user.Quota)) * 100
 	}
 
 	// TODO: Implement actual statistics gathering
@@ -234,7 +234,7 @@ func (h *StatsHandler) User(w http.ResponseWriter, r *http.Request) {
 		DomainID:          user.DomainID,
 		DomainName:        "", // TODO: Get domain name
 		Status:            user.Status,
-		StorageUsed:       user.CurrentUsage,
+		StorageUsed:       user.UsedQuota,
 		StorageQuota:      user.Quota,
 		QuotaPercent:      quotaPercent,
 		TotalMessages:     0,

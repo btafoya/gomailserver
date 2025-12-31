@@ -72,7 +72,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate user
-	user, err := h.userService.Authenticate(r.Context(), req.Email, req.Password)
+	user, err := h.userService.Authenticate(req.Email, req.Password)
 	if err != nil {
 		h.logger.Warn("Authentication failed",
 			zap.String("email", req.Email),
@@ -166,7 +166,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user to verify they still exist and are active
-	user, err := h.userService.GetByID(r.Context(), claims.UserID)
+	user, err := h.userService.GetByID(claims.UserID)
 	if err != nil {
 		middleware.RespondError(w, http.StatusUnauthorized, "User not found")
 		return

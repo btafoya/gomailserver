@@ -13,7 +13,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/api"
+	calendarrepo "github.com/btafoya/gomailserver/internal/calendar/repository/sqlite"
+	calendarsvc "github.com/btafoya/gomailserver/internal/calendar/service"
 	"github.com/btafoya/gomailserver/internal/config"
+	contactrepo "github.com/btafoya/gomailserver/internal/contact/repository/sqlite"
+	contactsvc "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/imap"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
@@ -29,6 +33,9 @@ import (
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/btafoya/gomailserver/internal/smtp"
 	tlspkg "github.com/btafoya/gomailserver/internal/tls"
+	"github.com/btafoya/gomailserver/internal/webdav"
+	"github.com/btafoya/gomailserver/internal/webdav/caldav"
+	"github.com/btafoya/gomailserver/internal/webdav/carddav"
 )
 
 var runCmd = &cobra.Command{
@@ -94,15 +101,29 @@ func run(cmd *cobra.Command, args []string) error {
 	messageRepo := sqlite.NewMessageRepository(db)
 	queueRepo := sqlite.NewQueueRepository(db)
 	domainRepo := sqlite.NewDomainRepository(db)
+	aliasRepo := sqlite.NewAliasRepository(db)
+	apiKeyRepo := sqlite.NewAPIKeyRepository(db)
+
+	// Create calendar/contact repositories
+	calendarRepo := calendarrepo.NewCalendarRepository(db.DB)
+	eventRepo := calendarrepo.NewEventRepository(db.DB)
+	addressbookRepo := contactrepo.NewAddressbookRepository(db.DB)
+	contactRepo := contactrepo.NewContactRepository(db.DB)
 
 	logger.Debug("repositories initialized")
 
 	// Create services
-	userSvc := service.NewUserService(userRepo, logger)
+	userSvc := service.NewUserService(userRepo, domainRepo, logger)
 	mailboxSvc := service.NewMailboxService(mailboxRepo, logger)
 	messageSvc := service.NewMessageService(messageRepo, "./data/mail", logger)
 	queueSvc := service.NewQueueService(queueRepo, logger)
 	domainSvc := service.NewDomainService(domainRepo)
+
+	// Create calendar/contact services
+	calendarSvc := calendarsvc.NewCalendarService(calendarRepo, eventRepo)
+	eventSvc := calendarsvc.NewEventService(eventRepo, calendarRepo)
+	addressbookSvc := contactsvc.NewAddressbookService(addressbookRepo, contactRepo)
+	contactSvc := contactsvc.NewContactService(contactRepo, addressbookRepo)
 
 	logger.Debug("services initialized")
 
@@ -191,7 +212,36 @@ func run(cmd *cobra.Command, args []string) error {
 	imapServer := imap.NewServer(&cfg.IMAP, tlsCfg, imapBackend, logger)
 
 	// Create Admin API server
-	apiServer := api.NewServer(&cfg.API, domainRepo, logger)
+	apiServer := api.NewServer(
+		&cfg.API,
+		domainRepo,
+		userRepo,
+		aliasRepo,
+		mailboxRepo,
+		messageRepo,
+		queueRepo,
+		apiKeyRepo,
+		rateLimitRepo,
+		logger,
+	)
+
+	// Create WebDAV/CalDAV/CardDAV server
+	var webdavServer *webdav.Server
+	if cfg.WebDAV.Enabled {
+		// Create CalDAV handler
+		caldavHandler := caldav.NewHandler(logger, calendarSvc, eventSvc)
+
+		// Create CardDAV handler
+		carddavHandler := carddav.NewHandler(logger, addressbookSvc, contactSvc)
+
+		// Create WebDAV server
+		webdavCfg := &webdav.Config{
+			Port:         cfg.WebDAV.Port,
+			ReadTimeout:  cfg.WebDAV.ReadTimeout,
+			WriteTimeout: cfg.WebDAV.WriteTimeout,
+		}
+		webdavServer = webdav.NewServer(webdavCfg, caldavHandler, carddavHandler, userRepo, logger)
+	}
 
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
@@ -212,18 +262,30 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to start admin API server: %w", err)
 	}
 
+	// Start WebDAV server
+	if cfg.WebDAV.Enabled && webdavServer != nil {
+		if err := webdavServer.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start WebDAV server: %w", err)
+		}
+	}
+
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	logger.Info("mail server ready",
+	logFields := []zap.Field{
 		zap.Int("smtp_submission_port", cfg.SMTP.SubmissionPort),
 		zap.Int("smtp_relay_port", cfg.SMTP.RelayPort),
 		zap.Int("smtps_port", cfg.SMTP.SMTPSPort),
 		zap.Int("imap_port", cfg.IMAP.Port),
 		zap.Int("imaps_port", cfg.IMAP.IMAPSPort),
 		zap.Int("api_port", cfg.API.Port),
-	)
+	}
+	if cfg.WebDAV.Enabled {
+		logFields = append(logFields, zap.Int("webdav_port", cfg.WebDAV.Port))
+	}
+
+	logger.Info("mail server ready", logFields...)
 
 	// Wait for shutdown signal
 	sig := <-sigChan
@@ -250,6 +312,13 @@ func run(cmd *cobra.Command, args []string) error {
 	// Shutdown Admin API server
 	if err := apiServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error("admin API server shutdown error", zap.Error(err))
+	}
+
+	// Shutdown WebDAV server
+	if cfg.WebDAV.Enabled && webdavServer != nil {
+		if err := webdavServer.Shutdown(shutdownCtx); err != nil {
+			logger.Error("WebDAV server shutdown error", zap.Error(err))
+		}
 	}
 
 	logger.Info("shutdown complete")

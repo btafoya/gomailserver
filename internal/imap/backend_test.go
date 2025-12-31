@@ -48,6 +48,18 @@ func (m *mockUserService) Delete(id int64) error {
 	return nil
 }
 
+// mockDomainRepository for IMAP backend tests
+type mockDomainRepository struct{}
+
+func (m *mockDomainRepository) Create(domain *domain.Domain) error          { return nil }
+func (m *mockDomainRepository) GetByID(id int64) (*domain.Domain, error)    { return nil, nil }
+func (m *mockDomainRepository) GetByName(name string) (*domain.Domain, error) { return nil, nil }
+func (m *mockDomainRepository) Update(domain *domain.Domain) error          { return nil }
+func (m *mockDomainRepository) Delete(id int64) error                       { return nil }
+func (m *mockDomainRepository) List(offset, limit int) ([]*domain.Domain, error) { return nil, nil }
+func (m *mockDomainRepository) CreateTemplate(template *domain.Domain) error { return nil }
+func (m *mockDomainRepository) GetDefaultTemplate() (*domain.Domain, error) { return nil, nil }
+
 // mockMailboxService for IMAP backend tests
 type mockMailboxService struct {
 	listFunc       func(int64, bool) ([]*domain.Mailbox, error)
@@ -136,6 +148,7 @@ func TestBackend_Login(t *testing.T) {
 			userService:    userSvc,
 			mailboxService: &mockMailboxService{},
 			messageService: &mockMessageService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -175,6 +188,7 @@ func TestBackend_Login(t *testing.T) {
 			userService:    userSvc,
 			mailboxService: &mockMailboxService{},
 			messageService: &mockMessageService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 
@@ -212,6 +226,7 @@ func TestBackend_Login(t *testing.T) {
 			userService:    userSvc,
 			mailboxService: &mockMailboxService{},
 			messageService: &mockMessageService{},
+			domainRepo:     &mockDomainRepository{},
 			logger:         logger,
 		}
 

@@ -9,6 +9,7 @@
 3. **Follow established patterns** - Match existing code style and project conventions
 4. **Complete the work** - Don't stop mid-task or leave partial implementations
 5. **Report results** - Summarize what was done when complete
+6. **Compact conversation** - When you are using compact, please focus on test output and code changes
 
 ### When to Ask Questions
 - Requirements are genuinely ambiguous with multiple valid interpretations

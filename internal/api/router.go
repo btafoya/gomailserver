@@ -30,16 +30,17 @@ type Router struct {
 
 // RouterConfig contains dependencies for the API router
 type RouterConfig struct {
-	Logger         *zap.Logger
-	DomainService  *service.DomainService
-	UserService    *service.UserService
-	AliasService   *service.AliasService
-	MailboxService *service.MailboxService
-	MessageService *service.MessageService
-	QueueService   *service.QueueService
-	APIKeyRepo     repository.APIKeyRepository
-	JWTSecret      string
-	CORSOrigins    []string
+	Logger          *zap.Logger
+	DomainService   *service.DomainService
+	UserService     *service.UserService
+	AliasService    *service.AliasService
+	MailboxService  *service.MailboxService
+	MessageService  *service.MessageService
+	QueueService    *service.QueueService
+	APIKeyRepo      repository.APIKeyRepository
+	RateLimitRepo   repository.RateLimitRepository
+	JWTSecret       string
+	CORSOrigins     []string
 }
 
 // NewRouter creates a new API router with all routes configured
@@ -81,23 +82,31 @@ func NewRouter(config RouterConfig) *Router {
 
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Authentication routes (no auth required)
-		r.Post("/auth/login", handlers.NewAuthHandler(
-			config.UserService,
-			config.JWTSecret,
-			config.Logger,
-		).Login)
+		// Authentication routes (no auth required, but rate limited)
+		r.Group(func(r chi.Router) {
+			// Aggressive rate limiting for auth endpoints to prevent brute force
+			r.Use(middleware.RateLimit(config.RateLimitRepo, config.Logger))
 
-		r.Post("/auth/refresh", handlers.NewAuthHandler(
-			config.UserService,
-			config.JWTSecret,
-			config.Logger,
-		).Refresh)
+			r.Post("/auth/login", handlers.NewAuthHandler(
+				config.UserService,
+				config.JWTSecret,
+				config.Logger,
+			).Login)
+
+			r.Post("/auth/refresh", handlers.NewAuthHandler(
+				config.UserService,
+				config.JWTSecret,
+				config.Logger,
+			).Refresh)
+		})
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
 			// JWT or API Key authentication required
 			r.Use(middleware.Auth(config.JWTSecret, config.APIKeyRepo, config.Logger))
+
+			// Rate limiting for API calls
+			r.Use(middleware.RateLimit(config.RateLimitRepo, config.Logger))
 
 			// Domain management
 			domainHandler := handlers.NewDomainHandler(config.DomainService, config.Logger)
