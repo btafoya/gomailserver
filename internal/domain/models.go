@@ -10,7 +10,7 @@ type Domain struct {
 	MaxUsers       int       `json:"max_users"`
 	MaxMailboxSize int64     `json:"max_mailbox_size"`
 	DefaultQuota   int64     `json:"default_quota"`
-	CatchallEmail  string    `json:"catchall_email,omitempty"`
+	CatchallEmail  *string   `json:"catchall_email,omitempty"`
 	BackupMX       bool      `json:"backup_mx"`
 
 	// DKIM configuration

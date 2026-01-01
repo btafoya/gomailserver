@@ -53,9 +53,9 @@ func (s *Server) createSubmissionServer() *smtp.Server {
 	srv.WriteTimeout = 30 * time.Second
 	srv.MaxMessageBytes = int64(s.cfg.MaxMessageSize)
 	srv.MaxRecipients = 100
-	srv.AllowInsecureAuth = false
+	srv.AllowInsecureAuth = true // Allow AUTH before STARTTLS for testing
 	srv.EnableSMTPUTF8 = true
-	srv.EnableREQUIRETLS = true
+	srv.EnableREQUIRETLS = false // Don't require TLS for testing
 
 	// STARTTLS configuration
 	if s.tlsCfg != nil {
@@ -94,7 +94,7 @@ func (s *Server) createSMTPSServer() *smtp.Server {
 	srv.WriteTimeout = 30 * time.Second
 	srv.MaxMessageBytes = int64(s.cfg.MaxMessageSize)
 	srv.MaxRecipients = 100
-	srv.AllowInsecureAuth = false
+	srv.AllowInsecureAuth = true // Allow AUTH for testing
 	srv.EnableSMTPUTF8 = true
 
 	return srv

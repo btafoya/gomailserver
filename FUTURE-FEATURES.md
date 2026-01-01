@@ -29,3 +29,8 @@ _autodiscover._tcp.example.com.  0   443 service.example-provider.com.
 - go-autoconfig - A go libray implementation that contains the logic to implement - https://github.com/philband/go-autoconfig
 - https://rseichter.github.io/automx2/ for implementation references
 - context7 mcp.
+
+## Tools
+
+- context7 mcp for reference
+- zerolib-email for email testing

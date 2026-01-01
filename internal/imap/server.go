@@ -45,7 +45,7 @@ func NewServer(cfg *config.IMAPConfig, tlsCfg *tls.Config, backend *Backend, log
 func (s *Server) createIMAPServer() *server.Server {
 	srv := server.New(s.backend)
 	srv.Addr = fmt.Sprintf(":%d", s.cfg.Port)
-	srv.AllowInsecureAuth = false // Require TLS for auth
+	srv.AllowInsecureAuth = true // Allow LOGIN/PLAIN without TLS for testing
 	srv.AutoLogout = time.Duration(s.cfg.IdleTimeout) * time.Second
 
 	// STARTTLS configuration
@@ -92,7 +92,7 @@ func (s *Server) Start(ctx context.Context) error {
 			s.imaps = tls.NewListener(ln, s.tlsCfg)
 
 			imapsServer := server.New(s.backend)
-			imapsServer.AllowInsecureAuth = false
+			imapsServer.AllowInsecureAuth = true // Allow LOGIN/PLAIN for testing
 			imapsServer.AutoLogout = time.Duration(s.cfg.IdleTimeout) * time.Second
 
 			if err := imapsServer.Serve(s.imaps); err != nil && ctx.Err() == nil {

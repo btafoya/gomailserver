@@ -77,22 +77,28 @@ func run(cmd *cobra.Command, args []string) error {
 	// Initialize TLS manager
 	var tlsMgr *tlspkg.Manager
 	var tlsCfg *tls.Config
+
+	// Always create TLS manager - it will generate self-signed cert if needed
+	tlsMgr, err = tlspkg.NewManager(&cfg.TLS, cfg.Server.Hostname, logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize TLS manager: %w", err)
+	}
+	tlsCfg = tlsMgr.GetTLSConfig()
+
 	if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
-		tlsMgr, err = tlspkg.NewManager(&cfg.TLS, cfg.Server.Hostname, logger)
-		if err != nil {
-			return fmt.Errorf("failed to initialize TLS manager: %w", err)
-		}
-		tlsCfg = tlsMgr.GetTLSConfig()
-		logger.Info("TLS initialized",
+		logger.Info("TLS initialized from files",
+			zap.String("cert_file", cfg.TLS.CertFile),
+			zap.String("key_file", cfg.TLS.KeyFile),
+		)
+	} else {
+		logger.Info("TLS initialized with self-signed certificate",
 			zap.String("hostname", cfg.Server.Hostname),
 		)
+	}
 
-		// Check certificate expiry
-		if err := tlsMgr.ValidateExpiry(30); err != nil {
-			logger.Warn("TLS certificate validation warning", zap.Error(err))
-		}
-	} else {
-		logger.Warn("TLS disabled - NOT RECOMMENDED FOR PRODUCTION")
+	// Check certificate expiry
+	if err := tlsMgr.ValidateExpiry(30); err != nil {
+		logger.Warn("TLS certificate validation warning", zap.Error(err))
 	}
 
 	// Create repositories

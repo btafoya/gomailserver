@@ -6,6 +6,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
 	"go.uber.org/zap"
 
@@ -218,6 +219,35 @@ func (s *Session) AuthPlain(username, password string) error {
 	)
 
 	return nil
+}
+
+// AuthMechanisms returns the list of supported authentication mechanisms
+// This method implements the AuthSession interface to enable AUTH advertisement
+func (s *Session) AuthMechanisms() []string {
+	return []string{sasl.Plain}
+}
+
+// Auth creates a SASL server for the specified mechanism
+// This method implements the AuthSession interface to enable AUTH advertisement
+func (s *Session) Auth(mech string) (sasl.Server, error) {
+	if mech != sasl.Plain {
+		return nil, &smtp.SMTPError{
+			Code:         504,
+			EnhancedCode: smtp.EnhancedCode{5, 7, 4},
+			Message:      "Unsupported authentication mechanism",
+		}
+	}
+
+	return sasl.NewPlainServer(func(identity, username, password string) error {
+		// The identity parameter is typically empty for PLAIN auth
+		// Use username if provided, otherwise fall back to identity
+		authUser := username
+		if authUser == "" {
+			authUser = identity
+		}
+
+		return s.AuthPlain(authUser, password)
+	}), nil
 }
 
 // Mail is called when the client sends MAIL FROM

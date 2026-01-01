@@ -98,7 +98,6 @@ func (h *DomainHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newDomain := &domain.Domain{
 		Name:               req.Name,
 		Status:             req.Status,
-		CatchallEmail:      req.CatchallEmail,
 		MaxUsers:           req.MaxUsers,
 		DefaultQuota:       req.DefaultQuota,
 		DKIMSelector:       req.DKIMSelector,
@@ -109,6 +108,11 @@ func (h *DomainHandler) Create(w http.ResponseWriter, r *http.Request) {
 		DMARCReportEmail:   req.DMARCReportEmail,
 		DKIMSigningEnabled: req.DKIMSigningEnabled,
 		DKIMVerifyEnabled:  req.DKIMVerifyEnabled,
+	}
+
+	// Convert CatchallEmail string to *string
+	if req.CatchallEmail != "" {
+		newDomain.CatchallEmail = &req.CatchallEmail
 	}
 
 	// Set defaults
@@ -183,7 +187,14 @@ func (h *DomainHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.Status != "" {
 		existingDomain.Status = req.Status
 	}
-	existingDomain.CatchallEmail = req.CatchallEmail
+
+	// Update CatchallEmail (convert string to *string)
+	if req.CatchallEmail != "" {
+		existingDomain.CatchallEmail = &req.CatchallEmail
+	} else {
+		existingDomain.CatchallEmail = nil
+	}
+
 	if req.MaxUsers > 0 {
 		existingDomain.MaxUsers = req.MaxUsers
 	}
@@ -279,11 +290,17 @@ func (h *DomainHandler) GenerateDKIM(w http.ResponseWriter, r *http.Request) {
 
 // domainToResponse converts a domain model to API response format
 func domainToResponse(d *domain.Domain) *DomainResponse {
+	// Convert *string to string for CatchallEmail
+	catchallEmail := ""
+	if d.CatchallEmail != nil {
+		catchallEmail = *d.CatchallEmail
+	}
+
 	return &DomainResponse{
 		ID:                 d.ID,
 		Name:               d.Name,
 		Status:             d.Status,
-		CatchallEmail:      d.CatchallEmail,
+		CatchallEmail:      catchallEmail,
 		MaxUsers:           d.MaxUsers,
 		DefaultQuota:       d.DefaultQuota,
 		DKIMSelector:       d.DKIMSelector,
