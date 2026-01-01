@@ -62,6 +62,7 @@ func NewServer(
 		SettingsService: settingsService,
 		APIKeyRepo:      apiKeyRepo,
 		RateLimitRepo:   rateLimitRepo,
+		DB:              db.DB,
 		JWTSecret:       cfg.JWTSecret,
 		CORSOrigins:     cfg.CORSOrigins,
 	})

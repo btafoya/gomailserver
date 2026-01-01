@@ -44,6 +44,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV4Up,
 			Down:        migrationV4Down,
 		},
+		{
+			Version:     5,
+			Description: "Add PostmarkApp API tables for servers, messages, templates, webhooks, bounces, and events",
+			Up:          migrationV5Up,
+			Down:        migrationV5Down,
+		},
 	}
 }
 

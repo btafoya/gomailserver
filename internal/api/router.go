@@ -1,12 +1,14 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/btafoya/gomailserver/internal/admin"
 	"github.com/btafoya/gomailserver/internal/api/handlers"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
+	"github.com/btafoya/gomailserver/internal/postmark"
 	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -43,6 +45,7 @@ type RouterConfig struct {
 	SettingsService *service.SettingsService
 	APIKeyRepo      repository.APIKeyRepository
 	RateLimitRepo   repository.RateLimitRepository
+	DB              *sql.DB
 	JWTSecret       string
 	CORSOrigins     []string
 }
@@ -193,6 +196,10 @@ func NewRouter(config RouterConfig) *Router {
 			})
 		})
 	})
+
+	// PostmarkApp API compatibility endpoints
+	// Mount at root level for PostmarkApp client compatibility
+	r.Mount("/", postmark.NewRouter(config.DB, config.QueueService, config.Logger))
 
 	// Admin UI - must be last to act as catch-all for SPA routing
 	// Serves at /admin/* with embedded or proxied assets
