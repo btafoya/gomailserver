@@ -1,4 +1,4 @@
-# Future efatures to be added
+# Future features to be added
 
 ## DNS Management for Cloudflare (with others providers at later dates).
 
