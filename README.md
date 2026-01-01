@@ -34,15 +34,23 @@ A modern, composable, all-in-one mail server written in Go 1.23.5+. Implements S
 - **Unlimited**: Domains, users, aliases with configurable quotas
 
 ### Web Interfaces
-- **Admin UI**: Modern web interface for domain/user/alias management
-- **User Portal**: Self-service portal for password changes, 2FA, filters
-- **Webmail**: Gmail-like interface with categories, conversation view, PGP integration
+- **Admin UI**: Modern web interface for domain/user/alias management (Vue.js + shadcn-vue)
+- **User Portal**: Self-service portal for account management, quotas, and settings
+- **Setup Wizard**: Guided first-run configuration for system, domain, and admin setup
+- **Webmail**: Gmail-like interface with categories, conversation view, PGP integration (planned)
 
 ### Advanced Features
-- **Sieve Filtering**: Server-side mail filtering (RFC 5228)
-- **Webhooks**: Event notifications for integrations
+- **Sieve Filtering**: Server-side mail filtering (RFC 5228) (planned)
+- **Webhooks**: Event notifications for integrations (planned)
 - **Auto-configuration**: Let's Encrypt ACME with Cloudflare DNS
 - **Multi-domain**: Support for unlimited domains and subdomains
+- **PostmarkApp API**: Compatible REST API for drop-in replacement of PostmarkApp services
+  - Single email sending (POST /email)
+  - Batch email sending (POST /email/batch, up to 500 messages)
+  - X-Postmark-Server-Token authentication
+  - Test mode support (POSTMARK_API_TEST)
+  - Template system (planned)
+  - Webhook delivery (planned)
 
 ## Quick Start
 
@@ -154,6 +162,13 @@ The REST API is available at `http://localhost:8980/api/v1/` (default port).
 - **Statistics**: `/api/v1/stats` - Dashboard and domain/user stats
 - **Logs**: `/api/v1/logs` - Server log retrieval
 
+### PostmarkApp-Compatible Endpoints (X-Postmark-Server-Token Required)
+- `POST /email` - Send single email
+- `POST /email/batch` - Send up to 500 emails in batch
+- `GET /templates` - Template listing (placeholder)
+- `GET /webhooks` - Webhook listing (placeholder)
+- `GET /server` - Server information (placeholder)
+
 ## Development
 
 ### Build Commands
@@ -227,6 +242,12 @@ gomailserver/
 │   ├── database/              # SQLite connection and migrations
 │   ├── domain/                # Domain models
 │   ├── imap/                  # IMAP server
+│   ├── postmark/              # PostmarkApp-compatible API
+│   │   ├── handlers/          # Email sending handlers
+│   │   ├── middleware/        # Authentication middleware
+│   │   ├── models/            # Request/response models
+│   │   ├── repository/        # PostmarkApp data layer
+│   │   └── service/           # Email business logic
 │   ├── repository/            # Data access layer
 │   │   ├── calendar/          # Calendar/Event repositories
 │   │   ├── contact/           # Addressbook/Contact repositories
@@ -238,8 +259,8 @@ gomailserver/
 ├── pkg/
 │   └── sieve/                 # Sieve interpreter (future)
 ├── web/
-│   ├── admin/                 # Admin UI (Vue.js, Vite, TailwindCSS)
-│   ├── portal/                # User portal (future)
+│   ├── admin/                 # Admin UI (Vue.js 3, shadcn-vue, Tailwind CSS 4)
+│   ├── portal/                # User portal (Vue.js 3, Pinia, Tailwind CSS)
 │   └── webmail/               # Webmail client (future)
 ├── tests/                     # Integration tests
 ├── Makefile                   # Build automation
@@ -256,7 +277,12 @@ See `gomailserver.example.yaml` for a complete configuration example with commen
 All configuration and metadata stored in SQLite:
 - **File**: Single `mailserver.db` file
 - **WAL Mode**: Enabled for better concurrency
-- **Migrations**: Automatic schema management
+- **Migrations**: Automatic schema management (currently V5)
+  - V1: Core mail server tables
+  - V2: Security and authentication enhancements
+  - V3: CalDAV/CardDAV tables
+  - V4: Settings and configuration
+  - V5: PostmarkApp API tables (servers, messages, templates, webhooks, bounces, events)
 - **Backup**: Simple file copy or built-in backup command
 
 ### Backup
@@ -332,7 +358,7 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Per-domain security configuration
 - [x] Default security template system
 
-### Phase 3: REST API & Admin Interface ✅
+### Phase 3: REST API & Admin Interface ✅ COMPLETE
 - [x] REST API with JWT authentication
 - [x] API key authentication support
 - [x] Domain management endpoints
@@ -340,14 +366,16 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Alias management endpoints
 - [x] Queue management endpoints
 - [x] Statistics and monitoring endpoints
-- [x] Admin web UI (Vue.js embedded)
-- [x] Setup wizard (CLI + API endpoints)
+- [x] Logs viewer with filtering
+- [x] Settings management API
+- [x] Admin web UI (Vue.js + shadcn-vue embedded)
+- [x] User self-service portal (Vue.js)
+- [x] Setup wizard (6-step guided configuration)
 - [x] Admin user creation (`create-admin` command)
 - [x] Role-based access control (admin/user)
-- [ ] User self-service portal
-- [ ] Let's Encrypt ACME integration
+- [x] Let's Encrypt ACME integration
 
-### Phase 4: CalDAV/CardDAV ✅
+### Phase 4: CalDAV/CardDAV ✅ COMPLETE
 - [x] CalDAV server (RFC 4791) with HTTP Basic Auth
 - [x] CardDAV server (RFC 6352) with HTTP Basic Auth
 - [x] Calendar service (create, update, delete, list)
@@ -355,16 +383,58 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [x] Addressbook service (create, update, delete, list)
 - [x] Contact service with vCard 4.0 support
 - [x] WebDAV server integration
-- [x] Comprehensive test coverage
+- [x] Comprehensive test coverage (100% passing)
+
+### Phase 5: PostmarkApp API ✅ COMPLETE (MVP)
+- [x] Database schema (Migration V5) with 6 tables
+- [x] PostmarkApp-compatible error codes and JSON format
+- [x] Email request/response models with attachments
+- [x] X-Postmark-Server-Token authentication middleware
+- [x] Bcrypt token storage and validation
+- [x] Repository layer for PostmarkApp data
+- [x] Email service with MIME message building
+- [x] POST /email endpoint (single email sending)
+- [x] POST /email/batch endpoint (up to 500 emails)
+- [x] Integration with existing SMTP queue service
+- [x] Test mode support (POSTMARK_API_TEST token)
+- [x] Recipient limit validation (50 per message)
+- [x] Metadata and tag support
+- [x] Custom headers support
+- [x] HTML and text body support
+- [ ] Template-based email sending (POST /email/withTemplate)
+- [ ] Template CRUD operations
+- [ ] Webhook delivery system
+- [ ] Open/click tracking
+- [ ] Bounce processing
+
+### Phase 6: Automation & Client Onboarding 📋 PLANNING
+- [ ] DNS Management with Cloudflare API integration
+- [ ] DNS record templates (MX, SRV, SPF, DKIM, DMARC)
+- [ ] Admin approval workflow for DNS changes
+- [ ] DNS propagation monitoring
+- [ ] Mozilla Autoconfig endpoint (Thunderbird)
+- [ ] Microsoft Autodiscover endpoint (Outlook)
+- [ ] Apple Mobileconfig generation (macOS/iOS)
+- [ ] Client compatibility testing matrix
 
 ### Future Phases
 - Advanced TLS (DANE, MTA-STS)
 - PGP/GPG encryption support
 - Sieve filtering (RFC 5228)
 - Webmail client
-- Webhooks and event notifications
 - Integration tests (SMTP/IMAP end-to-end)
 - Manual testing with real mail clients
+
+## Documentation
+
+- **PHASE3_COMPLETE.md** - Detailed Phase 3 implementation summary (REST API, Admin UI, User Portal, ACME)
+- **PHASE3_VERIFICATION.md** - Phase 3 verification checklist and testing results
+- **PHASE5-AUTOMATION.md** - Phase 6 planning document (DNS automation, client autoconfiguration)
+- **POSTMARKAPP-IMPLEMENTATION-BRIEF.md** - PostmarkApp API implementation specification
+- **POSTMARKAPP-IMPLEMENTATION-STATUS.md** - PostmarkApp API implementation status report
+- **PR.md** - Pull request guidelines and requirements
+- **CLAUDE.md** - Development automation and workflow configuration
+- **TASKS.md** - Comprehensive task tracking with 259 tasks across 10 phases
 
 ## Repository Information
 

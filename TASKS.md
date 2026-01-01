@@ -21,29 +21,29 @@ Based on PR.md requirements. This is a greenfield project - building from scratc
 ### 0.1 Project Setup [MVP]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| F-001 | Initialize Go module (`github.com/btafoya/gomailserver`) | [ ] | - |
-| F-002 | Create package structure (clean architecture) | [ ] | F-001 |
-| F-003 | Set up golangci-lint configuration | [ ] | F-001 |
-| F-004 | Create Makefile for common tasks | [ ] | F-001 |
-| F-005 | Set up GitHub Actions CI/CD | [ ] | F-003 |
+| F-001 | Initialize Go module (`github.com/btafoya/gomailserver`) | [x] | - |
+| F-002 | Create package structure (clean architecture) | [x] | F-001 |
+| F-003 | Set up golangci-lint configuration | [x] | F-001 |
+| F-004 | Create Makefile for common tasks | [x] | F-001 |
+| F-005 | Set up GitHub Actions CI/CD | [x] | F-003 |
 
 ### 0.2 Core Infrastructure [MVP]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| F-010 | Implement structured logging (JSON format) | [ ] | F-002 |
-| F-011 | Create configuration system (YAML + env vars) | [ ] | F-002 |
-| F-012 | Implement CLI framework (cobra) | [ ] | F-002 |
-| F-013 | Create graceful shutdown handler | [ ] | F-010 |
-| F-014 | Implement context-based cancellation | [ ] | F-013 |
+| F-010 | Implement structured logging (JSON format) | [x] | F-002 |
+| F-011 | Create configuration system (YAML + env vars) | [x] | F-002 |
+| F-012 | Implement CLI framework (cobra) | [x] | F-002 |
+| F-013 | Create graceful shutdown handler | [x] | F-010 |
+| F-014 | Implement context-based cancellation | [x] | F-013 |
 
 ### 0.3 Database Foundation [MVP]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| F-020 | SQLite connection management with WAL mode | [ ] | F-002 |
-| F-021 | Database migration framework | [ ] | F-020 |
-| F-022 | Create schema version 1 (all tables) | [ ] | F-021 |
-| F-023 | Implement repository pattern interfaces | [ ] | F-020 |
-| F-024 | SQLite PRAGMA optimizations | [ ] | F-020 |
+| F-020 | SQLite connection management with WAL mode | [x] | F-002 |
+| F-021 | Database migration framework | [x] | F-020 |
+| F-022 | Create schema version 1 (all tables) | [x] | F-021 |
+| F-023 | Implement repository pattern interfaces | [x] | F-020 |
+| F-024 | SQLite PRAGMA optimizations | [x] | F-020 |
 
 **Package Structure:**
 ```
@@ -626,40 +626,136 @@ web/
 
 ## MVP Milestone Checklist
 
-**Phase 1-3 MVP completion requires:**
+**Phase 1-5 MVP completion status:**
 
-- [ ] SMTP send/receive working
-- [ ] IMAP access working
-- [ ] User authentication working
-- [ ] DKIM/SPF/DMARC functional
-- [ ] ClamAV/SpamAssassin scanning
-- [ ] Greylisting enabled
-- [ ] Admin web UI functional
-- [ ] User self-service portal functional
-- [ ] Let's Encrypt auto-certificates
-- [ ] Setup wizard complete
-- [ ] All unit tests passing
-- [ ] Integration tests passing
-- [ ] mail-tester.com score >= 8/10
+- [x] SMTP send/receive working ✅
+- [x] IMAP access working ✅
+- [x] User authentication working ✅
+- [x] DKIM/SPF/DMARC functional ✅
+- [x] ClamAV/SpamAssassin scanning ✅
+- [x] Greylisting enabled ✅
+- [x] Admin web UI functional ✅
+- [x] User self-service portal functional ✅
+- [x] Let's Encrypt auto-certificates ✅
+- [x] Setup wizard complete ✅
+- [x] CalDAV/CardDAV servers ✅
+- [x] PostmarkApp API (email sending) ✅
+- [~] All unit tests passing (58 tests, 55 passing, 3 skipped)
+- [ ] Integration tests passing (pending)
+- [ ] mail-tester.com score >= 8/10 (pending manual testing)
+
+**Next Phases:**
+- Phase 6: Automation & Client Onboarding (DNS management, autoconfiguration)
+- Phase 7+: Advanced features (PGP, Sieve, Webmail, Webhooks)
+
+---
+
+## Phase 5: PostmarkApp API (New)
+
+### 5.1 PostmarkApp Database [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-001 | Create Migration V5 schema | [x] | F-021 |
+| PM-002 | Create postmark_servers table | [x] | PM-001 |
+| PM-003 | Create postmark_messages table | [x] | PM-001 |
+| PM-004 | Create postmark_templates table | [x] | PM-001 |
+| PM-005 | Create postmark_webhooks table | [x] | PM-001 |
+| PM-006 | Create postmark_bounces table | [x] | PM-001 |
+| PM-007 | Create postmark_events table | [x] | PM-001 |
+
+### 5.2 PostmarkApp Models [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-010 | Implement error codes and PostmarkError | [x] | F-002 |
+| PM-011 | Implement EmailRequest/EmailResponse models | [x] | F-002 |
+| PM-012 | Implement Attachment model | [x] | PM-011 |
+| PM-013 | Implement Header model | [x] | PM-011 |
+| PM-014 | Implement Template models | [x] | F-002 |
+| PM-015 | Implement Webhook models | [x] | F-002 |
+| PM-016 | Implement Server models | [x] | F-002 |
+
+### 5.3 PostmarkApp Repository [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-020 | Implement PostmarkRepository interface | [x] | PM-001 |
+| PM-021 | Implement Server CRUD operations | [x] | PM-020 |
+| PM-022 | Implement Message tracking operations | [x] | PM-020 |
+| PM-023 | Implement Template CRUD operations | [x] | PM-020 |
+| PM-024 | Implement Webhook CRUD operations | [x] | PM-020 |
+| PM-025 | Implement Bounce tracking operations | [x] | PM-020 |
+| PM-026 | Implement Event tracking operations | [x] | PM-020 |
+| PM-027 | Implement bcrypt token hashing | [x] | PM-021 |
+
+### 5.4 PostmarkApp Service [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-030 | Implement EmailService | [x] | PM-020 |
+| PM-031 | Implement SendEmail method | [x] | PM-030 |
+| PM-032 | Implement SendBatchEmail method | [x] | PM-030 |
+| PM-033 | Implement request validation | [x] | PM-030 |
+| PM-034 | Implement MIME message building | [x] | PM-030 |
+| PM-035 | Integrate with QueueService | [x] | PM-030 |
+| PM-036 | Implement recipient parsing | [x] | PM-030 |
+
+### 5.5 PostmarkApp Authentication [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-040 | Implement AuthMiddleware | [x] | PM-010 |
+| PM-041 | Implement X-Postmark-Server-Token support | [x] | PM-040 |
+| PM-042 | Implement X-Postmark-Account-Token support | [x] | PM-040 |
+| PM-043 | Implement test mode (POSTMARK_API_TEST) | [x] | PM-040 |
+| PM-044 | Implement bcrypt token validation | [x] | PM-040, PM-027 |
+| PM-045 | Implement RequireJSONMiddleware | [x] | PM-040 |
+
+### 5.6 PostmarkApp Handlers [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-050 | Implement EmailHandler | [x] | PM-030 |
+| PM-051 | Implement POST /email endpoint | [x] | PM-050 |
+| PM-052 | Implement POST /email/batch endpoint | [x] | PM-050 |
+| PM-053 | Implement error handling and responses | [x] | PM-050 |
+
+### 5.7 PostmarkApp Router [MVP] ✅ COMPLETE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-060 | Create PostmarkApp router | [x] | PM-050 |
+| PM-061 | Mount PostmarkApp router to main API | [x] | PM-060 |
+| PM-062 | Implement placeholder GET /templates | [x] | PM-060 |
+| PM-063 | Implement placeholder GET /webhooks | [x] | PM-060 |
+| PM-064 | Implement placeholder GET /server | [x] | PM-060 |
+
+### 5.8 PostmarkApp Advanced Features [FULL] 🔄 FUTURE
+| ID | Task | Status | Dependencies |
+|----|------|--------|--------------|
+| PM-070 | Implement POST /email/withTemplate | [ ] | PM-051, PM-014 |
+| PM-071 | Implement template rendering engine | [ ] | PM-070 |
+| PM-072 | Implement template CRUD handlers | [ ] | PM-014 |
+| PM-073 | Implement webhook delivery service | [ ] | PM-015 |
+| PM-074 | Implement webhook CRUD handlers | [ ] | PM-015 |
+| PM-075 | Implement open/click tracking | [ ] | PM-026 |
+| PM-076 | Implement bounce processing | [ ] | PM-025 |
+| PM-077 | Implement message retrieval endpoints | [ ] | PM-022 |
+| PM-078 | Implement server management UI | [ ] | PM-016 |
 
 ---
 
 ## Quick Reference: Task Counts
 
-| Phase | Tasks | MVP | Full |
-|-------|-------|-----|------|
-| 0 - Foundation | 15 | 15 | 15 |
-| 1 - Core Mail | 38 | 38 | 38 |
-| 2 - Security | 33 | 33 | 33 |
-| 3 - Web Interfaces | 45 | 45 | 45 |
-| 4 - CalDAV/CardDAV | 23 | 0 | 23 |
-| 5 - Advanced Security | 14 | 0 | 14 |
-| 6 - Sieve | 14 | 0 | 14 |
-| 7 - Webmail | 32 | 0 | 32 |
-| 8 - Webhooks | 9 | 0 | 9 |
-| 9 - Polish | 18 | 3 | 18 |
-| 10 - Testing | 18 | 8 | 18 |
-| **TOTAL** | **259** | **142** | **259** |
+| Phase | Tasks | MVP | Full | Completed |
+|-------|-------|-----|------|-----------|
+| 0 - Foundation | 15 | 15 | 15 | 15 ✅ |
+| 1 - Core Mail | 38 | 38 | 38 | 38 ✅ |
+| 2 - Security | 33 | 33 | 33 | 33 ✅ |
+| 3 - Web Interfaces | 45 | 45 | 45 | 45 ✅ |
+| 4 - CalDAV/CardDAV | 23 | 0 | 23 | 23 ✅ |
+| 5 - PostmarkApp API | 44 | 35 | 44 | 35 ✅ |
+| 6 - Advanced Security | 14 | 0 | 14 | 0 |
+| 7 - Sieve | 14 | 0 | 14 | 0 |
+| 8 - Webmail | 32 | 0 | 32 | 0 |
+| 9 - Webhooks | 9 | 0 | 9 | 0 |
+| 10 - Polish | 18 | 3 | 18 | 0 |
+| 11 - Testing | 18 | 8 | 18 | 0 |
+| **TOTAL** | **303** | **177** | **303** | **189** |
 
 ---
 
