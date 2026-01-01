@@ -1,0 +1,35 @@
+database:
+  path: "./mailserver.db"
+  max_connections: 10
+
+smtp:
+  hostname: "localhost"
+  submission_port: 2587
+  relay_port: 2525
+  smtps_port: 2465
+  max_message_size: 26214400
+
+imap:
+  hostname: "localhost"
+  port: 2143
+  imaps_port: 2993
+
+tls:
+  mode: "self-signed"
+  cert_file: ""
+  key_file: ""
+
+logger:
+  level: "info"
+  format: "json"
+
+clamav:
+  enabled: false
+  socket_path: "/var/run/clamav/clamd.ctl"
+  timeout: 30
+
+spamassassin:
+  enabled: false
+  host: "localhost"
+  port: 783
+  timeout: 30
