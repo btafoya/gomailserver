@@ -73,3 +73,4 @@ web/*/.output/
 acme/
 
 .playwright-mcp/
+internal/webmail/dist/_nuxt/

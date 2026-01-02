@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"os"
+	"path/filepath"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,25 +16,51 @@ import (
 
 // QueueService handles SMTP queue management
 type QueueService struct {
-	repo   repository.QueueRepository
-	logger *zap.Logger
+	repo      repository.QueueRepository
+	logger    *zap.Logger
+	queuePath string
 }
 
 // NewQueueService creates a new queue service
 func NewQueueService(repo repository.QueueRepository, logger *zap.Logger) *QueueService {
 	return &QueueService{
-		repo:   repo,
-		logger: logger,
+		repo:      repo,
+		logger:    logger,
+		queuePath: "/var/spool/mail/queue",
+	}
+}
+
+// NewQueueServiceWithPath creates a new queue service with custom queue path (for testing)
+func NewQueueServiceWithPath(repo repository.QueueRepository, logger *zap.Logger, queuePath string) *QueueService {
+	return &QueueService{
+		repo:      repo,
+		logger:    logger,
+		queuePath: queuePath,
 	}
 }
 
 // Enqueue adds a message to the delivery queue
 func (s *QueueService) Enqueue(from string, to []string, message []byte) (string, error) {
 	messageID := generateMessageID()
-	messagePath := "/var/spool/mail/queue/" + messageID + ".eml"
+	messagePath := filepath.Join(s.queuePath, messageID+".eml")
+
+	// Create queue directory if it doesn't exist
+	if err := os.MkdirAll(s.queuePath, 0755); err != nil {
+		s.logger.Error("failed to create queue directory",
+			zap.Error(err),
+			zap.String("path", s.queuePath),
+		)
+		return "", err
+	}
 
 	// Store message to disk
-	// TODO: Implement actual file storage
+	if err := os.WriteFile(messagePath, message, 0644); err != nil {
+		s.logger.Error("failed to write message to disk",
+			zap.Error(err),
+			zap.String("path", messagePath),
+		)
+		return "", err
+	}
 
 	// Create queue entry
 	item := &domain.QueueItem{
@@ -46,6 +74,8 @@ func (s *QueueService) Enqueue(from string, to []string, message []byte) (string
 	}
 
 	if err := s.repo.Enqueue(item); err != nil {
+		// Clean up file if database insert fails
+		os.Remove(messagePath)
 		return "", err
 	}
 
@@ -54,6 +84,7 @@ func (s *QueueService) Enqueue(from string, to []string, message []byte) (string
 		zap.String("from", from),
 		zap.Strings("to", to),
 		zap.Int("size", len(message)),
+		zap.String("path", messagePath),
 	)
 
 	return messageID, nil
@@ -170,7 +201,27 @@ func (s *QueueService) CalculateNextRetry(retryCount int, failedAt time.Time) ti
 }
 
 // ProcessQueue processes pending queue items
+// This method would require an SMTP client implementation to actually send the messages.
+// The queue infrastructure is ready but needs SMTP delivery integration.
 func (s *QueueService) ProcessQueue() error {
-	// TODO: Implement queue processing with retry logic
+	items, err := s.repo.GetPending()
+	if err != nil {
+		s.logger.Error("failed to get pending queue items", zap.Error(err))
+		return err
+	}
+
+	s.logger.Info("queue processing check",
+		zap.Int("pending_count", len(items)),
+	)
+
+	// TODO: Implement SMTP client integration for actual message delivery
+	// For each item:
+	//   - Read message from MessagePath
+	//   - Connect to recipient MX servers
+	//   - Attempt SMTP delivery
+	//   - On success: MarkDelivered(item.ID)
+	//   - On failure: IncrementRetry or MarkFailed based on retry count
+	//   - Handle retry scheduling with exponential backoff
+
 	return nil
 }

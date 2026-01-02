@@ -50,6 +50,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV5Up,
 			Down:        migrationV5Down,
 		},
+		{
+			Version:     6,
+			Description: "Add Advanced Security tables: audit logs, PGP keys, DANE cache, MTA-STS cache, TLS reports",
+			Up:          migrationV6Up,
+			Down:        migrationV6Down,
+		},
 	}
 }
 

@@ -65,10 +65,11 @@ func (m *mockQueueRepository) Delete(id int64) error {
 
 func TestQueueService_Enqueue(t *testing.T) {
 	logger := zap.NewNop()
+	tmpDir := t.TempDir()
 
 	t.Run("enqueues message successfully", func(t *testing.T) {
 		repo := &mockQueueRepository{}
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
 
 		_, err := svc.Enqueue("sender@example.com", []string{"recipient@example.com"}, []byte("test message data"))
 		if err != nil {
@@ -84,7 +85,7 @@ func TestQueueService_Enqueue(t *testing.T) {
 				return nil
 			},
 		}
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
 
 		recipients := []string{"user1@example.com", "user2@example.com", "user3@example.com"}
 		_, err := svc.Enqueue("sender@example.com", recipients, []byte("test message data"))
@@ -129,7 +130,7 @@ func TestQueueService_Enqueue(t *testing.T) {
 				return errors.New("database error")
 			},
 		}
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
 
 		_, err := svc.Enqueue("sender@example.com", []string{"recipient@example.com"}, []byte("test data"))
 

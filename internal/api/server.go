@@ -48,6 +48,12 @@ func NewServer(
 	queueService := service.NewQueueService(queueRepo, logger)
 	setupService := service.NewSetupService(db, userRepo, domainRepo, logger)
 	settingsService := service.NewSettingsService(fullConfig, configPath, logger)
+	pgpService := service.NewPGPService(db, logger)
+	auditService := service.NewAuditService(db, logger)
+
+	// Wire up cross-service dependencies for webmail
+	messageService.SetQueueService(queueService)
+	messageService.SetMailboxService(mailboxService)
 
 	// Create router with all dependencies
 	router := NewRouter(RouterConfig{
@@ -60,6 +66,8 @@ func NewServer(
 		QueueService:    queueService,
 		SetupService:    setupService,
 		SettingsService: settingsService,
+		PGPService:      pgpService,
+		AuditService:    auditService,
 		APIKeyRepo:      apiKeyRepo,
 		RateLimitRepo:   rateLimitRepo,
 		DB:              db.DB,

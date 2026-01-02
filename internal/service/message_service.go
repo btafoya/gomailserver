@@ -29,9 +29,11 @@ const (
 
 // MessageService handles message operations
 type MessageService struct {
-	repo        repository.MessageRepository
-	logger      *zap.Logger
-	storagePath string
+	repo           repository.MessageRepository
+	logger         *zap.Logger
+	storagePath    string
+	queueService   *QueueService
+	mailboxService *MailboxService
 }
 
 // NewMessageService creates a new message service
@@ -41,6 +43,16 @@ func NewMessageService(repo repository.MessageRepository, storagePath string, lo
 		logger:      logger,
 		storagePath: storagePath,
 	}
+}
+
+// SetQueueService sets the queue service dependency (optional, for sending)
+func (s *MessageService) SetQueueService(queueService *QueueService) {
+	s.queueService = queueService
+}
+
+// SetMailboxService sets the mailbox service dependency (optional, for drafts/sent)
+func (s *MessageService) SetMailboxService(mailboxService *MailboxService) {
+	s.mailboxService = mailboxService
 }
 
 // Store stores a message with hybrid storage strategy

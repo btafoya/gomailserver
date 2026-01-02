@@ -408,6 +408,7 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [ ] Bounce processing
 
 ### Phase 6: Automation & Client Onboarding 📋 PLANNING
+- [ ] Webmail client
 - [ ] DNS Management with Cloudflare API integration
 - [ ] DNS record templates (MX, SRV, SPF, DKIM, DMARC)
 - [ ] Admin approval workflow for DNS changes
@@ -421,7 +422,6 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - Advanced TLS (DANE, MTA-STS)
 - PGP/GPG encryption support
 - Sieve filtering (RFC 5228)
-- Webmail client
 - Integration tests (SMTP/IMAP end-to-end)
 - Manual testing with real mail clients
 

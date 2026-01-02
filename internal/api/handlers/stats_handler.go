@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/btafoya/gomailserver/internal/api/middleware"
+	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -15,6 +16,7 @@ type StatsHandler struct {
 	domainService *service.DomainService
 	userService   *service.UserService
 	queueService  *service.QueueService
+	aliasService  *service.AliasService
 	logger        *zap.Logger
 }
 
@@ -23,12 +25,14 @@ func NewStatsHandler(
 	domainService *service.DomainService,
 	userService *service.UserService,
 	queueService *service.QueueService,
+	aliasService *service.AliasService,
 	logger *zap.Logger,
 ) *StatsHandler {
 	return &StatsHandler{
 		domainService: domainService,
 		userService:   userService,
 		queueService:  queueService,
+		aliasService:  aliasService,
 		logger:        logger,
 	}
 }
@@ -130,19 +134,70 @@ type UserStats struct {
 
 // Dashboard retrieves dashboard statistics
 func (h *StatsHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement actual statistics gathering from database
-	// For now, return placeholder data
+	ctx := r.Context()
+
+	// Get all domains
+	domains, err := h.domainService.List(ctx)
+	if err != nil {
+		h.logger.Error("Failed to list domains for dashboard", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve dashboard statistics")
+		return
+	}
+
+	totalDomains := int64(len(domains))
+	activeDomains := int64(0)
+	for _, d := range domains {
+		if d.Status == "active" {
+			activeDomains++
+		}
+	}
+
+	// Get all users
+	users, err := h.userService.ListAll(ctx)
+	if err != nil {
+		h.logger.Error("Failed to list users for dashboard", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve dashboard statistics")
+		return
+	}
+
+	totalUsers := int64(len(users))
+	activeUsers := int64(0)
+	var totalStorageUsed, totalStorageQuota int64
+	for _, u := range users {
+		if u.Status == "active" {
+			activeUsers++
+		}
+		totalStorageUsed += u.UsedQuota
+		totalStorageQuota += u.Quota
+	}
+
+	// Get queue statistics
+	queueItems, err := h.queueService.GetPendingItems(ctx)
+	if err != nil {
+		h.logger.Warn("Failed to get queue items for dashboard", zap.Error(err))
+		queueItems = []*domain.QueueItem{}
+	}
+
+	queuedMessages := int64(0)
+	failedMessages := int64(0)
+	for _, item := range queueItems {
+		if item.Status == "pending" || item.Status == "retry" {
+			queuedMessages++
+		} else if item.Status == "failed" {
+			failedMessages++
+		}
+	}
 
 	stats := DashboardStats{
-		TotalDomains:      0,
-		ActiveDomains:     0,
-		TotalUsers:        0,
-		ActiveUsers:       0,
-		QueuedMessages:    0,
-		FailedMessages:    0,
-		TotalStorageUsed:  0,
-		TotalStorageQuota: 0,
-		MessagesToday:     0,
+		TotalDomains:      totalDomains,
+		ActiveDomains:     activeDomains,
+		TotalUsers:        totalUsers,
+		ActiveUsers:       activeUsers,
+		QueuedMessages:    queuedMessages,
+		FailedMessages:    failedMessages,
+		TotalStorageUsed:  totalStorageUsed,
+		TotalStorageQuota: totalStorageQuota,
+		MessagesToday:     0, // Would require message repository with time-based queries
 		MessagesThisWeek:  0,
 		MessagesThisMonth: 0,
 		RecentActivity:    []ActivityItem{},
@@ -153,8 +208,8 @@ func (h *StatsHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 			DatabaseStatus: "connected",
 			SMTPStatus:     "running",
 			IMAPStatus:     "running",
-			QueueDepth:     0,
-			QueueHealthy:   true,
+			QueueDepth:     queuedMessages,
+			QueueHealthy:   queuedMessages < 100,
 			DiskUsage:      0.0,
 			MemoryUsage:    0.0,
 			CPUUsage:       0.0,
@@ -169,6 +224,7 @@ func (h *StatsHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 // Domain retrieves statistics for a specific domain
 func (h *StatsHandler) Domain(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -177,28 +233,88 @@ func (h *StatsHandler) Domain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get domain
-	domain, err := h.domainService.GetByID(r.Context(), id)
+	domainRecord, err := h.domainService.GetByID(ctx, id)
 	if err != nil {
 		h.logger.Error("Failed to get domain", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "Domain not found")
 		return
 	}
 
-	// TODO: Implement actual statistics gathering
+	// Get all users and filter by domain
+	allUsers, err := h.userService.ListAll(ctx)
+	if err != nil {
+		h.logger.Error("Failed to list users for domain stats", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve domain statistics")
+		return
+	}
+
+	var totalUsers, activeUsers, disabledUsers int64
+	var totalStorageUsed, totalStorageQuota int64
+	var topUsers []UserStat
+
+	for _, u := range allUsers {
+		if u.DomainID != id {
+			continue
+		}
+
+		totalUsers++
+		if u.Status == "active" {
+			activeUsers++
+		} else {
+			disabledUsers++
+		}
+		totalStorageUsed += u.UsedQuota
+		totalStorageQuota += u.Quota
+
+		// Build top users list
+		quotaPercent := 0.0
+		if u.Quota > 0 {
+			quotaPercent = (float64(u.UsedQuota) / float64(u.Quota)) * 100
+		}
+		topUsers = append(topUsers, UserStat{
+			UserID:       u.ID,
+			Email:        u.Email,
+			StorageUsed:  u.UsedQuota,
+			MessageCount: 0, // Would require message repository with user queries
+			QuotaPercent: quotaPercent,
+		})
+	}
+
+	// Sort top users by storage used (descending) and limit to top 10
+	if len(topUsers) > 1 {
+		for i := 0; i < len(topUsers)-1; i++ {
+			for j := i + 1; j < len(topUsers); j++ {
+				if topUsers[j].StorageUsed > topUsers[i].StorageUsed {
+					topUsers[i], topUsers[j] = topUsers[j], topUsers[i]
+				}
+			}
+		}
+	}
+	if len(topUsers) > 10 {
+		topUsers = topUsers[:10]
+	}
+
+	// Get aliases for this domain
+	aliases, err := h.aliasService.ListByDomain(ctx, id)
+	if err != nil {
+		h.logger.Warn("Failed to get aliases for domain stats", zap.Error(err))
+		aliases = []*domain.Alias{}
+	}
+
 	stats := DomainStats{
-		DomainID:          domain.ID,
-		DomainName:        domain.Name,
-		Status:            domain.Status,
-		TotalUsers:        0,
-		ActiveUsers:       0,
-		DisabledUsers:     0,
-		TotalStorageUsed:  0,
-		TotalStorageQuota: 0,
-		TotalAliases:      0,
-		MessagesToday:     0,
+		DomainID:          domainRecord.ID,
+		DomainName:        domainRecord.Name,
+		Status:            domainRecord.Status,
+		TotalUsers:        totalUsers,
+		ActiveUsers:       activeUsers,
+		DisabledUsers:     disabledUsers,
+		TotalStorageUsed:  totalStorageUsed,
+		TotalStorageQuota: totalStorageQuota,
+		TotalAliases:      int64(len(aliases)),
+		MessagesToday:     0, // Would require message repository with time-based queries
 		MessagesThisWeek:  0,
 		MessagesThisMonth: 0,
-		TopUsers:          []UserStat{},
+		TopUsers:          topUsers,
 	}
 
 	middleware.RespondSuccess(w, stats, "Domain statistics retrieved successfully")
@@ -206,6 +322,7 @@ func (h *StatsHandler) Domain(w http.ResponseWriter, r *http.Request) {
 
 // User retrieves statistics for a specific user
 func (h *StatsHandler) User(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -221,23 +338,31 @@ func (h *StatsHandler) User(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get domain name
+	domainName := ""
+	domain, err := h.domainService.GetByID(ctx, user.DomainID)
+	if err != nil {
+		h.logger.Warn("Failed to get domain for user stats", zap.Int64("domain_id", user.DomainID), zap.Error(err))
+	} else {
+		domainName = domain.Name
+	}
+
 	// Calculate quota percentage
 	quotaPercent := 0.0
 	if user.Quota > 0 {
 		quotaPercent = (float64(user.UsedQuota) / float64(user.Quota)) * 100
 	}
 
-	// TODO: Implement actual statistics gathering
 	stats := UserStats{
 		UserID:            user.ID,
 		Email:             user.Email,
 		DomainID:          user.DomainID,
-		DomainName:        "", // TODO: Get domain name
+		DomainName:        domainName,
 		Status:            user.Status,
 		StorageUsed:       user.UsedQuota,
 		StorageQuota:      user.Quota,
 		QuotaPercent:      quotaPercent,
-		TotalMessages:     0,
+		TotalMessages:     0, // Would require message repository with user queries
 		MessagesToday:     0,
 		MessagesThisWeek:  0,
 		MessagesThisMonth: 0,

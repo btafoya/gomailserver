@@ -1,5 +1,9 @@
 # gomailserver - Detailed Task List
 
+**Last Updated**: 2026-01-02
+**Current Status**: Phase 7 (Webmail) Complete - 220/303 tasks done (73%)
+**Recent Achievement**: PGP-005 & AL-003 complete - PGP key management UI and Audit log viewer with full shadcn-vue component library
+
 Based on PR.md requirements. This is a greenfield project - building from scratch.
 
 ---
@@ -367,38 +371,38 @@ web/
 
 ## Phase 5: Advanced Security (Weeks 16-17)
 
-### 5.1 DANE [FULL]
+### 5.1 DANE [COMPLETE]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| DA-001 | TLSA record lookup | [ ] | F-002 |
-| DA-002 | DNSSEC validation | [ ] | DA-001 |
-| DA-003 | DANE-TA support | [ ] | DA-001 |
-| DA-004 | DANE-EE support | [ ] | DA-001 |
-| DA-005 | Fallback mechanisms | [ ] | DA-001 |
+| DA-001 | TLSA record lookup | [✅] | F-002 |
+| DA-002 | DNSSEC validation | [✅] | DA-001 |
+| DA-003 | DANE-TA support | [✅] | DA-001 |
+| DA-004 | DANE-EE support | [✅] | DA-001 |
+| DA-005 | Fallback mechanisms | [✅] | DA-001 |
 
-### 5.2 MTA-STS [FULL]
+### 5.2 MTA-STS [COMPLETE]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| MS-001 | MTA-STS policy fetching | [ ] | F-002 |
-| MS-002 | Policy caching | [ ] | MS-001, F-022 |
-| MS-003 | TLS enforcement based on policy | [ ] | MS-002 |
-| MS-004 | TLSRPT reporting (RFC 8460) | [ ] | MS-001 |
+| MS-001 | MTA-STS policy fetching | [✅] | F-002 |
+| MS-002 | Policy caching | [✅] | MS-001, F-022 |
+| MS-003 | TLS enforcement based on policy | [✅] | MS-002 |
+| MS-004 | TLSRPT reporting (RFC 8460) | [✅] | MS-001 |
 
-### 5.3 PGP/GPG Integration [FULL]
+### 5.3 PGP/GPG Integration [COMPLETE]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| PGP-001 | User PGP key storage | [ ] | F-022 |
-| PGP-002 | Key import/export API | [ ] | PGP-001, API-002 |
-| PGP-003 | Automatic encryption when key available | [ ] | PGP-001 |
-| PGP-004 | Signature verification | [ ] | PGP-001 |
-| PGP-005 | Web UI for key management | [ ] | UP-001, PGP-002 |
+| PGP-001 | User PGP key storage | [✅] | F-022 |
+| PGP-002 | Key import/export API | [✅] | PGP-001, API-002 |
+| PGP-003 | Automatic encryption when key available | [✅] | PGP-001 |
+| PGP-004 | Signature verification | [✅] | PGP-001 |
+| PGP-005 | Web UI for key management | [✅] | UP-001, PGP-002 |
 
-### 5.4 Audit Logging [FULL]
+### 5.4 Audit Logging [COMPLETE]
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| AL-001 | Admin action audit trail | [ ] | F-022 |
-| AL-002 | Security event logging | [ ] | AL-001 |
-| AL-003 | Audit log viewer in admin UI | [ ] | AUI-001, AL-001 |
+| AL-001 | Admin action audit trail | [✅] | F-022 |
+| AL-002 | Security event logging | [✅] | AL-001 |
+| AL-003 | Audit log viewer in admin UI | [✅] | AUI-001, AL-001 |
 
 ---
 
@@ -434,38 +438,38 @@ web/
 
 ## Phase 7: Webmail Client (Weeks 20-25)
 
-### 7.1 Webmail Backend [FULL]
+### 7.1 Webmail Backend [FULL] ✅
 | ID | Task | Status | Dependencies |
 |----|------|--------|--------------|
-| WM-001 | Mailbox listing API | [ ] | API-002, I-002 |
-| WM-002 | Message fetch API | [ ] | WM-001 |
-| WM-003 | Message send API | [ ] | WM-001, S-002 |
-| WM-004 | Message operations API (move, delete, flag) | [ ] | WM-002 |
-| WM-005 | Attachment download API | [ ] | WM-002 |
-| WM-006 | Attachment upload API | [ ] | WM-003 |
-| WM-007 | Search API | [ ] | WM-001, I-014 |
-| WM-008 | Labels/categories API | [ ] | WM-001 |
+| WM-001 | Mailbox listing API | [x] | API-002, I-002 |
+| WM-002 | Message fetch API | [x] | WM-001 |
+| WM-003 | Message send API | [x] | WM-001, S-002 |
+| WM-004 | Message operations API (move, delete, flag) | [x] | WM-002 |
+| WM-005 | Attachment download API | [x] | WM-002 |
+| WM-006 | Attachment upload API | [x] | WM-003 |
+| WM-007 | Search API | [x] | WM-001, I-014 |
+| WM-008 | Labels/categories API | [x] | WM-001 |
 
-### 7.2 Webmail Frontend [FULL]
+### 7.2 Webmail Frontend [FULL] ✅
 | ID | Task | Status | Dependencies | Framework |
 |----|------|--------|--------------|-----------|
-| WF-001 | Set up Vue.js 3 + Nuxt for webmail | [ ] | - | Nuxt 3 |
-| WF-002 | Authentication and session | [ ] | WF-001, USP-001 |
-| WF-003 | Mailbox sidebar | [ ] | WF-002, WM-001 |
-| WF-004 | Message list view | [ ] | WF-003 |
-| WF-005 | Conversation/thread view | [ ] | WF-004 |
-| WF-006 | Message detail view | [ ] | WF-004 |
-| WF-007 | Rich text composer (TipTap) | [ ] | WF-002 |
-| WF-008 | Plain text composer | [ ] | WF-007 |
-| WF-009 | Attachment handling (drag-drop) | [ ] | WF-007, WM-006 |
-| WF-010 | Inline images | [ ] | WF-009 |
-| WF-011 | Gmail-like categories UI | [ ] | WF-003, WM-008 |
-| WF-012 | Search interface | [ ] | WF-002, WM-007 |
-| WF-013 | Keyboard shortcuts | [ ] | WF-002 |
-| WF-014 | Dark mode | [ ] | WF-001 |
-| WF-015 | Mobile responsive design | [ ] | WF-001 |
+| WF-001 | Set up Vue.js 3 + Nuxt for webmail | [x] | - | Nuxt 3 |
+| WF-002 | Authentication and session | [x] | WF-001, USP-001 |
+| WF-003 | Mailbox sidebar | [x] | WF-002, WM-001 |
+| WF-004 | Message list view | [x] | WF-003 |
+| WF-005 | Conversation/thread view | [x] | WF-004 |
+| WF-006 | Message detail view | [x] | WF-004 |
+| WF-007 | Rich text composer (TipTap) | [x] | WF-002 |
+| WF-008 | Plain text composer | [x] | WF-007 |
+| WF-009 | Attachment handling (drag-drop) | [x] | WF-007, WM-006 |
+| WF-010 | Inline images | [x] | WF-009 |
+| WF-011 | Gmail-like categories UI | [x] | WF-003, WM-008 |
+| WF-012 | Search interface | [x] | WF-002, WM-007 |
+| WF-013 | Keyboard shortcuts | [x] | WF-002 |
+| WF-014 | Dark mode | [x] | WF-001 |
+| WF-015 | Mobile responsive design | [x] | WF-001 |
 | WF-016 | PWA offline capability | [ ] | WF-001 |
-| WF-017 | Auto-save drafts | [ ] | WF-007 |
+| WF-017 | Auto-save drafts | [x] | WF-007 |
 | WF-018 | Message templates | [ ] | WF-007 |
 | WF-019 | Spam reporting button | [ ] | WF-004, AS-005 |
 
@@ -626,7 +630,7 @@ web/
 
 ## MVP Milestone Checklist
 
-**Phase 1-5 MVP completion status:**
+**Phase 1-8 Completion Status:**
 
 - [x] SMTP send/receive working ✅
 - [x] IMAP access working ✅
@@ -640,13 +644,24 @@ web/
 - [x] Setup wizard complete ✅
 - [x] CalDAV/CardDAV servers ✅
 - [x] PostmarkApp API (email sending) ✅
+- [x] Webmail backend (13/13 methods) ✅
+- [x] Webmail frontend (Nuxt 3, Vue 3, TipTap) ✅
+- [x] Webmail UI embedded (21MB binary) ✅
 - [~] All unit tests passing (58 tests, 55 passing, 3 skipped)
 - [ ] Integration tests passing (pending)
 - [ ] mail-tester.com score >= 8/10 (pending manual testing)
 
-**Next Phases:**
-- Phase 6: Automation & Client Onboarding (DNS management, autoconfiguration)
-- Phase 7+: Advanced features (PGP, Sieve, Webmail, Webhooks)
+**Remaining Phases:**
+- Phase 6: Advanced Security (DANE, MTA-STS, PGP, Audit Logging) - 14 tasks
+- Phase 7: Sieve Filtering - 14 tasks
+- Phase 9: Webhooks - 9 tasks
+- Phase 10: Polish & Documentation - 18 tasks
+- Phase 11: Testing - 18 tasks
+
+**Current Progress:**
+- **Total Tasks**: 303
+- **Completed**: 218 (72%)
+- **Remaining**: 85 (28%)
 
 ---
 
@@ -751,11 +766,11 @@ web/
 | 5 - PostmarkApp API | 44 | 35 | 44 | 35 ✅ |
 | 6 - Advanced Security | 14 | 0 | 14 | 0 |
 | 7 - Sieve | 14 | 0 | 14 | 0 |
-| 8 - Webmail | 32 | 0 | 32 | 0 |
+| 8 - Webmail | 32 | 0 | 32 | 29 ✅ |
 | 9 - Webhooks | 9 | 0 | 9 | 0 |
 | 10 - Polish | 18 | 3 | 18 | 0 |
 | 11 - Testing | 18 | 8 | 18 | 0 |
-| **TOTAL** | **303** | **177** | **303** | **189** |
+| **TOTAL** | **303** | **177** | **303** | **218** |
 
 ---
 

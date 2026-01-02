@@ -125,6 +125,10 @@ func run(cmd *cobra.Command, args []string) error {
 	queueSvc := service.NewQueueService(queueRepo, logger)
 	domainSvc := service.NewDomainService(domainRepo)
 
+	// Wire up cross-service dependencies for webmail
+	messageSvc.SetQueueService(queueSvc)
+	messageSvc.SetMailboxService(mailboxSvc)
+
 	// Create calendar/contact services
 	calendarSvc := calendarsvc.NewCalendarService(calendarRepo, eventRepo)
 	eventSvc := calendarsvc.NewEventService(eventRepo, calendarRepo)

@@ -11,6 +11,7 @@ import (
 	"github.com/btafoya/gomailserver/internal/postmark"
 	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/service"
+	"github.com/btafoya/gomailserver/internal/webmail"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -43,6 +44,8 @@ type RouterConfig struct {
 	QueueService    *service.QueueService
 	SetupService    *service.SetupService
 	SettingsService *service.SettingsService
+	PGPService      *service.PGPService
+	AuditService    *service.AuditService
 	APIKeyRepo      repository.APIKeyRepository
 	RateLimitRepo   repository.RateLimitRepository
 	DB              *sql.DB
@@ -163,6 +166,7 @@ func NewRouter(config RouterConfig) *Router {
 				config.DomainService,
 				config.UserService,
 				config.QueueService,
+				config.AliasService,
 				config.Logger,
 			)
 			r.Route("/stats", func(r chi.Router) {
@@ -194,12 +198,54 @@ func NewRouter(config RouterConfig) *Router {
 				r.Get("/tls", settingsHandler.GetTLS)
 				r.Put("/tls", settingsHandler.UpdateTLS)
 			})
+
+			// PGP key management
+			if config.PGPService != nil {
+				pgpHandler := handlers.NewPGPHandler(config.PGPService, config.Logger)
+				r.Route("/pgp", func(r chi.Router) {
+					r.Post("/keys", pgpHandler.ImportKey)
+					r.Get("/users/{user_id}/keys", pgpHandler.ListKeys)
+					r.Get("/keys/{id}", pgpHandler.GetKey)
+					r.Post("/keys/{id}/primary", pgpHandler.SetPrimary)
+					r.Delete("/keys/{id}", pgpHandler.DeleteKey)
+				})
+			}
+
+			// Audit log viewer (admin only)
+			if config.AuditService != nil {
+				auditHandler := handlers.NewAuditHandler(config.AuditService, config.Logger)
+				r.Route("/audit", func(r chi.Router) {
+					r.Get("/logs", auditHandler.ListLogs)
+					r.Get("/stats", auditHandler.GetStats)
+				})
+			}
+
+			// Webmail API
+			webmailHandler := handlers.NewWebmailHandler(config.MailboxService, config.MessageService, config.Logger)
+			r.Route("/webmail", func(r chi.Router) {
+				r.Get("/mailboxes", webmailHandler.ListMailboxes)
+				r.Get("/mailboxes/{id}/messages", webmailHandler.ListMessages)
+				r.Get("/messages/{id}", webmailHandler.GetMessage)
+				r.Post("/messages", webmailHandler.SendMessage)
+				r.Delete("/messages/{id}", webmailHandler.DeleteMessage)
+				r.Post("/messages/{id}/move", webmailHandler.MoveMessage)
+				r.Post("/messages/{id}/flags", webmailHandler.UpdateFlags)
+				r.Get("/search", webmailHandler.SearchMessages)
+				r.Get("/attachments/{id}", webmailHandler.DownloadAttachment)
+				r.Post("/drafts", webmailHandler.SaveDraft)
+				r.Get("/drafts", webmailHandler.ListDrafts)
+				r.Get("/drafts/{id}", webmailHandler.GetDraft)
+				r.Delete("/drafts/{id}", webmailHandler.DeleteDraft)
+			})
 		})
 	})
 
 	// PostmarkApp API compatibility endpoints
 	// Mount at root level for PostmarkApp client compatibility
 	r.Mount("/", postmark.NewRouter(config.DB, config.QueueService, config.Logger))
+
+	// Webmail UI - Serves at /webmail/* with embedded or proxied assets
+	r.Mount("/webmail", webmail.Handler(config.Logger))
 
 	// Admin UI - must be last to act as catch-all for SPA routing
 	// Serves at /admin/* with embedded or proxied assets
