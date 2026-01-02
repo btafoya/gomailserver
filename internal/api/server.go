@@ -37,6 +37,11 @@ func NewServer(
 	queueRepo repository.QueueRepository,
 	apiKeyRepo repository.APIKeyRepository,
 	rateLimitRepo repository.RateLimitRepository,
+	webhookRepo repository.WebhookRepository,
+	contactService interface{},
+	addressbookService interface{},
+	calendarService interface{},
+	eventService interface{},
 	logger *zap.Logger,
 ) *Server {
 	// Create services
@@ -50,6 +55,7 @@ func NewServer(
 	settingsService := service.NewSettingsService(fullConfig, configPath, logger)
 	pgpService := service.NewPGPService(db, logger)
 	auditService := service.NewAuditService(db, logger)
+	webhookService := service.NewWebhookService(webhookRepo, logger)
 
 	// Wire up cross-service dependencies for webmail
 	messageService.SetQueueService(queueService)
@@ -57,22 +63,27 @@ func NewServer(
 
 	// Create router with all dependencies
 	router := NewRouter(RouterConfig{
-		Logger:          logger,
-		DomainService:   domainService,
-		UserService:     userService,
-		AliasService:    aliasService,
-		MailboxService:  mailboxService,
-		MessageService:  messageService,
-		QueueService:    queueService,
-		SetupService:    setupService,
-		SettingsService: settingsService,
-		PGPService:      pgpService,
-		AuditService:    auditService,
-		APIKeyRepo:      apiKeyRepo,
-		RateLimitRepo:   rateLimitRepo,
-		DB:              db.DB,
-		JWTSecret:       cfg.JWTSecret,
-		CORSOrigins:     cfg.CORSOrigins,
+		Logger:             logger,
+		DomainService:      domainService,
+		UserService:        userService,
+		AliasService:       aliasService,
+		MailboxService:     mailboxService,
+		MessageService:     messageService,
+		QueueService:       queueService,
+		SetupService:       setupService,
+		SettingsService:    settingsService,
+		PGPService:         pgpService,
+		AuditService:       auditService,
+		WebhookService:     webhookService,
+		ContactService:     contactService,
+		AddressbookService: addressbookService,
+		CalendarService:    calendarService,
+		EventService:       eventService,
+		APIKeyRepo:         apiKeyRepo,
+		RateLimitRepo:      rateLimitRepo,
+		DB:                 db.DB,
+		JWTSecret:          cfg.JWTSecret,
+		CORSOrigins:        cfg.CORSOrigins,
 	})
 
 	httpServer := &http.Server{

@@ -56,6 +56,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV6Up,
 			Down:        migrationV6Down,
 		},
+		{
+			Version:     7,
+			Description: "Add webhook tables for event notifications",
+			Up:          migrationV7Up,
+			Down:        migrationV7Down,
+		},
 	}
 }
 

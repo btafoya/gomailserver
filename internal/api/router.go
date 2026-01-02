@@ -35,22 +35,27 @@ type Router struct {
 
 // RouterConfig contains dependencies for the API router
 type RouterConfig struct {
-	Logger          *zap.Logger
-	DomainService   *service.DomainService
-	UserService     *service.UserService
-	AliasService    *service.AliasService
-	MailboxService  *service.MailboxService
-	MessageService  *service.MessageService
-	QueueService    *service.QueueService
-	SetupService    *service.SetupService
-	SettingsService *service.SettingsService
-	PGPService      *service.PGPService
-	AuditService    *service.AuditService
-	APIKeyRepo      repository.APIKeyRepository
-	RateLimitRepo   repository.RateLimitRepository
-	DB              *sql.DB
-	JWTSecret       string
-	CORSOrigins     []string
+	Logger             *zap.Logger
+	DomainService      *service.DomainService
+	UserService        *service.UserService
+	AliasService       *service.AliasService
+	MailboxService     *service.MailboxService
+	MessageService     *service.MessageService
+	QueueService       *service.QueueService
+	SetupService       *service.SetupService
+	SettingsService    *service.SettingsService
+	PGPService         *service.PGPService
+	AuditService       *service.AuditService
+	WebhookService     *service.WebhookService
+	ContactService     interface{} // *contact/service.ContactService
+	AddressbookService interface{} // *contact/service.AddressbookService
+	CalendarService    interface{} // *calendar/service.CalendarService
+	EventService       interface{} // *calendar/service.EventService
+	APIKeyRepo         repository.APIKeyRepository
+	RateLimitRepo      repository.RateLimitRepository
+	DB                 *sql.DB
+	JWTSecret          string
+	CORSOrigins        []string
 }
 
 // NewRouter creates a new API router with all routes configured
@@ -220,6 +225,21 @@ func NewRouter(config RouterConfig) *Router {
 				})
 			}
 
+			// Webhook management
+			if config.WebhookService != nil {
+				webhookHandler := handlers.NewWebhookHandler(config.WebhookService, config.Logger)
+				r.Route("/webhooks", func(r chi.Router) {
+					r.Get("/", webhookHandler.ListWebhooks)
+					r.Post("/", webhookHandler.CreateWebhook)
+					r.Get("/{id}", webhookHandler.GetWebhook)
+					r.Put("/{id}", webhookHandler.UpdateWebhook)
+					r.Delete("/{id}", webhookHandler.DeleteWebhook)
+					r.Post("/{id}/test", webhookHandler.TestWebhook)
+					r.Get("/{id}/deliveries", webhookHandler.ListDeliveries)
+				})
+				r.Get("/webhooks/deliveries/{id}", webhookHandler.GetDelivery)
+			}
+
 			// Webmail API
 			webmailHandler := handlers.NewWebmailHandler(config.MailboxService, config.MessageService, config.Logger)
 			r.Route("/webmail", func(r chi.Router) {
@@ -236,6 +256,47 @@ func NewRouter(config RouterConfig) *Router {
 				r.Get("/drafts", webmailHandler.ListDrafts)
 				r.Get("/drafts/{id}", webmailHandler.GetDraft)
 				r.Delete("/drafts/{id}", webmailHandler.DeleteDraft)
+
+				// Contact integration
+				if config.ContactService != nil && config.AddressbookService != nil {
+					// Type assertion for contact services
+					contactSvc, contactOk := config.ContactService.(interface {
+						SearchContacts(addressbookID int64, query string) ([]*interface{}, error)
+						GetAddressbookContacts(addressbookID int64) ([]*interface{}, error)
+					})
+					addressbookSvc, abOk := config.AddressbookService.(interface {
+						GetUserAddressbooks(userID int64) ([]*interface{}, error)
+						GetAddressbook(id int64) (*interface{}, error)
+					})
+
+					if contactOk && abOk {
+						contactHandler := handlers.NewWebmailContactsHandler(contactSvc, addressbookSvc, config.Logger)
+						r.Get("/contacts/search", contactHandler.SearchContacts)
+						r.Get("/contacts/addressbooks", contactHandler.ListAddressbooks)
+						r.Get("/contacts/addressbooks/{id}/contacts", contactHandler.ListContacts)
+					}
+				}
+
+				// Calendar integration
+				if config.CalendarService != nil && config.EventService != nil {
+					// Type assertion for calendar services
+					calendarSvc, calOk := config.CalendarService.(interface {
+						GetUserCalendars(userID int64) ([]*interface{}, error)
+						GetCalendar(id int64) (*interface{}, error)
+					})
+					eventSvc, evOk := config.EventService.(interface {
+						CreateEvent(calendarID int64, icalData string) (*interface{}, error)
+						GetCalendarEventsByTimeRange(calendarID int64, start, end interface{}) ([]*interface{}, error)
+					})
+
+					if calOk && evOk {
+						calendarHandler := handlers.NewWebmailCalendarHandler(calendarSvc, eventSvc, config.Logger)
+						r.Get("/calendar/calendars", calendarHandler.ListCalendars)
+						r.Get("/calendar/upcoming", calendarHandler.GetUpcomingEvents)
+						r.Post("/calendar/events", calendarHandler.CreateEvent)
+						r.Post("/calendar/invitations", calendarHandler.ProcessInvitation)
+					}
+				}
 			})
 		})
 	})

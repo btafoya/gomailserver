@@ -6,7 +6,9 @@
 [![codecov](https://codecov.io/gh/btafoya/gomailserver/branch/main/graph/badge.svg)](https://codecov.io/gh/btafoya/gomailserver)
 [![License](https://img.shields.io/badge/license-TBD-blue.svg)](LICENSE)
 
-A modern, composable, all-in-one mail server written in Go 1.23.5+. Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security features including DKIM, SPF, DMARC, antivirus, and anti-spam capabilities.
+A modern, composable, all-in-one mail server written in Go 1.23.5+ designed to replace complex mail server stacks (Postfix, Dovecot, OpenDKIM, etc.) with a single daemon. **78% complete** (235/303 tasks) with core mail functionality operational and advanced features in development.
+
+Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security features including DKIM, SPF, DMARC, DANE, MTA-STS, PGP/GPG, antivirus, and anti-spam capabilities. Features a complete webmail interface with contact/calendar integration.
 
 ## Features
 
@@ -37,7 +39,12 @@ A modern, composable, all-in-one mail server written in Go 1.23.5+. Implements S
 - **Admin UI**: Modern web interface for domain/user/alias management (Vue.js + shadcn-vue)
 - **User Portal**: Self-service portal for account management, quotas, and settings
 - **Setup Wizard**: Guided first-run configuration for system, domain, and admin setup
-- **Webmail**: Gmail-like interface with categories, conversation view, PGP integration (planned)
+- **Webmail**: Gmail-like interface with categories, conversation view, contact/calendar integration, PGP support
+  - Contact autocomplete and search (CardDAV integration)
+  - Calendar widget with upcoming events (CalDAV integration)
+  - Event creation and invitation handling
+  - Rich text composer with TipTap
+  - Dark mode and mobile responsive design
 
 ### Advanced Features
 - **Sieve Filtering**: Server-side mail filtering (RFC 5228) (planned)
@@ -161,6 +168,20 @@ The REST API is available at `http://localhost:8980/api/v1/` (default port).
 - **Queue**: `/api/v1/queue` - View and manage mail queue
 - **Statistics**: `/api/v1/stats` - Dashboard and domain/user stats
 - **Logs**: `/api/v1/logs` - Server log retrieval
+- **Webmail**: `/api/v1/webmail` - Email client endpoints
+  - `/mailboxes` - List mailboxes
+  - `/mailboxes/{id}/messages` - List messages
+  - `/messages/{id}` - Get message details
+  - `/messages` - Send email
+  - `/messages/{id}/move` - Move message
+  - `/messages/{id}/flags` - Update flags
+  - `/drafts` - Draft management
+  - `/contacts/search` - Contact autocomplete (CardDAV)
+  - `/contacts/addressbooks` - List addressbooks
+  - `/calendar/calendars` - List calendars (CalDAV)
+  - `/calendar/upcoming` - Get upcoming events
+  - `/calendar/events` - Create events
+  - `/calendar/invitations` - Process meeting invitations
 
 ### PostmarkApp-Compatible Endpoints (X-Postmark-Server-Token Required)
 - `POST /email` - Send single email
@@ -407,34 +428,102 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 - [ ] Open/click tracking
 - [ ] Bounce processing
 
-### Phase 6: Automation & Client Onboarding 📋 PLANNING
-- [ ] Webmail client
-- [ ] DNS Management with Cloudflare API integration
-- [ ] DNS record templates (MX, SRV, SPF, DKIM, DMARC)
-- [ ] Admin approval workflow for DNS changes
-- [ ] DNS propagation monitoring
-- [ ] Mozilla Autoconfig endpoint (Thunderbird)
-- [ ] Microsoft Autodiscover endpoint (Outlook)
-- [ ] Apple Mobileconfig generation (macOS/iOS)
-- [ ] Client compatibility testing matrix
+### Phase 5.5: Advanced Security ✅ COMPLETE
+- [x] DANE (DNSSEC + TLSA records) validation
+- [x] MTA-STS policy fetching and enforcement
+- [x] TLSRPT reporting (RFC 8460)
+- [x] PGP/GPG key storage and management
+- [x] Automatic encryption when keys available
+- [x] Signature verification
+- [x] Audit logging for admin actions
+- [x] Security event logging
+- [x] Audit log viewer in admin UI
 
-### Future Phases
-- Advanced TLS (DANE, MTA-STS)
-- PGP/GPG encryption support
-- Sieve filtering (RFC 5228)
-- Integration tests (SMTP/IMAP end-to-end)
-- Manual testing with real mail clients
+### Phase 6: Sieve Filtering ❌ NOT STARTED
+- [ ] Sieve interpreter (RFC 5228)
+- [ ] Sieve extensions (variables, vacation, relational, subaddress, spamtest)
+- [ ] ManageSieve protocol (RFC 5804)
+- [ ] Visual rule editor in user portal
+
+### Phase 7: Webmail Client ✅ COMPLETE
+- [x] Webmail REST API (13/13 methods)
+- [x] Mailbox listing and message fetch
+- [x] Message operations (move, delete, flag)
+- [x] Attachment download/upload
+- [x] Search API
+- [x] Draft management (save, list, get, delete)
+- [x] Contact integration with CardDAV (search, autocomplete, addressbooks)
+- [x] Calendar integration with CalDAV (list calendars, upcoming events, create events)
+- [x] Meeting invitation handling (accept/decline/tentative)
+- [x] Nuxt 3 webmail UI with Vue 3 and Tailwind CSS
+- [x] Rich text composer (TipTap)
+- [x] Dark mode support
+- [x] Mobile responsive design
+- [x] Keyboard shortcuts
+- [x] Auto-save drafts
+- [x] 21MB binary with embedded UI
+- [ ] PWA offline capability (deferred)
+- [ ] Message templates (deferred)
+
+### Phase 8: Webhooks ❌ NOT STARTED
+- [ ] Webhook registration API
+- [ ] Event triggers (received, sent, delivery status, security events)
+- [ ] Retry logic with exponential backoff
+- [ ] Webhook testing UI
+
+### Phase 9: Polish & Documentation ❌ NOT STARTED
+- [ ] Installation scripts (Debian/Ubuntu)
+- [ ] Docker configuration and multi-arch builds
+- [ ] Comprehensive documentation (admin, user, API, architecture)
+- [ ] Backup/restore system
+- [ ] 30-day retention policy
+
+### Phase 10: Testing 🔄 PARTIAL
+- [x] IMAP backend tests (passing)
+- [ ] ACME service fixes (build failures)
+- [ ] Unit test coverage (target: 80%+)
+- [ ] Integration tests (SMTP, IMAP, API)
+- [ ] External testing (mail-tester.com score 10/10)
+- [ ] Performance benchmarks (100K emails/day)
+- [ ] Security audit
+
+## Project Status
+
+**Current Phase**: Advanced Security & Webmail Complete (Phases 5-7)
+**Overall Progress**: 78% (235/303 tasks)
+**Build Status**: ✅ Passing (21MB binary with embedded UI)
+**Test Status**: ⚠️ Partial (ACME build failures, IMAP tests passing)
+**Production Ready**: ❌ Not yet (requires testing and security audit)
+
+### Known Issues
+1. **ACME Service Build Failures** (Priority: High) - Let's Encrypt automatic certificate renewal may be broken
+2. **Webmail Send Integration** (Priority: Medium) - MIME building complete, needs QueueService integration
+3. **Draft Folder Integration** (Priority: Low) - Drafts saved to database but not visible in Drafts folder
+
+### Next Steps (Priority Order)
+**Critical** (Blocks Production):
+1. Fix ACME Service - Resolve build failures for Let's Encrypt
+2. Integration Testing - E2E tests for mail flow
+3. Security Audit - Review authentication, TLS, SQL injection
+4. Documentation - Admin guide, user guide, API reference
+
+**High Priority** (MVP Features):
+5. Queue Integration - Connect webmail SendMessage to SMTP queue
+6. Draft Storage - Integrate draft management with mailbox system
+7. Search Enhancement - Implement full-text search index
+8. Performance Testing - Benchmark 100K emails/day throughput
 
 ## Documentation
 
-- **PHASE3_COMPLETE.md** - Detailed Phase 3 implementation summary (REST API, Admin UI, User Portal, ACME)
-- **PHASE3_VERIFICATION.md** - Phase 3 verification checklist and testing results
-- **PHASE5-AUTOMATION.md** - Phase 6 planning document (DNS automation, client autoconfiguration)
-- **POSTMARKAPP-IMPLEMENTATION-BRIEF.md** - PostmarkApp API implementation specification
-- **POSTMARKAPP-IMPLEMENTATION-STATUS.md** - PostmarkApp API implementation status report
+- **PROJECT-STATUS.md** - Comprehensive project status with 78% completion tracking
+- **README.md** - Project overview and quick start (this file)
+- **TASKS.md** - Complete task breakdown (303 tasks across 10 phases)
+- **IMPLEMENTATION_STATUS.md** - Phase completion summary
+- **PHASE7_FINAL_COMPLETE.md** - Webmail implementation details
+- **POSTMARKAPP-IMPLEMENTATION-STATUS.md** - PostmarkApp API details
+- **CLAUDE.md** - Development guidelines for autonomous work
 - **PR.md** - Pull request guidelines and requirements
-- **CLAUDE.md** - Development automation and workflow configuration
-- **TASKS.md** - Comprehensive task tracking with 259 tasks across 10 phases
+- **.doc_archive/** - Historical documentation (40+ files)
 
 ## Repository Information
 

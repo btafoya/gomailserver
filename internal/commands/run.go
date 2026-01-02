@@ -109,6 +109,7 @@ func run(cmd *cobra.Command, args []string) error {
 	domainRepo := sqlite.NewDomainRepository(db)
 	aliasRepo := sqlite.NewAliasRepository(db)
 	apiKeyRepo := sqlite.NewAPIKeyRepository(db)
+	webhookRepo := sqlite.NewWebhookRepository(db)
 
 	// Create calendar/contact repositories
 	calendarRepo := calendarrepo.NewCalendarRepository(db.DB)
@@ -235,6 +236,11 @@ func run(cmd *cobra.Command, args []string) error {
 		queueRepo,
 		apiKeyRepo,
 		rateLimitRepo,
+		webhookRepo,
+		contactSvc,
+		addressbookSvc,
+		calendarSvc,
+		eventSvc,
 		logger,
 	)
 
