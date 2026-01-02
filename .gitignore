@@ -74,3 +74,4 @@ acme/
 
 .playwright-mcp/
 internal/webmail/dist/_nuxt/
+.claude/ralph-loop.local.md
