@@ -8,7 +8,9 @@ import (
 
 	"go.uber.org/zap"
 
+	calendarService "github.com/btafoya/gomailserver/internal/calendar/service"
 	"github.com/btafoya/gomailserver/internal/config"
+	contactService "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/service"
@@ -38,10 +40,10 @@ func NewServer(
 	apiKeyRepo repository.APIKeyRepository,
 	rateLimitRepo repository.RateLimitRepository,
 	webhookRepo repository.WebhookRepository,
-	contactService interface{},
-	addressbookService interface{},
-	calendarService interface{},
-	eventService interface{},
+	contactService *contactService.ContactService,
+	addressbookService *contactService.AddressbookService,
+	calendarService *calendarService.CalendarService,
+	eventService *calendarService.EventService,
 	logger *zap.Logger,
 ) *Server {
 	// Create services

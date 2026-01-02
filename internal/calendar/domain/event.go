@@ -15,6 +15,7 @@ type Event struct {
 	StartTime   time.Time
 	EndTime     time.Time
 	AllDay      bool
+	Timezone    string
 	RRule       string // Recurrence rule (RFC 5545)
 	Attendees   string // JSON array of attendees
 	Organizer   string

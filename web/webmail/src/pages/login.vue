@@ -1,9 +1,11 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'default'
-})
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
-const { login } = useAuth()
+const router = useRouter()
+const authStore = useAuthStore()
+
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -13,7 +15,8 @@ const handleLogin = async () => {
   try {
     loading.value = true
     error.value = ''
-    await login(email.value, password.value)
+    await authStore.login(email.value, password.value)
+    router.push('/mail/inbox')
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Login failed. Please check your credentials.'
   } finally {

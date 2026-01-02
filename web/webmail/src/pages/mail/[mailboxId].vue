@@ -1,7 +1,6 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'mail'
-})
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const mailboxId = computed(() => parseInt(route.params.mailboxId as string))

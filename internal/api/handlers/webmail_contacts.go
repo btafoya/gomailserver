@@ -42,7 +42,7 @@ type ContactSearchResponse struct {
 // GET /api/v1/webmail/contacts/search?q=john
 func (h *WebmailContactsHandler) SearchContacts(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -89,7 +89,7 @@ func (h *WebmailContactsHandler) SearchContacts(w http.ResponseWriter, r *http.R
 // GET /api/v1/webmail/contacts/addressbooks
 func (h *WebmailContactsHandler) ListAddressbooks(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -109,7 +109,7 @@ func (h *WebmailContactsHandler) ListAddressbooks(w http.ResponseWriter, r *http
 // GET /api/v1/webmail/contacts/addressbooks/{id}/contacts
 func (h *WebmailContactsHandler) ListContacts(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return

@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS webhooks (
 	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_webhooks_active ON webhooks(active);
-CREATE INDEX idx_webhooks_created_at ON webhooks(created_at);
+CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(active);
+CREATE INDEX IF NOT EXISTS idx_webhooks_created_at ON webhooks(created_at);
 
 -- Create webhook_deliveries table
 CREATE TABLE IF NOT EXISTS webhook_deliveries (
@@ -37,11 +37,11 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
 	FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_webhook_deliveries_webhook_id ON webhook_deliveries(webhook_id);
-CREATE INDEX idx_webhook_deliveries_status ON webhook_deliveries(status);
-CREATE INDEX idx_webhook_deliveries_next_retry ON webhook_deliveries(next_retry_at);
-CREATE INDEX idx_webhook_deliveries_event_type ON webhook_deliveries(event_type);
-CREATE INDEX idx_webhook_deliveries_created_at ON webhook_deliveries(created_at);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook_id ON webhook_deliveries(webhook_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON webhook_deliveries(status);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_next_retry ON webhook_deliveries(next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_event_type ON webhook_deliveries(event_type);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created_at ON webhook_deliveries(created_at);
 `
 
 const migrationV7Down = `

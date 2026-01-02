@@ -1,11 +1,17 @@
 <script setup>
-const { checkAuth } = useAuth()
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 onMounted(() => {
-  if (checkAuth()) {
-    navigateTo('/mail/inbox')
+  authStore.initializeAuth()
+  if (authStore.isAuthenticated) {
+    router.push('/mail/inbox')
   } else {
-    navigateTo('/login')
+    router.push('/login')
   }
 })
 </script>

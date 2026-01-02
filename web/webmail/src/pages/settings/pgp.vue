@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useAuth } from '~/composables/useAuth'
+import { useAuthStore } from '../../stores/auth'
 
-const { user } = useAuth()
+const authStore = useAuthStore()
+const user = ref(authStore.user)
 const keys = ref([])
 const loading = ref(false)
 const importDialog = ref(false)

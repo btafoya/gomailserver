@@ -76,5 +76,5 @@ acme/
 internal/webmail/dist/_nuxt/
 .claude/ralph-loop.local.md
 .serena/
-.gemini/
+
 gha-creds-*.json

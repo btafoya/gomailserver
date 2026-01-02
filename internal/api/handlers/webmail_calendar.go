@@ -8,7 +8,6 @@ import (
 
 	calendarService "github.com/btafoya/gomailserver/internal/calendar/service"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
@@ -79,7 +78,7 @@ type ProcessInvitationRequest struct {
 // GET /api/v1/webmail/calendar/calendars
 func (h *WebmailCalendarHandler) ListCalendars(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -112,7 +111,7 @@ func (h *WebmailCalendarHandler) ListCalendars(w http.ResponseWriter, r *http.Re
 // GET /api/v1/webmail/calendar/upcoming?days=7
 func (h *WebmailCalendarHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -140,7 +139,7 @@ func (h *WebmailCalendarHandler) GetUpcomingEvents(w http.ResponseWriter, r *htt
 
 	var allEvents []EventResponse
 	for _, cal := range calendars {
-		events, err := h.eventService.GetCalendarEventsByTimeRange(cal.ID, now, endTime)
+		events, err := h.eventService.GetEventsInRange(cal.ID, now, endTime)
 		if err != nil {
 			h.logger.Error("failed to get events", zap.Error(err), zap.Int64("calendar_id", cal.ID))
 			continue
@@ -168,7 +167,7 @@ func (h *WebmailCalendarHandler) GetUpcomingEvents(w http.ResponseWriter, r *htt
 // POST /api/v1/webmail/calendar/events
 func (h *WebmailCalendarHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -248,7 +247,7 @@ func (h *WebmailCalendarHandler) CreateEvent(w http.ResponseWriter, r *http.Requ
 // POST /api/v1/webmail/calendar/invitations
 func (h *WebmailCalendarHandler) ProcessInvitation(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID, ok := middleware.GetUserID(r.Context())
+	userID, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return

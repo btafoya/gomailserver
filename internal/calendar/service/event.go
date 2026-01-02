@@ -113,6 +113,11 @@ func (s *EventService) CreateEvent(calendarID int64, icalData string) (*domain.E
 		if dateParam := prop.Params.Get("VALUE"); dateParam == "DATE" {
 			event.AllDay = true
 		}
+
+		// Extract timezone
+		if tzid := prop.Params.Get("TZID"); tzid != "" {
+			event.Timezone = tzid
+		}
 	} else {
 		return nil, fmt.Errorf("DTSTART property is required")
 	}

@@ -4,37 +4,32 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev",
-    "build": "nuxt build",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@nuxt/icon": "^1.13.0",
-    "@pinia/nuxt": "^0.11.3",
-    "@tiptap/extension-placeholder": "^2.10.6",
-    "@tiptap/pm": "^2.10.6",
-    "@tiptap/starter-kit": "^2.10.6",
-    "@tiptap/vue-3": "^2.10.6",
-    "@vueuse/core": "^12.3.0",
-    "@vueuse/nuxt": "^12.3.0",
+    "@tiptap/extension-placeholder": "^3.14.0",
+    "@tiptap/pm": "^3.14.0",
+    "@tiptap/starter-kit": "^3.14.0",
+    "@tiptap/vue-3": "^3.14.0",
+    "@vueuse/core": "^14.1.0",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^0.562.0",
-    "nuxt": "^3.16.3",
     "pinia": "^3.0.4",
     "radix-vue": "^1.9.17",
     "tailwind-merge": "^3.4.0",
-    "vue": "^3.5.24",
+    "vue": "^3.5.26",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.14.0",
-    "@tailwindcss/postcss": "^4.0.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.2.4",
+    "@tailwindcss/postcss": "^4.1.18",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.15"
+    "tailwindcss": "^3.4.19"
   }
 }

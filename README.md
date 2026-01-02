@@ -316,6 +316,29 @@ cp ./data/mailserver.db ./backups/mailserver-$(date +%Y%m%d).db
 ./build/gomailserver backup
 ```
 
+## Technical Stack
+
+### Backend
+- **Language**: Go 1.23.5+
+- **Web Framework**: Chi Router v5
+- **Database**: SQLite (hybrid message storage)
+- **MIME**: emersion/go-message/mail
+- **Authentication**: JWT with bcrypt
+
+### Frontend (Webmail)
+- **Framework**: Vite
+- **UI Library**: Vue 3.5.26
+- **Styling**: Tailwind CSS 3.4.19
+- **State Management**: Pinia 3.0.4
+- **Rich Text**: TipTap 2.27.1
+- **Features**: Dark mode, responsive, modern UI
+
+### DevOps
+- **Package Manager**: pnpm (frontend)
+- **Build System**: Go modules, Nuxt build
+- **Deployment**: Single 21MB binary
+- **Assets**: Embedded with go:embed
+
 ## Contributing
 
 Contributions are welcome! This is a greenfield project following the PR.md requirements. See CLAUDE.md for autonomous work guidelines.
