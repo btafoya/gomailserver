@@ -31,7 +31,7 @@ func NewDANEService(db *database.DB, logger *zap.Logger) *DANEService {
 		db:        db,
 		logger:    logger,
 		dnsClient: &dns.Client{},
-		resolver:  "8.8.8.8:53", // Default to Google DNS
+		resolver:  "1.1.1.1:53", // Default to Cloudflare DNS - TODO Add to admin as configurable.
 	}
 }
 
