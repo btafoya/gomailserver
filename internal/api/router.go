@@ -288,7 +288,8 @@ func NewRouter(config RouterConfig) *Router {
 
 	// Admin UI - must be last to act as catch-all for SPA routing
 	// Serves at /admin/* with embedded or proxied assets
-	r.Mount("/admin", admin.Handler(config.Logger))
+	// Using unified handler for Phase 1 migration
+	r.Mount("/admin", admin.UnifiedHandler(config.Logger))
 
 	return r
 }
