@@ -22,6 +22,7 @@ import (
 	"github.com/btafoya/gomailserver/internal/imap"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
 	"github.com/btafoya/gomailserver/internal/reputation"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/security/antispam"
 	"github.com/btafoya/gomailserver/internal/security/antivirus"
 	"github.com/btafoya/gomailserver/internal/security/bruteforce"
@@ -149,6 +150,9 @@ func run(cmd *cobra.Command, args []string) error {
 	addressbookSvc := contactsvc.NewAddressbookService(addressbookRepo, contactRepo)
 	contactSvc := contactsvc.NewContactService(contactRepo, addressbookRepo)
 
+	// Create reputation auditor service
+	auditorService := repService.NewAuditorService(tlsMgr, logger)
+
 	logger.Debug("services initialized")
 
 	// Initialize default domain template
@@ -256,6 +260,8 @@ func run(cmd *cobra.Command, args []string) error {
 		calendarSvc,
 		eventSvc,
 		reputationDB.TelemetryService,
+		auditorService,
+		reputationDB,
 		logger,
 	)
 

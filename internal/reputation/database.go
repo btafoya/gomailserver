@@ -103,6 +103,7 @@ type Database struct {
 	WarmUpRepo               repository.WarmUpRepository
 	CircuitBreakerRepo       repository.CircuitBreakerRepository
 	TelemetryService         *service.TelemetryService
+	AuditorService           *service.AuditorService
 	logger                   *zap.Logger
 }
 
@@ -174,6 +175,21 @@ func InitDatabase(cfg Config, logger *zap.Logger) (*Database, error) {
 func (d *Database) Close() error {
 	d.logger.Info("closing reputation database connection")
 	return d.DB.Close()
+}
+
+// GetEventRepo returns the events repository
+func (d *Database) GetEventRepo() repository.EventsRepository {
+	return d.EventsRepo
+}
+
+// GetScoresRepo returns the scores repository
+func (d *Database) GetScoresRepo() repository.ScoresRepository {
+	return d.ScoresRepo
+}
+
+// GetCircuitBreakerRepo returns the circuit breaker repository
+func (d *Database) GetCircuitBreakerRepo() repository.CircuitBreakerRepository {
+	return d.CircuitBreakerRepo
 }
 
 // applyPragmas configures SQLite for optimal performance

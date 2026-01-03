@@ -92,3 +92,27 @@ type RetentionPolicy struct {
 	RetentionDays int
 	LastCleanup  int64
 }
+
+// AuditResult represents the deliverability readiness audit for a domain
+type AuditResult struct {
+	Domain       string
+	Timestamp    int64
+	SPFStatus    CheckStatus
+	DKIMStatus   CheckStatus
+	DMARCStatus  CheckStatus
+	RDNSStatus   CheckStatus
+	FCrDNSStatus CheckStatus
+	TLSStatus    CheckStatus
+	MTASTSStatus CheckStatus
+	PostmasterOK bool
+	AbuseOK      bool
+	OverallScore int // 0-100
+	Issues       []string
+}
+
+// CheckStatus represents the status of a deliverability check
+type CheckStatus struct {
+	Passed  bool
+	Message string
+	Details map[string]interface{}
+}

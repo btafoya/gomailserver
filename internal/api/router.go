@@ -12,6 +12,8 @@ import (
 	contactService "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/postmark"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repRepository "github.com/btafoya/gomailserver/internal/reputation/repository"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/btafoya/gomailserver/internal/webmail"
 	"github.com/go-chi/chi/v5"
@@ -53,6 +55,10 @@ type RouterConfig struct {
 	AddressbookService *contactService.AddressbookService
 	CalendarService    *calendarService.CalendarService
 	EventService       *calendarService.EventService
+	AuditorService     *repService.AuditorService
+	ScoresRepo         repRepository.ScoresRepository
+	EventsRepo         repRepository.EventsRepository
+	CircuitRepo        repRepository.CircuitBreakerRepository
 	APIKeyRepo         repository.APIKeyRepository
 	RateLimitRepo      repository.RateLimitRepository
 	DB                 *sql.DB
@@ -240,6 +246,26 @@ func NewRouter(config RouterConfig) *Router {
 					r.Get("/{id}/deliveries", webhookHandler.ListDeliveries)
 				})
 				r.Get("/webhooks/deliveries/{id}", webhookHandler.GetDelivery)
+			}
+
+			// Reputation management
+			if config.AuditorService != nil {
+				reputationHandler := handlers.NewReputationHandler(
+					config.AuditorService,
+					config.ScoresRepo,
+					config.EventsRepo,
+					config.CircuitRepo,
+					config.Logger,
+				)
+				r.Route("/reputation", func(r chi.Router) {
+					r.Get("/audit/{domain}", reputationHandler.AuditDomain)
+					r.Post("/audit/{domain}", reputationHandler.AuditDomain)
+					r.Get("/scores", reputationHandler.ListScores)
+					r.Get("/scores/{domain}", reputationHandler.GetScore)
+					r.Get("/circuit-breakers", reputationHandler.ListCircuitBreakers)
+					r.Get("/circuit-breakers/{domain}/history", reputationHandler.GetCircuitBreakerHistory)
+					r.Get("/alerts", reputationHandler.ListAlerts)
+				})
 			}
 
 			// Webmail API

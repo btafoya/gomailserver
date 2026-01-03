@@ -13,6 +13,7 @@ import (
 	contactService "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repRepository "github.com/btafoya/gomailserver/internal/reputation/repository"
 	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/service"
 )
@@ -46,6 +47,12 @@ func NewServer(
 	calendarService *calendarService.CalendarService,
 	eventService *calendarService.EventService,
 	telemetryService *repService.TelemetryService,
+	auditorService *repService.AuditorService,
+	reputationDB interface {
+		GetEventRepo() repRepository.EventsRepository
+		GetScoresRepo() repRepository.ScoresRepository
+		GetCircuitBreakerRepo() repRepository.CircuitBreakerRepository
+	},
 	logger *zap.Logger,
 ) *Server {
 	// Create services
@@ -83,6 +90,10 @@ func NewServer(
 		AddressbookService: addressbookService,
 		CalendarService:    calendarService,
 		EventService:       eventService,
+		AuditorService:     auditorService,
+		ScoresRepo:         reputationDB.GetScoresRepo(),
+		EventsRepo:         reputationDB.GetEventRepo(),
+		CircuitRepo:        reputationDB.GetCircuitBreakerRepo(),
 		APIKeyRepo:         apiKeyRepo,
 		RateLimitRepo:      rateLimitRepo,
 		DB:                 db.DB,
