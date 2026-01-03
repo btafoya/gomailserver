@@ -964,6 +964,8 @@ func SetupCronJobs(services *Services) {
 
 ### Configuration
 
+All configuration is maintained in the Admin WebUI configuration page and stored in the existing mailserver.db sqwlite database, with the exception of the below:
+
 **gomailserver.conf** additions:
 ```yaml
 reputation:
