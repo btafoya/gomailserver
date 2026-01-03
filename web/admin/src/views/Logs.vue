@@ -54,7 +54,7 @@ const fetchLogs = async () => {
     if (startDate.value) params.start_date = startDate.value
     if (endDate.value) params.end_date = endDate.value
 
-    const response = await api.get('/api/v1/logs', { params })
+    const response = await api.get('/v1/logs', { params })
     logs.value = response.data.logs || []
     totalCount.value = response.data.total || 0
   } catch (err) {

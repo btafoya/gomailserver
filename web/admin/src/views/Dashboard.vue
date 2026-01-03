@@ -14,7 +14,7 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/v1/stats/dashboard')
+    const response = await api.get('/v1/stats/dashboard')
     stats.value = response.data
   } catch (err) {
     error.value = err.message

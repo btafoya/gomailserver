@@ -7,7 +7,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/v1/domains')
+    const response = await api.get('/v1/domains')
     domains.value = response.data.domains || []
   } catch (err) {
     console.error('Failed to load domains:', err)

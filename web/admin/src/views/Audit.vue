@@ -60,7 +60,7 @@ const fetchLogs = async () => {
     if (startDate.value) params.start_time = new Date(startDate.value).toISOString()
     if (endDate.value) params.end_time = new Date(endDate.value).toISOString()
 
-    const response = await api.get('/api/v1/audit/logs', { params })
+    const response = await api.get('/v1/audit/logs', { params })
     logs.value = response.data || []
 
     // Extract unique actions and resource types for filters
@@ -83,7 +83,7 @@ const fetchStats = async () => {
     if (startDate.value) params.start_time = new Date(startDate.value).toISOString()
     if (endDate.value) params.end_time = new Date(endDate.value).toISOString()
 
-    const response = await api.get('/api/v1/audit/stats', { params })
+    const response = await api.get('/v1/audit/stats', { params })
     stats.value = response.data
   } catch (err) {
     console.error('Failed to fetch audit stats:', err)

@@ -53,7 +53,7 @@ const fetchQueue = async () => {
     if (statusFilter.value !== 'all') params.status = statusFilter.value
     if (searchQuery.value) params.query = searchQuery.value
 
-    const response = await api.get('/api/v1/queue', { params })
+    const response = await api.get('/v1/queue', { params })
     queueItems.value = response.data.items || []
     totalCount.value = response.data.total || 0
   } catch (err) {
@@ -91,7 +91,7 @@ const deleteItem = async () => {
   if (!itemToDelete.value) return
 
   try {
-    await api.delete(`/api/v1/queue/${itemToDelete.value.id}`)
+    await api.delete(`/v1/queue/${itemToDelete.value.id}`)
     showDeleteDialog.value = false
     itemToDelete.value = null
     await fetchQueue()
@@ -110,7 +110,7 @@ const retryItem = async () => {
   if (!itemToRetry.value) return
 
   try {
-    await api.post(`/api/v1/queue/${itemToRetry.value.id}/retry`)
+    await api.post(`/v1/queue/${itemToRetry.value.id}/retry`)
     showRetryDialog.value = false
     itemToRetry.value = null
     await fetchQueue()
@@ -124,7 +124,7 @@ const purgeCompleted = async () => {
   if (!confirm('Are you sure you want to purge all completed queue items?')) return
 
   try {
-    await api.post('/api/v1/queue/purge', { status: 'completed' })
+    await api.post('/v1/queue/purge', { status: 'completed' })
     await fetchQueue()
   } catch (err) {
     error.value = err.message
@@ -136,7 +136,7 @@ const purgeFailed = async () => {
   if (!confirm('Are you sure you want to purge all failed queue items?')) return
 
   try {
-    await api.post('/api/v1/queue/purge', { status: 'failed' })
+    await api.post('/v1/queue/purge', { status: 'failed' })
     await fetchQueue()
   } catch (err) {
     error.value = err.message
@@ -148,7 +148,7 @@ const retryAllFailed = async () => {
   if (!confirm('Are you sure you want to retry all failed queue items?')) return
 
   try {
-    await api.post('/api/v1/queue/retry-all', { status: 'failed' })
+    await api.post('/v1/queue/retry-all', { status: 'failed' })
     await fetchQueue()
   } catch (err) {
     error.value = err.message

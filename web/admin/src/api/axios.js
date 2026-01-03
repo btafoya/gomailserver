@@ -2,9 +2,10 @@ import axios from 'axios'
 import router from '@/router'
 
 // Create axios instance with default config
-// Force empty baseURL so axios uses absolute paths from document root
+// Use runtime origin + /api to ensure correct base regardless of where admin UI is mounted
+// This prevents Vite's base: '/admin/' from affecting API paths
 const api = axios.create({
-  baseURL: '',
+  baseURL: `${window.location.origin}/api`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'

@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email, password) {
       try {
-        const response = await api.post('/api/v1/auth/login', {
+        const response = await api.post('/v1/auth/login', {
           email,
           password
         })
@@ -39,7 +39,7 @@ export const useAuthStore = defineStore('auth', {
 
     async refresh() {
       try {
-        const response = await api.post('/api/v1/auth/refresh', {
+        const response = await api.post('/v1/auth/refresh', {
           refresh_token: this.refreshToken
         })
 

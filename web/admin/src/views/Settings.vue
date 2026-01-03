@@ -71,15 +71,15 @@ const loadSettings = async () => {
     }
 
     // Load server settings from API
-    const serverResponse = await api.get('/api/v1/settings/server')
+    const serverResponse = await api.get('/v1/settings/server')
     Object.assign(serverForm, serverResponse.data.data)
 
     // Load security settings from API
-    const securityResponse = await api.get('/api/v1/settings/security')
+    const securityResponse = await api.get('/v1/settings/security')
     Object.assign(securityForm, securityResponse.data.data)
 
     // Load TLS settings from API
-    const tlsResponse = await api.get('/api/v1/settings/tls')
+    const tlsResponse = await api.get('/v1/settings/tls')
     Object.assign(tlsForm, tlsResponse.data.data)
 
   } catch (error) {
@@ -117,11 +117,11 @@ const saveProfile = async () => {
     }
 
     if (authStore.user && authStore.user.id) {
-      await api.put(`/api/v1/users/${authStore.user.id}`, updates)
+      await api.put(`/v1/users/${authStore.user.id}`, updates)
 
       // Update password if provided
       if (profileForm.newPassword) {
-        await api.put(`/api/v1/users/${authStore.user.id}/password`, {
+        await api.put(`/v1/users/${authStore.user.id}/password`, {
           new_password: profileForm.newPassword
         })
 
@@ -151,7 +151,7 @@ const saveServerSettings = async () => {
   saveMessage.value = ''
 
   try {
-    const response = await api.put('/api/v1/settings/server', serverForm)
+    const response = await api.put('/v1/settings/server', serverForm)
     saveMessage.value = response.data.message || 'Server settings updated successfully'
   } catch (error) {
     saveError.value = error.response?.data?.message || 'Failed to save server settings'
@@ -166,7 +166,7 @@ const saveSecuritySettings = async () => {
   saveMessage.value = ''
 
   try {
-    const response = await api.put('/api/v1/settings/security', securityForm)
+    const response = await api.put('/v1/settings/security', securityForm)
     saveMessage.value = response.data.message || 'Security settings updated successfully'
   } catch (error) {
     saveError.value = error.response?.data?.message || 'Failed to save security settings'
@@ -181,7 +181,7 @@ const saveTLSSettings = async () => {
   saveMessage.value = ''
 
   try {
-    const response = await api.put('/api/v1/settings/tls', tlsForm)
+    const response = await api.put('/v1/settings/tls', tlsForm)
     saveMessage.value = response.data.message || 'TLS settings updated successfully'
   } catch (error) {
     saveError.value = error.response?.data?.message || 'Failed to save TLS settings'

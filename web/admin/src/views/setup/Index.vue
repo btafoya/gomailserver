@@ -74,7 +74,7 @@ const canGoNext = computed(() => {
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/v1/setup/status')
+    const response = await api.get('/v1/setup/status')
     currentStep.value = response.data.current_step
     completedSteps.value = response.data.completed_steps || []
   } catch (err) {
@@ -89,7 +89,7 @@ const nextStep = async () => {
   try {
     const stepData = getStepData(currentStep.value)
 
-    await api.post('/api/v1/setup/step', {
+    await api.post('/v1/setup/step', {
       step: currentStep.value,
       data: stepData
     })
@@ -135,7 +135,7 @@ const getStepData = (step) => {
 
 const completeSetup = async () => {
   try {
-    await api.post('/api/v1/setup/complete')
+    await api.post('/v1/setup/complete')
     setTimeout(() => {
       router.push({ name: 'Dashboard' })
     }, 2000)
