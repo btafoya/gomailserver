@@ -13,6 +13,7 @@ import (
 	contactService "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/service"
 )
 
@@ -44,6 +45,7 @@ func NewServer(
 	addressbookService *contactService.AddressbookService,
 	calendarService *calendarService.CalendarService,
 	eventService *calendarService.EventService,
+	telemetryService *repService.TelemetryService,
 	logger *zap.Logger,
 ) *Server {
 	// Create services
@@ -52,7 +54,7 @@ func NewServer(
 	aliasService := service.NewAliasService(aliasRepo)
 	mailboxService := service.NewMailboxService(mailboxRepo, logger)
 	messageService := service.NewMessageService(messageRepo, "./data/mail", logger)
-	queueService := service.NewQueueService(queueRepo, logger)
+	queueService := service.NewQueueService(queueRepo, telemetryService, logger)
 	setupService := service.NewSetupService(db, userRepo, domainRepo, logger)
 	settingsService := service.NewSettingsService(fullConfig, configPath, logger)
 	pgpService := service.NewPGPService(db, logger)

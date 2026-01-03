@@ -6,36 +6,41 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 )
 
 // QueueService handles SMTP queue management
 type QueueService struct {
-	repo      repository.QueueRepository
-	logger    *zap.Logger
-	queuePath string
+	repo             repository.QueueRepository
+	logger           *zap.Logger
+	queuePath        string
+	telemetryService *repService.TelemetryService
 }
 
 // NewQueueService creates a new queue service
-func NewQueueService(repo repository.QueueRepository, logger *zap.Logger) *QueueService {
+func NewQueueService(repo repository.QueueRepository, telemetryService *repService.TelemetryService, logger *zap.Logger) *QueueService {
 	return &QueueService{
-		repo:      repo,
-		logger:    logger,
-		queuePath: "/var/spool/mail/queue",
+		repo:             repo,
+		logger:           logger,
+		queuePath:        "/var/spool/mail/queue",
+		telemetryService: telemetryService,
 	}
 }
 
 // NewQueueServiceWithPath creates a new queue service with custom queue path (for testing)
-func NewQueueServiceWithPath(repo repository.QueueRepository, logger *zap.Logger, queuePath string) *QueueService {
+func NewQueueServiceWithPath(repo repository.QueueRepository, telemetryService *repService.TelemetryService, logger *zap.Logger, queuePath string) *QueueService {
 	return &QueueService{
-		repo:      repo,
-		logger:    logger,
-		queuePath: queuePath,
+		repo:             repo,
+		logger:           logger,
+		queuePath:        queuePath,
+		telemetryService: telemetryService,
 	}
 }
 
@@ -164,13 +169,62 @@ func (s *QueueService) DeleteItem(ctx context.Context, id int64) error {
 }
 
 // MarkDelivered marks a queue item as successfully delivered
+// Note: This should be called by the delivery worker with proper context including recipient domain
 func (s *QueueService) MarkDelivered(id int64) error {
-	return s.repo.UpdateStatus(id, "delivered", "")
+	if err := s.repo.UpdateStatus(id, "delivered", ""); err != nil {
+		return err
+	}
+
+	// Record telemetry if available
+	// Note: For proper telemetry, the delivery worker should call
+	// telemetryService.RecordDelivery directly with full context
+	// This is a placeholder for when the delivery worker is implemented
+
+	return nil
 }
 
 // MarkFailed marks a queue item as permanently failed
+// Note: This should be called by the delivery worker with bounce details
 func (s *QueueService) MarkFailed(id int64, errorMsg string) error {
-	return s.repo.UpdateStatus(id, "failed", errorMsg)
+	if err := s.repo.UpdateStatus(id, "failed", errorMsg); err != nil {
+		return err
+	}
+
+	// Record bounce telemetry if available
+	// Note: For proper telemetry, the delivery worker should call
+	// telemetryService.RecordBounce directly with full context
+	// This is a placeholder for when the delivery worker is implemented
+
+	return nil
+}
+
+// RecordDeliveryTelemetry records successful delivery telemetry
+// This should be called by the delivery worker after successful SMTP delivery
+func (s *QueueService) RecordDeliveryTelemetry(ctx context.Context, senderDomain, recipientDomain, ip string) error {
+	if s.telemetryService == nil {
+		return nil // Telemetry not configured
+	}
+
+	return s.telemetryService.RecordDelivery(ctx, senderDomain, recipientDomain, ip)
+}
+
+// RecordBounceTelemetry records bounce telemetry
+// This should be called by the delivery worker when delivery fails
+func (s *QueueService) RecordBounceTelemetry(ctx context.Context, senderDomain, recipientDomain, ip, bounceType, statusCode, response string) error {
+	if s.telemetryService == nil {
+		return nil // Telemetry not configured
+	}
+
+	return s.telemetryService.RecordBounce(ctx, senderDomain, recipientDomain, ip, bounceType, statusCode, response)
+}
+
+// extractDomain extracts domain from email address
+func extractDomain(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
 }
 
 // IncrementRetry increments the retry count and schedules next retry

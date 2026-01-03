@@ -1,6 +1,7 @@
 package smtp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/security/antispam"
 	"github.com/btafoya/gomailserver/internal/security/antivirus"
 	"github.com/btafoya/gomailserver/internal/security/bruteforce"
@@ -20,16 +22,17 @@ import (
 	"github.com/btafoya/gomailserver/internal/security/greylist"
 	"github.com/btafoya/gomailserver/internal/security/ratelimit"
 	"github.com/btafoya/gomailserver/internal/security/spf"
-	"github.com/btafoya/gomailserver/internal/service"
+	mailService "github.com/btafoya/gomailserver/internal/service"
 )
 
 // Backend implements SMTP backend interface
 type Backend struct {
-	userService    service.UserServiceInterface
-	messageService service.MessageServiceInterface
-	queueService   service.QueueServiceInterface
-	domainRepo     repository.DomainRepository
-	logger         *zap.Logger
+	userService      mailService.UserServiceInterface
+	messageService   mailService.MessageServiceInterface
+	queueService     mailService.QueueServiceInterface
+	domainRepo       repository.DomainRepository
+	telemetryService *repService.TelemetryService
+	logger           *zap.Logger
 
 	// Security services
 	dkimSigner    *dkim.Signer
@@ -45,10 +48,11 @@ type Backend struct {
 
 // NewBackend creates a new SMTP backend with all dependencies
 func NewBackend(
-	userService service.UserServiceInterface,
-	messageService service.MessageServiceInterface,
-	queueService service.QueueServiceInterface,
+	userService mailService.UserServiceInterface,
+	messageService mailService.MessageServiceInterface,
+	queueService mailService.QueueServiceInterface,
 	domainRepo repository.DomainRepository,
+	telemetryService *repService.TelemetryService,
 	dkimSigner *dkim.Signer,
 	dkimVerifier *dkim.Verifier,
 	spfValidator *spf.Validator,
@@ -61,20 +65,21 @@ func NewBackend(
 	logger *zap.Logger,
 ) *Backend {
 	return &Backend{
-		userService:    userService,
-		messageService: messageService,
-		queueService:   queueService,
-		domainRepo:     domainRepo,
-		logger:         logger,
-		dkimSigner:     dkimSigner,
-		dkimVerifier:   dkimVerifier,
-		spfValidator:   spfValidator,
-		dmarcEnforcer:  dmarcEnforcer,
-		greylister:     greylister,
-		rateLimiter:    rateLimiter,
-		bruteForce:     bruteForce,
-		clamav:         clamav,
-		spamAssassin:   spamAssassin,
+		userService:      userService,
+		messageService:   messageService,
+		queueService:     queueService,
+		domainRepo:       domainRepo,
+		telemetryService: telemetryService,
+		logger:           logger,
+		dkimSigner:       dkimSigner,
+		dkimVerifier:     dkimVerifier,
+		spfValidator:     spfValidator,
+		dmarcEnforcer:    dmarcEnforcer,
+		greylister:       greylister,
+		rateLimiter:      rateLimiter,
+		bruteForce:       bruteForce,
+		clamav:           clamav,
+		spamAssassin:     spamAssassin,
 	}
 }
 
@@ -565,6 +570,26 @@ func (s *Session) Data(r io.Reader) error {
 		zap.Strings("to", s.to),
 		zap.Int("size", len(data)),
 	)
+
+	// Record telemetry for outbound authenticated mail
+	if !isInboundRelay && s.backend.telemetryService != nil {
+		senderDomain := extractDomain(s.from)
+		for _, recipient := range s.to {
+			recipientDomain := extractDomain(recipient)
+			if recipientDomain != "" {
+				// Record as queued for delivery (will be updated when actually delivered)
+				// Note: This is optimistic - actual delivery telemetry should be recorded
+				// by the delivery worker when processing the queue
+				ctx := context.Background()
+				if err := s.backend.telemetryService.RecordDelivery(ctx, senderDomain, recipientDomain, remoteIP); err != nil {
+					s.logger.Warn("failed to record telemetry",
+						zap.Error(err),
+						zap.String("domain", senderDomain),
+					)
+				}
+			}
+		}
+	}
 
 	return nil
 }

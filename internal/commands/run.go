@@ -21,6 +21,7 @@ import (
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/imap"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
+	"github.com/btafoya/gomailserver/internal/reputation"
 	"github.com/btafoya/gomailserver/internal/security/antispam"
 	"github.com/btafoya/gomailserver/internal/security/antivirus"
 	"github.com/btafoya/gomailserver/internal/security/bruteforce"
@@ -74,6 +75,18 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	defer db.Close()
 
+	// Initialize reputation database
+	reputationDB, err := reputation.InitDatabase(reputation.Config{
+		Path: "./data/reputation.db",
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize reputation database: %w", err)
+	}
+	defer reputationDB.Close()
+
+	// Create reputation scheduler
+	reputationScheduler := reputation.NewScheduler(reputationDB.TelemetryService, logger)
+
 	// Initialize TLS manager
 	var tlsMgr *tlspkg.Manager
 	var tlsCfg *tls.Config
@@ -123,7 +136,7 @@ func run(cmd *cobra.Command, args []string) error {
 	userSvc := service.NewUserService(userRepo, domainRepo, logger)
 	mailboxSvc := service.NewMailboxService(mailboxRepo, logger)
 	messageSvc := service.NewMessageService(messageRepo, "./data/mail", logger)
-	queueSvc := service.NewQueueService(queueRepo, logger)
+	queueSvc := service.NewQueueService(queueRepo, reputationDB.TelemetryService, logger)
 	domainSvc := service.NewDomainService(domainRepo)
 
 	// Wire up cross-service dependencies for webmail
@@ -192,6 +205,7 @@ func run(cmd *cobra.Command, args []string) error {
 		messageSvc,
 		queueSvc,
 		domainRepo,
+		reputationDB.TelemetryService,
 		dkimSigner,
 		dkimVerifier,
 		spfValidator,
@@ -241,6 +255,7 @@ func run(cmd *cobra.Command, args []string) error {
 		addressbookSvc,
 		calendarSvc,
 		eventSvc,
+		reputationDB.TelemetryService,
 		logger,
 	)
 
@@ -265,6 +280,11 @@ func run(cmd *cobra.Command, args []string) error {
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Start reputation scheduler
+	if err := reputationScheduler.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start reputation scheduler: %w", err)
+	}
 
 	// Start SMTP server
 	if err := smtpServer.Start(ctx); err != nil {
@@ -338,6 +358,11 @@ func run(cmd *cobra.Command, args []string) error {
 		if err := webdavServer.Shutdown(shutdownCtx); err != nil {
 			logger.Error("WebDAV server shutdown error", zap.Error(err))
 		}
+	}
+
+	// Shutdown reputation scheduler
+	if err := reputationScheduler.Stop(); err != nil {
+		logger.Error("reputation scheduler shutdown error", zap.Error(err))
 	}
 
 	logger.Info("shutdown complete")
