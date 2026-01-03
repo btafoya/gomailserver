@@ -1,10 +1,10 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 
 // Create axios instance with default config
+// Force empty baseURL so axios uses absolute paths from document root
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8980',
+  baseURL: '',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
@@ -14,9 +14,10 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const authStore = useAuthStore()
-    if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`
+    // Get token from localStorage directly to avoid circular dependency
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -36,6 +37,8 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
+        // Import useAuthStore dynamically to avoid circular dependency
+        const { useAuthStore } = await import('@/stores/auth')
         const authStore = useAuthStore()
         await authStore.refresh()
 
@@ -44,6 +47,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         // Refresh token failed, redirect to login
+        const { useAuthStore } = await import('@/stores/auth')
         const authStore = useAuthStore()
         authStore.logout()
         router.push({ name: 'Login' })
