@@ -121,6 +121,31 @@ func (r *warmUpRepository) UpdateDayVolume(ctx context.Context, domainName strin
 	return nil
 }
 
+// IncrementDayVolume increments the actual volume sent for a specific day
+func (r *warmUpRepository) IncrementDayVolume(ctx context.Context, domainName string, day int, increment int) error {
+	query := `
+		UPDATE warm_up_schedules
+		SET actual_volume = actual_volume + ?
+		WHERE domain = ? AND day = ?
+	`
+
+	result, err := r.db.ExecContext(ctx, query, increment, domainName, day)
+	if err != nil {
+		return fmt.Errorf("failed to increment day volume: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no warm-up day found for domain %s day %d", domainName, day)
+	}
+
+	return nil
+}
+
 // DeleteSchedule removes the warm-up schedule for a domain
 func (r *warmUpRepository) DeleteSchedule(ctx context.Context, domainName string) error {
 	query := `DELETE FROM warm_up_schedules WHERE domain = ?`

@@ -18,7 +18,11 @@ type SendingEvent struct {
 type EventType string
 
 const (
-	// EventDelivery indicates successful message delivery
+	// EventSent indicates message was sent
+	EventSent EventType = "sent"
+	// EventDelivered indicates successful message delivery
+	EventDelivered EventType = "delivered"
+	// EventDelivery indicates successful message delivery (alias for EventDelivered)
 	EventDelivery EventType = "delivery"
 	// EventBounce indicates message bounce
 	EventBounce EventType = "bounce"
@@ -115,4 +119,16 @@ type CheckStatus struct {
 	Passed  bool
 	Message string
 	Details map[string]interface{}
+}
+
+// WarmUpStatus represents the current warm-up status for a domain
+type WarmUpStatus struct {
+	Active        bool
+	Domain        string
+	CurrentDay    int
+	TotalDays     int
+	MaxVolume     int
+	ActualVolume  int
+	VolumePercent float64
+	Completed     bool
 }

@@ -41,8 +41,11 @@ type WarmUpRepository interface {
 	// CreateSchedule creates a new warm-up schedule for a domain
 	CreateSchedule(ctx context.Context, domain string, schedule []*domain.WarmUpDay) error
 
-	// UpdateDayVolume updates the actual volume sent for a specific day
+	// UpdateDayVolume sets the actual volume sent for a specific day
 	UpdateDayVolume(ctx context.Context, domain string, day int, volume int) error
+
+	// IncrementDayVolume increments the actual volume sent for a specific day
+	IncrementDayVolume(ctx context.Context, domain string, day int, increment int) error
 
 	// DeleteSchedule removes the warm-up schedule for a domain
 	DeleteSchedule(ctx context.Context, domain string) error

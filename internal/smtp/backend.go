@@ -35,15 +35,16 @@ type Backend struct {
 	logger           *zap.Logger
 
 	// Security services
-	dkimSigner    *dkim.Signer
-	dkimVerifier  *dkim.Verifier
-	spfValidator  *spf.Validator
-	dmarcEnforcer *dmarc.Enforcer
-	greylister    *greylist.Greylister
-	rateLimiter   *ratelimit.Limiter
-	bruteForce    *bruteforce.Protection
-	clamav        *antivirus.ClamAV
-	spamAssassin  *antispam.SpamAssassin
+	dkimSigner      *dkim.Signer
+	dkimVerifier    *dkim.Verifier
+	spfValidator    *spf.Validator
+	dmarcEnforcer   *dmarc.Enforcer
+	greylister      *greylist.Greylister
+	rateLimiter     *ratelimit.Limiter
+	adaptiveLimiter *repService.AdaptiveLimiter
+	bruteForce      *bruteforce.Protection
+	clamav          *antivirus.ClamAV
+	spamAssassin    *antispam.SpamAssassin
 }
 
 // NewBackend creates a new SMTP backend with all dependencies
@@ -59,6 +60,7 @@ func NewBackend(
 	dmarcEnforcer *dmarc.Enforcer,
 	greylister *greylist.Greylister,
 	rateLimiter *ratelimit.Limiter,
+	adaptiveLimiter *repService.AdaptiveLimiter,
 	bruteForce *bruteforce.Protection,
 	clamav *antivirus.ClamAV,
 	spamAssassin *antispam.SpamAssassin,
@@ -77,6 +79,7 @@ func NewBackend(
 		dmarcEnforcer:    dmarcEnforcer,
 		greylister:       greylister,
 		rateLimiter:      rateLimiter,
+		adaptiveLimiter:  adaptiveLimiter,
 		bruteForce:       bruteForce,
 		clamav:           clamav,
 		spamAssassin:     spamAssassin,
@@ -325,6 +328,55 @@ func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 					EnhancedCode: smtp.EnhancedCode{4, 7, 1},
 					Message:      "Rate limit exceeded",
 				}
+			}
+		}
+	}
+
+	// Check adaptive rate limiting (reputation-aware, circuit breaker, warm-up)
+	if s.backend.adaptiveLimiter != nil {
+		ctx := context.Background()
+		allowed, err := s.backend.adaptiveLimiter.CheckDomain(ctx, domain)
+		if err != nil {
+			// Check if it's a circuit breaker error
+			if err == repService.ErrCircuitBreakerActive {
+				s.logger.Warn("Domain paused by circuit breaker",
+					zap.String("domain", domain),
+					zap.String("from", from),
+				)
+				return &smtp.SMTPError{
+					Code:         421,
+					EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+					Message:      "Sending paused for this domain due to reputation issues",
+				}
+			}
+
+			// Check if it's a warm-up limit error
+			if err == repService.ErrWarmUpLimitExceeded {
+				s.logger.Warn("Warm-up volume limit exceeded",
+					zap.String("domain", domain),
+					zap.String("from", from),
+				)
+				return &smtp.SMTPError{
+					Code:         421,
+					EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+					Message:      "Daily sending limit reached during warm-up period",
+				}
+			}
+
+			// Other errors - log but allow
+			s.logger.Error("adaptive limiter check failed",
+				zap.String("domain", domain),
+				zap.Error(err),
+			)
+		} else if !allowed {
+			s.logger.Warn("Domain rate limited by reputation",
+				zap.String("domain", domain),
+				zap.String("from", from),
+			)
+			return &smtp.SMTPError{
+				Code:         421,
+				EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+				Message:      "Domain sending rate limit exceeded",
 			}
 		}
 	}
@@ -588,6 +640,18 @@ func (s *Session) Data(r io.Reader) error {
 					)
 				}
 			}
+		}
+	}
+
+	// Record send for warm-up tracking (outbound only)
+	if !isInboundRelay && s.backend.adaptiveLimiter != nil {
+		senderDomain := extractDomain(s.from)
+		ctx := context.Background()
+		if err := s.backend.adaptiveLimiter.RecordSend(ctx, senderDomain); err != nil {
+			s.logger.Warn("failed to record warm-up send",
+				zap.Error(err),
+				zap.String("domain", senderDomain),
+			)
 		}
 	}
 

@@ -85,9 +85,6 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	defer reputationDB.Close()
 
-	// Create reputation scheduler
-	reputationScheduler := reputation.NewScheduler(reputationDB.TelemetryService, logger)
-
 	// Initialize TLS manager
 	var tlsMgr *tlspkg.Manager
 	var tlsCfg *tls.Config
@@ -203,6 +200,42 @@ func run(cmd *cobra.Command, args []string) error {
 
 	logger.Debug("security services initialized")
 
+	// Create reputation management services (Phase 3)
+	circuitBreakerSvc := repService.NewCircuitBreakerService(
+		reputationDB.EventsRepo,
+		reputationDB.ScoresRepo,
+		reputationDB.CircuitBreakerRepo,
+		reputationDB.TelemetryService,
+		logger,
+	)
+
+	warmUpSvc := repService.NewWarmUpService(
+		reputationDB.EventsRepo,
+		reputationDB.ScoresRepo,
+		reputationDB.WarmUpRepo,
+		reputationDB.TelemetryService,
+		logger,
+	)
+
+	// Create adaptive limiter (wraps base rate limiter with reputation awareness)
+	adaptiveLimiter := repService.NewAdaptiveLimiter(
+		rateLimiter,
+		reputationDB.ScoresRepo,
+		reputationDB.WarmUpRepo,
+		reputationDB.CircuitBreakerRepo,
+		logger,
+	)
+
+	// Create reputation scheduler with Phase 3 services
+	reputationScheduler := reputation.NewScheduler(
+		reputationDB.TelemetryService,
+		circuitBreakerSvc,
+		warmUpSvc,
+		logger,
+	)
+
+	logger.Debug("reputation management services initialized")
+
 	// Create SMTP backend with all security services
 	smtpBackend := smtp.NewBackend(
 		userSvc,
@@ -216,6 +249,7 @@ func run(cmd *cobra.Command, args []string) error {
 		dmarcEnforcer,
 		greylister,
 		rateLimiter,
+		adaptiveLimiter,
 		bruteForce,
 		clamav,
 		spamAssassin,
