@@ -77,6 +77,26 @@ const routes = [
         path: 'audit',
         name: 'Audit',
         component: () => import('@/views/Audit.vue')
+      },
+      {
+        path: 'reputation',
+        name: 'Reputation',
+        component: () => import('@/views/reputation/Overview.vue')
+      },
+      {
+        path: 'reputation/circuit-breakers',
+        name: 'ReputationCircuitBreakers',
+        component: () => import('@/views/reputation/CircuitBreakers.vue')
+      },
+      {
+        path: 'reputation/warmup',
+        name: 'ReputationWarmup',
+        component: () => import('@/views/reputation/Warmup.vue')
+      },
+      {
+        path: 'reputation/audit',
+        name: 'ReputationAudit',
+        component: () => import('@/views/reputation/Audit.vue')
       }
     ]
   }
