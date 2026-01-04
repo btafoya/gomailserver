@@ -59,6 +59,24 @@ type RouterConfig struct {
 	ScoresRepo         repRepository.ScoresRepository
 	EventsRepo         repRepository.EventsRepository
 	CircuitRepo        repRepository.CircuitBreakerRepository
+	// Phase 5 repositories
+	DMARCRepo          repRepository.DMARCReportsRepository
+	ARFRepo            repRepository.ARFReportsRepository
+	PostmasterRepo     repRepository.PostmasterMetricsRepository
+	SNDSRepo           repRepository.SNDSMetricsRepository
+	ProviderLimitsRepo repRepository.ProviderRateLimitsRepository
+	WarmupRepo         repRepository.CustomWarmupSchedulesRepository
+	PredictionsRepo    repRepository.PredictionsRepository
+	AlertsRepo         repRepository.AlertsRepository
+	// Phase 5 services
+	DMARCAnalyzer      *repService.DMARCAnalyzerService
+	ARFParser          *repService.ARFParserService
+	GmailPostmaster    *repService.GmailPostmasterService
+	MicrosoftSNDS      *repService.MicrosoftSNDSService
+	ProviderLimits     *repService.ProviderRateLimitsService
+	CustomWarmup       *repService.CustomWarmupService
+	Predictions        *repService.PredictionsService
+	Alerts             *repService.AlertsService
 	APIKeyRepo         repository.APIKeyRepository
 	RateLimitRepo      repository.RateLimitRepository
 	DB                 *sql.DB
@@ -258,6 +276,7 @@ func NewRouter(config RouterConfig) *Router {
 					config.Logger,
 				)
 				r.Route("/reputation", func(r chi.Router) {
+					// Phase 1-4 endpoints
 					r.Get("/audit/{domain}", reputationHandler.AuditDomain)
 					r.Post("/audit/{domain}", reputationHandler.AuditDomain)
 					r.Get("/scores", reputationHandler.ListScores)
@@ -265,6 +284,70 @@ func NewRouter(config RouterConfig) *Router {
 					r.Get("/circuit-breakers", reputationHandler.ListCircuitBreakers)
 					r.Get("/circuit-breakers/{domain}/history", reputationHandler.GetCircuitBreakerHistory)
 					r.Get("/alerts", reputationHandler.ListAlerts)
+
+					// Phase 5 endpoints (if dependencies available)
+					if config.DMARCRepo != nil && config.DMARCAnalyzer != nil {
+						phase5Handler := handlers.NewReputationPhase5Handler(
+							config.DMARCRepo,
+							config.ARFRepo,
+							config.PostmasterRepo,
+							config.SNDSRepo,
+							config.ProviderLimitsRepo,
+							config.WarmupRepo,
+							config.PredictionsRepo,
+							config.AlertsRepo,
+							config.DMARCAnalyzer,
+							config.ARFParser,
+							config.GmailPostmaster,
+							config.MicrosoftSNDS,
+							config.ProviderLimits,
+							config.CustomWarmup,
+							config.Predictions,
+							config.Alerts,
+							config.Logger,
+						)
+
+						// DMARC reports
+						r.Get("/dmarc/reports", phase5Handler.ListDMARCReports)
+						r.Get("/dmarc/reports/{id}", phase5Handler.GetDMARCReport)
+						r.Get("/dmarc/stats/{domain}", phase5Handler.GetDMARCStats)
+						r.Get("/dmarc/actions", phase5Handler.GetDMARCActions)
+						r.Post("/dmarc/reports/{id}/export", phase5Handler.ExportDMARCReport)
+
+						// ARF reports
+						r.Get("/arf/reports", phase5Handler.ListARFReports)
+						r.Get("/arf/stats", phase5Handler.GetARFStats)
+						r.Post("/arf/reports/{id}/process", phase5Handler.ProcessARFReport)
+
+						// External metrics
+						r.Get("/external/postmaster/{domain}", phase5Handler.GetPostmasterMetrics)
+						r.Get("/external/snds/{ip}", phase5Handler.GetSNDSMetrics)
+						r.Get("/external/trends", phase5Handler.GetExternalMetricsTrends)
+
+						// Provider rate limits
+						r.Get("/provider-limits", phase5Handler.ListProviderRateLimits)
+						r.Put("/provider-limits/{id}", phase5Handler.UpdateProviderRateLimit)
+						r.Post("/provider-limits/init/{domain}", phase5Handler.InitializeProviderLimits)
+						r.Post("/provider-limits/{id}/reset", phase5Handler.ResetProviderUsage)
+
+						// Custom warmup schedules
+						r.Get("/warmup/{domain}", phase5Handler.GetCustomWarmupSchedule)
+						r.Post("/warmup", phase5Handler.CreateCustomWarmupSchedule)
+						r.Put("/warmup/{id}", phase5Handler.UpdateCustomWarmupSchedule)
+						r.Delete("/warmup/{id}", phase5Handler.DeleteCustomWarmupSchedule)
+						r.Get("/warmup/templates", phase5Handler.GetWarmupTemplates)
+
+						// Predictions
+						r.Get("/predictions/latest", phase5Handler.GetLatestPredictions)
+						r.Get("/predictions/{domain}", phase5Handler.GetDomainPredictions)
+						r.Post("/predictions/generate/{domain}", phase5Handler.GeneratePredictions)
+						r.Get("/predictions/{domain}/history", phase5Handler.GetPredictionHistory)
+
+						// Phase 5 alerts
+						r.Get("/alerts/phase5", phase5Handler.ListPhase5Alerts)
+						r.Post("/alerts/{id}/acknowledge", phase5Handler.AcknowledgeAlert)
+						r.Post("/alerts/{id}/resolve", phase5Handler.ResolveAlert)
+					}
 				})
 			}
 
