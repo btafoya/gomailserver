@@ -275,8 +275,13 @@ func run(cmd *cobra.Command, args []string) error {
 	imapServer := imap.NewServer(&cfg.IMAP, tlsCfg, imapBackend, logger)
 
 	// Create Admin API server
+	// Use WebUI port if enabled, otherwise fall back to API port
+	apiConfig := cfg.API
+	if cfg.WebUI.Enabled {
+		apiConfig.Port = cfg.WebUI.Port
+	}
 	apiServer := api.NewServer(
-		&cfg.API,
+		&apiConfig,
 		cfg,
 		cfgFile,
 		db,
@@ -359,6 +364,9 @@ func run(cmd *cobra.Command, args []string) error {
 		zap.Int("imap_port", cfg.IMAP.Port),
 		zap.Int("imaps_port", cfg.IMAP.IMAPSPort),
 		zap.Int("api_port", cfg.API.Port),
+	}
+	if cfg.WebUI.Enabled {
+		logFields = append(logFields, zap.Int("webui_port", cfg.WebUI.Port))
 	}
 	if cfg.WebDAV.Enabled {
 		logFields = append(logFields, zap.Int("webdav_port", cfg.WebDAV.Port))

@@ -78,3 +78,4 @@ internal/webmail/dist/_nuxt/
 .serena/
 
 gha-creds-*.json
+/.venv/

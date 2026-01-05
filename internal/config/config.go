@@ -15,6 +15,7 @@ type Config struct {
 	SMTP     SMTPConfig     `mapstructure:"smtp" yaml:"smtp"`
 	IMAP     IMAPConfig     `mapstructure:"imap" yaml:"imap"`
 	API      APIConfig      `mapstructure:"api" yaml:"api"`
+	WebUI    WebUIConfig    `mapstructure:"webui" yaml:"webui"`
 	WebDAV   WebDAVConfig   `mapstructure:"webdav" yaml:"webdav"`
 	Security SecurityConfig `mapstructure:"security" yaml:"security"`
 }
@@ -72,6 +73,12 @@ type APIConfig struct {
 	AdminToken     string   `mapstructure:"admin_token" yaml:"admin_token" env:"API_ADMIN_TOKEN"`                                   // Bearer token for admin endpoints (deprecated, use JWT)
 	JWTSecret      string   `mapstructure:"jwt_secret" yaml:"jwt_secret" env:"API_JWT_SECRET"`                                      // Secret for signing JWT tokens
 	CORSOrigins    []string `mapstructure:"cors_origins" yaml:"cors_origins" env:"API_CORS_ORIGINS"`                                // Allowed CORS origins
+}
+
+// WebUIConfig holds Web UI (admin and webmail) server configuration
+type WebUIConfig struct {
+	Enabled bool `mapstructure:"enabled" yaml:"enabled" env:"WEBUI_ENABLED" default:"true"`
+	Port    int  `mapstructure:"port" yaml:"port" env:"WEBUI_PORT" default:"8080"`
 }
 
 // WebDAVConfig holds WebDAV/CalDAV/CardDAV server configuration
@@ -174,6 +181,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("api.read_timeout", 15)
 	v.SetDefault("api.write_timeout", 15)
 	v.SetDefault("api.max_header_bytes", 1048576) // 1MB
+
+	// WebUI (Admin and Webmail interfaces)
+	v.SetDefault("webui.enabled", true)
+	v.SetDefault("webui.port", 8080)
 
 	// WebDAV/CalDAV/CardDAV
 	v.SetDefault("webdav.enabled", true)
