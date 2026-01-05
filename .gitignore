@@ -70,7 +70,7 @@ web/*/.output/
 *.cert
 
 # ACME cache
-acme/
+/acme/
 
 .playwright-mcp/
 internal/webmail/dist/_nuxt/

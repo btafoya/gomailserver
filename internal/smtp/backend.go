@@ -1,6 +1,7 @@
 package smtp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/security/antispam"
 	"github.com/btafoya/gomailserver/internal/security/antivirus"
 	"github.com/btafoya/gomailserver/internal/security/bruteforce"
@@ -20,61 +22,67 @@ import (
 	"github.com/btafoya/gomailserver/internal/security/greylist"
 	"github.com/btafoya/gomailserver/internal/security/ratelimit"
 	"github.com/btafoya/gomailserver/internal/security/spf"
-	"github.com/btafoya/gomailserver/internal/service"
+	mailService "github.com/btafoya/gomailserver/internal/service"
 )
 
 // Backend implements SMTP backend interface
 type Backend struct {
-	userService    service.UserServiceInterface
-	messageService service.MessageServiceInterface
-	queueService   service.QueueServiceInterface
-	domainRepo     repository.DomainRepository
-	logger         *zap.Logger
+	userService      mailService.UserServiceInterface
+	messageService   mailService.MessageServiceInterface
+	queueService     mailService.QueueServiceInterface
+	domainRepo       repository.DomainRepository
+	telemetryService *repService.TelemetryService
+	logger           *zap.Logger
 
 	// Security services
-	dkimSigner    *dkim.Signer
-	dkimVerifier  *dkim.Verifier
-	spfValidator  *spf.Validator
-	dmarcEnforcer *dmarc.Enforcer
-	greylister    *greylist.Greylister
-	rateLimiter   *ratelimit.Limiter
-	bruteForce    *bruteforce.Protection
-	clamav        *antivirus.ClamAV
-	spamAssassin  *antispam.SpamAssassin
+	dkimSigner      *dkim.Signer
+	dkimVerifier    *dkim.Verifier
+	spfValidator    *spf.Validator
+	dmarcEnforcer   *dmarc.Enforcer
+	greylister      *greylist.Greylister
+	rateLimiter     *ratelimit.Limiter
+	adaptiveLimiter *repService.AdaptiveLimiter
+	bruteForce      *bruteforce.Protection
+	clamav          *antivirus.ClamAV
+	spamAssassin    *antispam.SpamAssassin
 }
 
 // NewBackend creates a new SMTP backend with all dependencies
 func NewBackend(
-	userService service.UserServiceInterface,
-	messageService service.MessageServiceInterface,
-	queueService service.QueueServiceInterface,
+	userService mailService.UserServiceInterface,
+	messageService mailService.MessageServiceInterface,
+	queueService mailService.QueueServiceInterface,
 	domainRepo repository.DomainRepository,
+	telemetryService *repService.TelemetryService,
 	dkimSigner *dkim.Signer,
 	dkimVerifier *dkim.Verifier,
 	spfValidator *spf.Validator,
 	dmarcEnforcer *dmarc.Enforcer,
 	greylister *greylist.Greylister,
 	rateLimiter *ratelimit.Limiter,
+	adaptiveLimiter *repService.AdaptiveLimiter,
 	bruteForce *bruteforce.Protection,
 	clamav *antivirus.ClamAV,
 	spamAssassin *antispam.SpamAssassin,
 	logger *zap.Logger,
 ) *Backend {
 	return &Backend{
-		userService:    userService,
-		messageService: messageService,
-		queueService:   queueService,
-		domainRepo:     domainRepo,
-		logger:         logger,
-		dkimSigner:     dkimSigner,
-		dkimVerifier:   dkimVerifier,
-		spfValidator:   spfValidator,
-		dmarcEnforcer:  dmarcEnforcer,
-		greylister:     greylister,
-		rateLimiter:    rateLimiter,
-		bruteForce:     bruteForce,
-		clamav:         clamav,
-		spamAssassin:   spamAssassin,
+		userService:      userService,
+		messageService:   messageService,
+		queueService:     queueService,
+		domainRepo:       domainRepo,
+		telemetryService: telemetryService,
+		logger:           logger,
+		dkimSigner:       dkimSigner,
+		dkimVerifier:     dkimVerifier,
+		spfValidator:     spfValidator,
+		dmarcEnforcer:    dmarcEnforcer,
+		greylister:       greylister,
+		rateLimiter:      rateLimiter,
+		adaptiveLimiter:  adaptiveLimiter,
+		bruteForce:       bruteForce,
+		clamav:           clamav,
+		spamAssassin:     spamAssassin,
 	}
 }
 
@@ -324,6 +332,55 @@ func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 		}
 	}
 
+	// Check adaptive rate limiting (reputation-aware, circuit breaker, warm-up)
+	if s.backend.adaptiveLimiter != nil {
+		ctx := context.Background()
+		allowed, err := s.backend.adaptiveLimiter.CheckDomain(ctx, domain)
+		if err != nil {
+			// Check if it's a circuit breaker error
+			if err == repService.ErrCircuitBreakerActive {
+				s.logger.Warn("Domain paused by circuit breaker",
+					zap.String("domain", domain),
+					zap.String("from", from),
+				)
+				return &smtp.SMTPError{
+					Code:         421,
+					EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+					Message:      "Sending paused for this domain due to reputation issues",
+				}
+			}
+
+			// Check if it's a warm-up limit error
+			if err == repService.ErrWarmUpLimitExceeded {
+				s.logger.Warn("Warm-up volume limit exceeded",
+					zap.String("domain", domain),
+					zap.String("from", from),
+				)
+				return &smtp.SMTPError{
+					Code:         421,
+					EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+					Message:      "Daily sending limit reached during warm-up period",
+				}
+			}
+
+			// Other errors - log but allow
+			s.logger.Error("adaptive limiter check failed",
+				zap.String("domain", domain),
+				zap.Error(err),
+			)
+		} else if !allowed {
+			s.logger.Warn("Domain rate limited by reputation",
+				zap.String("domain", domain),
+				zap.String("from", from),
+			)
+			return &smtp.SMTPError{
+				Code:         421,
+				EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+				Message:      "Domain sending rate limit exceeded",
+			}
+		}
+	}
+
 	s.from = from
 	s.logger.Debug("MAIL FROM",
 		zap.String("from", from),
@@ -565,6 +622,38 @@ func (s *Session) Data(r io.Reader) error {
 		zap.Strings("to", s.to),
 		zap.Int("size", len(data)),
 	)
+
+	// Record telemetry for outbound authenticated mail
+	if !isInboundRelay && s.backend.telemetryService != nil {
+		senderDomain := extractDomain(s.from)
+		for _, recipient := range s.to {
+			recipientDomain := extractDomain(recipient)
+			if recipientDomain != "" {
+				// Record as queued for delivery (will be updated when actually delivered)
+				// Note: This is optimistic - actual delivery telemetry should be recorded
+				// by the delivery worker when processing the queue
+				ctx := context.Background()
+				if err := s.backend.telemetryService.RecordDelivery(ctx, senderDomain, recipientDomain, remoteIP); err != nil {
+					s.logger.Warn("failed to record telemetry",
+						zap.Error(err),
+						zap.String("domain", senderDomain),
+					)
+				}
+			}
+		}
+	}
+
+	// Record send for warm-up tracking (outbound only)
+	if !isInboundRelay && s.backend.adaptiveLimiter != nil {
+		senderDomain := extractDomain(s.from)
+		ctx := context.Background()
+		if err := s.backend.adaptiveLimiter.RecordSend(ctx, senderDomain); err != nil {
+			s.logger.Warn("failed to record warm-up send",
+				zap.Error(err),
+				zap.String("domain", senderDomain),
+			)
+		}
+	}
 
 	return nil
 }

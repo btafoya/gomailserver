@@ -62,6 +62,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV7Up,
 			Down:        migrationV7Down,
 		},
+		{
+			Version:     8,
+			Description: "Add reputation management Phase 5 tables (DMARC, ARF, external metrics, predictions, alerts)",
+			Up:          migrationV8Up,
+			Down:        migrationV8Down,
+		},
 	}
 }
 

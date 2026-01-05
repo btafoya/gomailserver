@@ -77,6 +77,58 @@ const routes = [
         path: 'audit',
         name: 'Audit',
         component: () => import('@/views/Audit.vue')
+      },
+      {
+        path: 'reputation',
+        name: 'Reputation',
+        component: () => import('@/views/reputation/Overview.vue')
+      },
+      {
+        path: 'reputation/circuit-breakers',
+        name: 'ReputationCircuitBreakers',
+        component: () => import('@/views/reputation/CircuitBreakers.vue')
+      },
+      {
+        path: 'reputation/warmup',
+        name: 'ReputationWarmup',
+        component: () => import('@/views/reputation/Warmup.vue')
+      },
+      {
+        path: 'reputation/audit',
+        name: 'ReputationAudit',
+        component: () => import('@/views/reputation/Audit.vue')
+      },
+      // Phase 5 reputation routes
+      {
+        path: 'reputation/dmarc',
+        name: 'ReputationDMARC',
+        component: () => import('@/views/reputation/DMARCReports.vue')
+      },
+      {
+        path: 'reputation/external-metrics',
+        name: 'ReputationExternalMetrics',
+        component: () => import('@/views/reputation/ExternalMetrics.vue')
+      },
+      {
+        path: 'reputation/provider-limits',
+        name: 'ReputationProviderLimits',
+        component: () => import('@/views/reputation/ProviderLimits.vue')
+      },
+      {
+        path: 'reputation/warmup-scheduler',
+        name: 'ReputationWarmupScheduler',
+        component: () => import('@/views/reputation/WarmupScheduler.vue')
+      },
+      {
+        path: 'reputation/predictions',
+        name: 'ReputationPredictions',
+        component: () => import('@/views/reputation/Predictions.vue')
+      },
+      // Phase 6 reputation routes
+      {
+        path: 'reputation/operational-mail',
+        name: 'ReputationOperationalMail',
+        component: () => import('@/views/reputation/OperationalMail.vue')
       }
     ]
   }

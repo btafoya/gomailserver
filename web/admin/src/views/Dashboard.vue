@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
+import DeliverabilityCard from '@/components/reputation/DeliverabilityCard.vue'
+import CircuitBreakersCard from '@/components/reputation/CircuitBreakersCard.vue'
+import RecentAlertsTimeline from '@/components/reputation/RecentAlertsTimeline.vue'
 
 const stats = ref({
   domains: 0,
@@ -83,6 +86,33 @@ onMounted(async () => {
             </svg>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Reputation Management Section -->
+    <div class="mt-8">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-foreground">Reputation Management</h2>
+          <p class="text-muted-foreground mt-1">Monitor sender reputation and deliverability health</p>
+        </div>
+        <router-link
+          to="/reputation"
+          class="text-sm font-semibold text-primary hover:underline"
+        >
+          View Full Dashboard →
+        </router-link>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Deliverability Card -->
+        <DeliverabilityCard />
+
+        <!-- Circuit Breakers Card -->
+        <CircuitBreakersCard />
+
+        <!-- Recent Alerts Timeline -->
+        <RecentAlertsTimeline :limit="5" />
       </div>
     </div>
 

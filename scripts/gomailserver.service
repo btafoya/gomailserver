@@ -1,0 +1,53 @@
+[Unit]
+Description=gomailserver - Modern Go Mail Server
+Documentation=https://github.com/btafoya/gomailserver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gomailserver
+Group=gomailserver
+
+# Binary and configuration
+ExecStart=/usr/local/bin/gomailserver run --config /etc/gomailserver/gomailserver.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Working directory and data storage
+WorkingDirectory=/var/lib/gomailserver
+RuntimeDirectory=gomailserver
+StateDirectory=gomailserver
+ConfigurationDirectory=gomailserver
+LogsDirectory=gomailserver
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/gomailserver /var/log/gomailserver
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Environment
+Environment="GOMAILSERVER_ENV=production"
+
+[Install]
+WantedBy=multi-user.target
