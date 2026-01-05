@@ -1,0 +1,57 @@
+{
+  "spec_id": "001-add-pagination-to-admin-list-endpoints",
+  "created_at": "2026-01-05T22:04:13.431865+00:00",
+  "updated_at": "2026-01-05T22:04:19.843052+00:00",
+  "phases": {
+    "planning": {
+      "phase": "planning",
+      "status": "completed",
+      "started_at": "2026-01-05T22:04:13.432684+00:00",
+      "completed_at": "2026-01-05T22:04:19.842418+00:00",
+      "entries": [
+        {
+          "timestamp": "2026-01-05T22:04:13.432712+00:00",
+          "type": "phase_start",
+          "content": "Starting implementation planning...",
+          "phase": "planning"
+        },
+        {
+          "timestamp": "2026-01-05T22:04:15.793788+00:00",
+          "type": "text",
+          "content": "You've hit your limit · resets 7pm (America/New_York)",
+          "phase": "planning",
+          "session": 1
+        },
+        {
+          "timestamp": "2026-01-05T22:04:19.842442+00:00",
+          "type": "phase_end",
+          "content": "Implementation plan created",
+          "phase": "planning",
+          "session": 1
+        }
+      ]
+    },
+    "coding": {
+      "phase": "coding",
+      "status": "active",
+      "started_at": "2026-01-05T22:04:19.843009+00:00",
+      "completed_at": null,
+      "entries": [
+        {
+          "timestamp": "2026-01-05T22:04:19.843034+00:00",
+          "type": "phase_start",
+          "content": "Starting implementation...",
+          "phase": "coding",
+          "session": 1
+        }
+      ]
+    },
+    "validation": {
+      "phase": "validation",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "entries": []
+    }
+  }
+}
