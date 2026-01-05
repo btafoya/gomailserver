@@ -79,3 +79,6 @@ internal/webmail/dist/_nuxt/
 
 gha-creds-*.json
 /.venv/
+
+# Auto Claude data directory
+.auto-claude/

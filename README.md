@@ -95,6 +95,28 @@ Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security feature
 
 ### Installation
 
+#### Option 1: APT Package (Recommended for Debian/Ubuntu)
+
+Install via APT repository on supported distributions (Ubuntu: focal/jammy/noble, Debian: bullseye/bookworm):
+
+```bash
+# Add GPG key
+curl -fsSL https://btafoya.github.io/gomailserver/repo/public.key | \
+  sudo gpg --dearmor -o /usr/share/keyrings/gomailserver-archive-keyring.gpg
+
+# Add repository (replace 'jammy' with your distribution codename)
+echo "deb [signed-by=/usr/share/keyrings/gomailserver-archive-keyring.gpg] https://btafoya.github.io/gomailserver/repo jammy main" | \
+  sudo tee /etc/apt/sources.list.d/gomailserver.list
+
+# Install
+sudo apt update
+sudo apt install gomailserver
+```
+
+See [INSTALL-APT.md](INSTALL-APT.md) for detailed APT installation instructions.
+
+#### Option 2: Build from Source
+
 ```bash
 # Clone repository
 git clone https://github.com/btafoya/gomailserver.git
@@ -107,7 +129,7 @@ make build
 make install
 ```
 
-#### systemd Installation (Recommended for Production)
+#### Option 3: systemd Installation (Manual Build for Production)
 
 For production deployments with systemd:
 
