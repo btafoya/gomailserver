@@ -631,26 +631,16 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 ## Documentation
 
 ### Project Status & Planning
-- **PROJECT-STATUS.md** - Comprehensive project status with 81% completion tracking (244/303 tasks)
+- **PROJECT-STATUS-2026-01-04.md** - Comprehensive project status with complete phase breakdown and 81% completion tracking (244/303 tasks)
 - **README.md** - Project overview and quick start (this file)
-- **TASKS.md** - Complete task breakdown (303 tasks across 10+ phases)
-- **IMPLEMENTATION_STATUS.md** - Phase completion summary
 
 ### Feature Documentation
 - **REPUTATION-MANAGEMENT.md** - Complete reputation management strategy and architecture
-- **REPUTATION-IMPLEMENTATION-PLAN.md** - Detailed implementation plan for reputation features
-- **ISSUE1-PHASE1-COMPLETE.md** - Reputation Phase 1: Telemetry Foundation
-- **ISSUE2-PHASE2-COMPLETE.md** - Reputation Phase 2: Deliverability Auditor
-- **ISSUE3-PHASE3-COMPLETE.md** - Reputation Phase 3: Adaptive Sending Engine
-- **ISSUE4-PHASE4-COMPLETE.md** - Reputation Phase 4: Dashboard UI
-- **ISSUE5-PHASE5-IMPLEMENTATION-STATUS.md** - Reputation Phase 5: Advanced Automation (85% complete)
-- **PHASE7_FINAL_COMPLETE.md** - Webmail implementation details
-- **POSTMARKAPP-IMPLEMENTATION-STATUS.md** - PostmarkApp API details
 
 ### Development Guidelines
 - **CLAUDE.md** - Development guidelines for autonomous work
 - **PR.md** - Pull request guidelines and requirements
-- **.doc_archive/** - Historical documentation (40+ files)
+- **.doc_archive/** - Historical documentation and phase completion files (60+ archived documents)
 
 ## Repository Information
 
