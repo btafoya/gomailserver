@@ -36,14 +36,19 @@ BINARY_PATH="$PROJECT_ROOT/build/$BINARY_NAME"
 # PID file location
 PID_DIR="$PROJECT_ROOT/data"
 PID_FILE="$PID_DIR/gomailserver.pid"
+WEBUI_PID_FILE="$PID_DIR/webui.pid"
 
 # Log file location
 LOG_DIR="$PROJECT_ROOT/data"
 LOG_FILE="$LOG_DIR/gomailserver.log"
+WEBUI_LOG_FILE="$LOG_DIR/webui.log"
 
 # Configuration files
 DEV_CONFIG="$PROJECT_ROOT/gomailserver.yaml"
 PROD_CONFIG="/etc/gomailserver/gomailserver.yaml"
+
+# WebUI directory
+WEBUI_DIR="$PROJECT_ROOT/web/unified"
 
 # Default mode is production
 MODE="production"
@@ -107,6 +112,25 @@ is_running() {
 }
 
 ################################################################################
+# Check if the WebUI is running
+################################################################################
+# Returns: 0 if running, 1 if not running
+is_webui_running() {
+    if [ -f "$WEBUI_PID_FILE" ]; then
+        local pid=$(cat "$WEBUI_PID_FILE")
+        if ps -p "$pid" > /dev/null 2>&1; then
+            return 0  # Running
+        else
+            # PID file exists but process is not running
+            log_warning "Stale WebUI PID file found, removing..."
+            rm -f "$WEBUI_PID_FILE"
+            return 1  # Not running
+        fi
+    fi
+    return 1  # Not running
+}
+
+################################################################################
 # Build the server binary
 ################################################################################
 build_server() {
@@ -123,6 +147,106 @@ build_server() {
         log_error "Build failed"
         return 1
     fi
+}
+
+################################################################################
+# Start the WebUI development server
+################################################################################
+start_webui() {
+    # Only start WebUI in development mode
+    if [ "$MODE" != "development" ]; then
+        return 0
+    fi
+
+    # Check if already running
+    if is_webui_running; then
+        log_warning "WebUI is already running (PID: $(cat "$WEBUI_PID_FILE"))"
+        return 1
+    fi
+
+    # Check if WebUI directory exists
+    if [ ! -d "$WEBUI_DIR" ]; then
+        log_error "WebUI directory not found at $WEBUI_DIR"
+        return 1
+    fi
+
+    # Check if pnpm is installed
+    if ! command -v pnpm > /dev/null 2>&1; then
+        log_error "pnpm is not installed. Please install pnpm to run the WebUI."
+        return 1
+    fi
+
+    # Check if node_modules exists, install if needed
+    if [ ! -d "$WEBUI_DIR/node_modules" ]; then
+        log_info "Installing WebUI dependencies..."
+        cd "$WEBUI_DIR"
+        if ! pnpm install; then
+            log_error "Failed to install WebUI dependencies"
+            return 1
+        fi
+    fi
+
+    log_info "Starting WebUI development server..."
+
+    # Navigate to WebUI directory
+    cd "$WEBUI_DIR"
+
+    # Start the WebUI in the background
+    pnpm dev > "$WEBUI_LOG_FILE" 2>&1 &
+    local pid=$!
+
+    # Save PID to file
+    echo "$pid" > "$WEBUI_PID_FILE"
+
+    # Wait a moment and check if the process is still running
+    sleep 2
+    if ps -p "$pid" > /dev/null 2>&1; then
+        log_success "WebUI started successfully (PID: $pid)"
+        log_info "WebUI logs: $WEBUI_LOG_FILE"
+        log_info "WebUI available at:"
+        log_info "  - Local:   http://localhost:5173/admin/"
+        log_info "  - Network: Check logs for all network URLs"
+        return 0
+    else
+        log_error "WebUI failed to start, check logs at $WEBUI_LOG_FILE"
+        rm -f "$WEBUI_PID_FILE"
+        return 1
+    fi
+}
+
+################################################################################
+# Stop the WebUI development server
+################################################################################
+stop_webui() {
+    # Check if running
+    if ! is_webui_running; then
+        return 0  # Not an error, just not running
+    fi
+
+    local pid=$(cat "$WEBUI_PID_FILE")
+    log_info "Stopping WebUI (PID: $pid)..."
+
+    # Send SIGTERM for graceful shutdown
+    kill -TERM "$pid" 2>/dev/null
+
+    # Wait for process to terminate (max 10 seconds)
+    local timeout=10
+    local count=0
+    while ps -p "$pid" > /dev/null 2>&1; do
+        if [ $count -ge $timeout ]; then
+            log_warning "WebUI did not terminate gracefully, forcing shutdown..."
+            kill -KILL "$pid" 2>/dev/null
+            break
+        fi
+        sleep 1
+        count=$((count + 1))
+    done
+
+    # Remove PID file
+    rm -f "$WEBUI_PID_FILE"
+
+    log_success "WebUI stopped"
+    return 0
 }
 
 ################################################################################
@@ -198,6 +322,12 @@ start_server() {
     if ps -p "$pid" > /dev/null 2>&1; then
         log_success "gomailserver started successfully (PID: $pid)"
         log_info "Logs: $LOG_FILE"
+
+        # Start WebUI in development mode
+        if [ "$MODE" = "development" ]; then
+            start_webui
+        fi
+
         return 0
     else
         log_error "gomailserver failed to start, check logs at $LOG_FILE"
@@ -210,7 +340,10 @@ start_server() {
 # Stop the server
 ################################################################################
 stop_server() {
-    # Check if running
+    # Stop WebUI first if it's running
+    stop_webui
+
+    # Check if server is running
     if ! is_running; then
         log_warning "gomailserver is not running"
         return 1
@@ -264,9 +397,14 @@ restart_server() {
 # Show server status
 ################################################################################
 show_status() {
+    local server_running=false
+    local webui_running=false
+
+    # Check server status
     if is_running; then
         local pid=$(cat "$PID_FILE")
         log_success "gomailserver is running (PID: $pid)"
+        server_running=true
 
         # Show process information
         echo ""
@@ -281,10 +419,27 @@ show_status() {
             log_info "Listening ports:"
             netstat -tlnp 2>/dev/null | grep "$pid" || log_warning "No listening ports found"
         fi
-
-        return 0
     else
         log_warning "gomailserver is not running"
+    fi
+
+    # Check WebUI status
+    echo ""
+    if is_webui_running; then
+        local webui_pid=$(cat "$WEBUI_PID_FILE")
+        log_success "WebUI is running (PID: $webui_pid)"
+        webui_running=true
+        log_info "WebUI URLs:"
+        log_info "  - Local:   http://localhost:5173/admin/"
+        log_info "  - Network: Check $WEBUI_LOG_FILE for all network URLs"
+    else
+        log_info "WebUI is not running (only runs in --dev mode)"
+    fi
+
+    # Return success if at least one service is running
+    if [ "$server_running" = true ]; then
+        return 0
+    else
         return 1
     fi
 }
@@ -305,24 +460,31 @@ Commands:
   help              Show this help message
 
 Options:
-  --dev, -d         Run in development mode (debug logging, local config)
+  --dev, -d         Run in development mode (debug logging, local config, WebUI)
 
 Examples:
   $0 start          Start in production mode
-  $0 start --dev    Start in development mode
-  $0 stop           Stop the server
+  $0 start --dev    Start in development mode (includes WebUI at http://localhost:5173)
+  $0 stop           Stop the server (and WebUI if running)
   $0 restart --dev  Restart in development mode
-  $0 status         Check if server is running
+  $0 status         Check if server and WebUI are running
 
 Configuration:
   Development:  $DEV_CONFIG
   Production:   $PROD_CONFIG
 
 Logs:
-  $LOG_FILE
+  Server:  $LOG_FILE
+  WebUI:   $WEBUI_LOG_FILE (dev mode only)
 
-PID File:
-  $PID_FILE
+PID Files:
+  Server:  $PID_FILE
+  WebUI:   $WEBUI_PID_FILE (dev mode only)
+
+Development Mode:
+  In --dev mode, the script automatically starts the unified WebUI development
+  server (Vite) at http://localhost:5173 alongside the gomailserver backend.
+  The WebUI is automatically stopped when the server is stopped.
 
 EOF
 }
