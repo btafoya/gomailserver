@@ -1,9 +1,25 @@
-@config "../tailwind.config.js";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
+  /* Ensure proper viewport and overflow handling */
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  #app {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Color scheme variables */
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
