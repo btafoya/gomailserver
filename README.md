@@ -4,7 +4,7 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/btafoya/gomailserver)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/btafoya/gomailserver)](https://goreportcard.com/report/github.com/btafoya/gomailserver)
 [![codecov](https://codecov.io/gh/btafoya/gomailserver/branch/main/graph/badge.svg)](https://codecov.io/gh/btafoya/gomailserver)
-[![License](https://img.shields.io/badge/license-TBD-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE.txt)
 
 A modern, composable, all-in-one mail server written in Go 1.23.5+ designed to replace complex mail server stacks (Postfix, Dovecot, OpenDKIM, etc.) with a single daemon. **81% complete** (244/303 tasks) with core mail functionality operational and comprehensive reputation management with advanced automation complete.
 
@@ -743,11 +743,32 @@ Contributions are welcome! This is a greenfield project following the PR.md requ
 
 ## License
 
-[License TBD]
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+### What This Means
+
+- ✅ **Free to Use**: You can use this software for any purpose, including commercial use
+- ✅ **Free to Modify**: You can modify the source code to suit your needs
+- ✅ **Free to Distribute**: You can distribute the original or modified versions
+- ⚖️ **Network Use Requirement**: If you run a modified version on a server and let users interact with it over a network, you **must** provide them access to the modified source code
+- 📝 **Share Alike**: Modifications must also be licensed under AGPL-3.0
+- 🔓 **Source Code**: You must make source code available when you distribute the software
+
+### Key AGPL-3.0 Provision
+
+The AGPL-3.0 license includes a network copyleft provision (Section 13): if you modify this software and run it on a server where users can interact with it remotely (e.g., as a mail server service), you must offer those users access to the modified source code.
+
+This ensures that improvements to mail server software benefit the entire community, even when the software is used to provide network services.
+
+### Full License
+
+See [LICENSE.txt](LICENSE.txt) for the complete GNU Affero General Public License v3.0 text.
+
+For more information about AGPL-3.0, visit: https://www.gnu.org/licenses/agpl-3.0.html
 
 ## Author
 
-**btafoya** - [GitHub Profile](https://github.com/btafoya)
+**Brian Tafoya** - [GitHub Profile](https://github.com/btafoya)
 
 ## Acknowledgments
 
