@@ -154,6 +154,48 @@ Create the first admin user before starting the server:
 
 Access the admin UI at `http://localhost:8980/admin/` (or your configured API port).
 
+### Using the Control Script
+
+For easier daemon management, use the provided control script:
+
+```bash
+# Start in production mode (uses /etc/gomailserver/gomailserver.yaml)
+./scripts/gomailserver-control.sh start
+
+# Start in development mode (uses ./gomailserver.yaml)
+./scripts/gomailserver-control.sh start --dev
+
+# Check server status
+./scripts/gomailserver-control.sh status
+
+# Stop the server
+./scripts/gomailserver-control.sh stop
+
+# Restart the server
+./scripts/gomailserver-control.sh restart
+
+# Restart in development mode
+./scripts/gomailserver-control.sh restart --dev
+```
+
+**Production Mode** (default):
+- Uses system configuration at `/etc/gomailserver/gomailserver.yaml`
+- Info-level logging for normal operations
+- Suitable for deployment environments
+
+**Development Mode** (`--dev` flag):
+- Uses local configuration at `./gomailserver.yaml`
+- Auto-creates config from example if missing
+- Debug-level logging for troubleshooting
+- Logs written to `./data/gomailserver.log`
+
+The control script provides:
+- PID-based process management (`./data/gomailserver.pid`)
+- Graceful shutdown with SIGTERM
+- Auto-build if binary is missing
+- Status monitoring with port information
+- Color-coded output for readability
+
 ## CLI Commands
 
 ```bash
