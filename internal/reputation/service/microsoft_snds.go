@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -296,4 +295,45 @@ func (s *MicrosoftSNDSService) GetMetricsHistory(ctx context.Context, ipAddress 
 // GetFilterLevelTrend returns filter level trend over time
 func (s *MicrosoftSNDSService) GetFilterLevelTrend(ctx context.Context, ipAddress string, days int) ([]string, error) {
 	return s.metricsRepo.GetFilterLevelTrend(ctx, ipAddress, days)
+}
+
+// GetTrends returns combined trend data for an IP address
+func (s *MicrosoftSNDSService) GetTrends(ctx context.Context, ipAddress string, days int) (map[string]interface{}, error) {
+	// Get metrics history
+	metrics, err := s.GetMetricsHistory(ctx, ipAddress, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metrics history: %w", err)
+	}
+
+	// Get filter level trend
+	filterTrend, err := s.GetFilterLevelTrend(ctx, ipAddress, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get filter level trend: %w", err)
+	}
+
+	// Extract trends
+	complaintRates := make([]float64, 0, len(metrics))
+	spamTrapHits := make([]int, 0, len(metrics))
+	messageCounts := make([]int, 0, len(metrics))
+	dates := make([]int64, 0, len(metrics))
+
+	for _, m := range metrics {
+		complaintRates = append(complaintRates, m.ComplaintRate)
+		spamTrapHits = append(spamTrapHits, m.SpamTrapHits)
+		messageCounts = append(messageCounts, m.MessageCount)
+		dates = append(dates, m.MetricDate)
+	}
+
+	trends := map[string]interface{}{
+		"ip_address":           ipAddress,
+		"days":                 days,
+		"filter_level_trend":   filterTrend,
+		"complaint_rate_trend": complaintRates,
+		"spam_trap_hits_trend": spamTrapHits,
+		"message_count_trend":  messageCounts,
+		"dates":                dates,
+		"data_points":          len(metrics),
+	}
+
+	return trends, nil
 }

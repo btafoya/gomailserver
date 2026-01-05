@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/btafoya/gomailserver/internal/reputation/domain"
 	"github.com/btafoya/gomailserver/internal/reputation/repository"
@@ -174,7 +175,7 @@ func (r *alertsRepository) Acknowledge(ctx context.Context, id int64, acknowledg
 		WHERE id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, domain.Now(), acknowledgedBy, id)
+	_, err := r.db.ExecContext(ctx, query, time.Now().Unix(), acknowledgedBy, id)
 	if err != nil {
 		return fmt.Errorf("failed to acknowledge alert: %w", err)
 	}
@@ -191,7 +192,7 @@ func (r *alertsRepository) Resolve(ctx context.Context, id int64) error {
 		WHERE id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, domain.Now(), id)
+	_, err := r.db.ExecContext(ctx, query, time.Now().Unix(), id)
 	if err != nil {
 		return fmt.Errorf("failed to resolve alert: %w", err)
 	}
@@ -271,4 +272,35 @@ func (r *alertsRepository) scanAlerts(rows *sql.Rows) ([]*domain.ReputationAlert
 	}
 
 	return alerts, nil
+}
+
+// GetUnacknowledgedAlerts returns unacknowledged alerts (alias for ListUnacknowledged)
+func (r *alertsRepository) GetUnacknowledgedAlerts(ctx context.Context, limit int) ([]*domain.ReputationAlert, error) {
+	return r.ListUnacknowledged(ctx, limit)
+}
+
+// GetAlertsByDomain returns alerts for a domain (alias for ListByDomain with default offset)
+func (r *alertsRepository) GetAlertsByDomain(ctx context.Context, domainName string, limit int) ([]*domain.ReputationAlert, error) {
+	return r.ListByDomain(ctx, domainName, limit, 0)
+}
+
+// GetRecentAlerts returns recent alerts across all domains
+func (r *alertsRepository) GetRecentAlerts(ctx context.Context, limit int) ([]*domain.ReputationAlert, error) {
+	query := `
+		SELECT
+			id, domain, alert_type, severity, title, message, details,
+			created_at, acknowledged, acknowledged_at, acknowledged_by,
+			resolved, resolved_at
+		FROM reputation_alerts
+		ORDER BY created_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent alerts: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanAlerts(rows)
 }

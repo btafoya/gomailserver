@@ -189,3 +189,73 @@ func (r *predictionsRepository) GetByHorizon(ctx context.Context, domainName str
 
 	return prediction, nil
 }
+
+// GetLatestPredictions returns the latest predictions for all domains
+func (r *predictionsRepository) GetLatestPredictions(ctx context.Context, limit int) ([]*domain.ReputationPrediction, error) {
+	query := `
+		SELECT
+			id, domain, predicted_at, prediction_horizon, predicted_score,
+			predicted_complaint_rate, predicted_bounce_rate, confidence_level,
+			model_version, features_used
+		FROM reputation_predictions
+		WHERE (domain, predicted_at) IN (
+			SELECT domain, MAX(predicted_at)
+			FROM reputation_predictions
+			GROUP BY domain
+		)
+		ORDER BY predicted_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest predictions: %w", err)
+	}
+	defer rows.Close()
+
+	var predictions []*domain.ReputationPrediction
+	for rows.Next() {
+		prediction := &domain.ReputationPrediction{}
+		var featuresJSON string
+		err := rows.Scan(
+			&prediction.ID,
+			&prediction.Domain,
+			&prediction.PredictedAt,
+			&prediction.PredictionHorizon,
+			&prediction.PredictedScore,
+			&prediction.PredictedComplaintRate,
+			&prediction.PredictedBounceRate,
+			&prediction.ConfidenceLevel,
+			&prediction.ModelVersion,
+			&featuresJSON,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan prediction: %w", err)
+		}
+
+		// Parse features JSON
+		if err := prediction.ParseFeaturesJSON(featuresJSON); err != nil {
+			return nil, fmt.Errorf("failed to parse features JSON: %w", err)
+		}
+
+		predictions = append(predictions, prediction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating predictions: %w", err)
+	}
+
+	return predictions, nil
+}
+
+// GetPredictionByDomain returns the latest prediction for a domain (alias for GetLatest)
+func (r *predictionsRepository) GetPredictionByDomain(ctx context.Context, domainName string) (*domain.ReputationPrediction, error) {
+	return r.GetLatest(ctx, domainName)
+}
+
+// GetPredictionHistory returns prediction history for a domain (alias for ListByDomain)
+func (r *predictionsRepository) GetPredictionHistory(ctx context.Context, domainName string, days int) ([]*domain.ReputationPrediction, error) {
+	// Convert days to number of records (approximation)
+	limit := days * 24 // Assuming hourly predictions
+	return r.ListByDomain(ctx, domainName, limit)
+}

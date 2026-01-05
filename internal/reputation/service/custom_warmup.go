@@ -183,3 +183,27 @@ func (s *CustomWarmupService) CreateModerateSchedule(ctx context.Context, domain
 func (s *CustomWarmupService) ListActiveSchedules(ctx context.Context) (map[string][]*domain.CustomWarmupSchedule, error) {
 	return s.warmupRepo.ListActiveSchedules(ctx)
 }
+
+// GetTemplates returns available warmup schedule templates
+func (s *CustomWarmupService) GetTemplates(ctx context.Context) []map[string]interface{} {
+	return []map[string]interface{}{
+		{
+			"name":        "conservative",
+			"description": "Conservative 28-day warmup schedule - slow and steady",
+			"total_days":  28,
+			"type":        "conservative",
+		},
+		{
+			"name":        "moderate",
+			"description": "Moderate 21-day warmup schedule - balanced approach",
+			"total_days":  21,
+			"type":        "moderate",
+		},
+		{
+			"name":        "aggressive",
+			"description": "Aggressive 14-day warmup schedule - fast ramp-up",
+			"total_days":  14,
+			"type":        "aggressive",
+		},
+	}
+}

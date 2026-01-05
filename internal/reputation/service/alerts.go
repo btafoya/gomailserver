@@ -189,3 +189,13 @@ func (s *AlertsService) CreateCircuitBreakerAlert(ctx context.Context, domainNam
 func (s *AlertsService) ExportAlertsJSON(ctx context.Context, alerts []*domain.ReputationAlert) ([]byte, error) {
 	return json.MarshalIndent(alerts, "", "  ")
 }
+
+// AcknowledgeAlert marks an alert as acknowledged (alias for Acknowledge)
+func (s *AlertsService) AcknowledgeAlert(ctx context.Context, id int64, acknowledgedBy string) error {
+	return s.Acknowledge(ctx, id, acknowledgedBy)
+}
+
+// ResolveAlert marks an alert as resolved (alias for Resolve)
+func (s *AlertsService) ResolveAlert(ctx context.Context, id int64) error {
+	return s.Resolve(ctx, id)
+}

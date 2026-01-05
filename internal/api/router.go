@@ -65,7 +65,7 @@ type RouterConfig struct {
 	PostmasterRepo     repRepository.PostmasterMetricsRepository
 	SNDSRepo           repRepository.SNDSMetricsRepository
 	ProviderLimitsRepo repRepository.ProviderRateLimitsRepository
-	WarmupRepo         repRepository.CustomWarmupSchedulesRepository
+	WarmupRepo         repRepository.CustomWarmupRepository
 	PredictionsRepo    repRepository.PredictionsRepository
 	AlertsRepo         repRepository.AlertsRepository
 	// Phase 5 services

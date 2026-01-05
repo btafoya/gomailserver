@@ -556,7 +556,7 @@ func (s *Scheduler) processARFReports(ctx context.Context) {
 	s.logger.Debug("processing ARF complaint reports")
 
 	start := time.Now()
-	count, err := s.arfParserSvc.ProcessUnprocessed(ctx, 100) // Process up to 100 at a time
+	err := s.arfParserSvc.ProcessUnprocessed(ctx)
 	duration := time.Since(start)
 
 	if err != nil {
@@ -567,12 +567,9 @@ func (s *Scheduler) processARFReports(ctx context.Context) {
 		return
 	}
 
-	if count > 0 {
-		s.logger.Info("ARF reports processed",
-			zap.Int("count", count),
-			zap.Duration("duration", duration),
-		)
-	}
+	s.logger.Info("ARF reports processing completed",
+		zap.Duration("duration", duration),
+	)
 }
 
 // Phase 5: DMARC Analysis

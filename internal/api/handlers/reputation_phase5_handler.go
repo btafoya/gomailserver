@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,7 +24,7 @@ type ReputationPhase5Handler struct {
 	postmasterRepo    repository.PostmasterMetricsRepository
 	sndsRepo          repository.SNDSMetricsRepository
 	providerLimitsRepo repository.ProviderRateLimitsRepository
-	warmupRepo        repository.CustomWarmupSchedulesRepository
+	warmupRepo        repository.CustomWarmupRepository
 	predictionsRepo   repository.PredictionsRepository
 	alertsRepo        repository.AlertsRepository
 
@@ -47,7 +48,7 @@ func NewReputationPhase5Handler(
 	postmasterRepo repository.PostmasterMetricsRepository,
 	sndsRepo repository.SNDSMetricsRepository,
 	providerLimitsRepo repository.ProviderRateLimitsRepository,
-	warmupRepo repository.CustomWarmupSchedulesRepository,
+	warmupRepo repository.CustomWarmupRepository,
 	predictionsRepo repository.PredictionsRepository,
 	alertsRepo repository.AlertsRepository,
 	dmarcAnalyzer *service.DMARCAnalyzerService,
@@ -141,7 +142,7 @@ type DMARCActionResponse struct {
 // ListDMARCReports retrieves DMARC reports with optional filters
 // GET /api/v1/reputation/dmarc/reports
 func (h *ReputationPhase5Handler) ListDMARCReports(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
+	domainFilter := r.URL.Query().Get("domain")
 	limitStr := r.URL.Query().Get("limit")
 	limit := 50
 	if limitStr != "" {
@@ -153,8 +154,8 @@ func (h *ReputationPhase5Handler) ListDMARCReports(w http.ResponseWriter, r *htt
 	var reports []*domain.DMARCReport
 	var err error
 
-	if domain != "" {
-		reports, err = h.dmarcRepo.GetReportsByDomain(r.Context(), domain, limit)
+	if domainFilter != "" {
+		reports, err = h.dmarcRepo.ListByDomain(r.Context(), domainFilter, limit, 0)
 	} else {
 		reports, err = h.dmarcRepo.GetRecentReports(r.Context(), limit)
 	}
@@ -183,7 +184,7 @@ func (h *ReputationPhase5Handler) GetDMARCReport(w http.ResponseWriter, r *http.
 		return
 	}
 
-	report, err := h.dmarcRepo.GetReportByID(r.Context(), id)
+	report, err := h.dmarcRepo.GetByID(r.Context(), id)
 	if err != nil {
 		h.logger.Error("Failed to get DMARC report", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "DMARC report not found")
@@ -211,7 +212,7 @@ func (h *ReputationPhase5Handler) GetDMARCStats(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	stats, err := h.dmarcAnalyzer.GetDomainStats(r.Context(), domainName, days)
+	stats, err := h.dmarcRepo.GetDomainStats(r.Context(), domainName, days)
 	if err != nil {
 		h.logger.Error("Failed to get DMARC stats", zap.String("domain", domainName), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve DMARC statistics")
@@ -262,7 +263,7 @@ func (h *ReputationPhase5Handler) ExportDMARCReport(w http.ResponseWriter, r *ht
 		format = "json"
 	}
 
-	report, err := h.dmarcRepo.GetReportByID(r.Context(), id)
+	report, err := h.dmarcRepo.GetByID(r.Context(), id)
 	if err != nil {
 		h.logger.Error("Failed to get DMARC report for export", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "DMARC report not found")
@@ -319,7 +320,7 @@ type ARFStatsResponse struct {
 // ListARFReports retrieves ARF complaint reports with optional filters
 // GET /api/v1/reputation/arf/reports
 func (h *ReputationPhase5Handler) ListARFReports(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
+	domainFilter := r.URL.Query().Get("domain")
 	limitStr := r.URL.Query().Get("limit")
 	limit := 50
 	if limitStr != "" {
@@ -331,8 +332,8 @@ func (h *ReputationPhase5Handler) ListARFReports(w http.ResponseWriter, r *http.
 	var reports []*domain.ARFReport
 	var err error
 
-	if domain != "" {
-		reports, err = h.arfRepo.GetReportsByDomain(r.Context(), domain, limit)
+	if domainFilter != "" {
+		reports, err = h.arfRepo.ListByDomain(r.Context(), domainFilter, limit, 0)
 	} else {
 		reports, err = h.arfRepo.GetRecentReports(r.Context(), limit)
 	}
@@ -354,6 +355,7 @@ func (h *ReputationPhase5Handler) ListARFReports(w http.ResponseWriter, r *http.
 // GetARFStats retrieves ARF complaint statistics
 // GET /api/v1/reputation/arf/stats
 func (h *ReputationPhase5Handler) GetARFStats(w http.ResponseWriter, r *http.Request) {
+	domainFilter := r.URL.Query().Get("domain")
 	daysStr := r.URL.Query().Get("days")
 	days := 30
 	if daysStr != "" {
@@ -362,7 +364,12 @@ func (h *ReputationPhase5Handler) GetARFStats(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	stats, err := h.arfParser.GetARFStats(r.Context(), days)
+	// If no domain specified, use empty string for all domains
+	if domainFilter == "" {
+		domainFilter = ""
+	}
+
+	stats, err := h.arfParser.GetARFStats(r.Context(), domainFilter, days)
 	if err != nil {
 		h.logger.Error("Failed to get ARF stats", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve ARF statistics")
@@ -382,7 +389,7 @@ func (h *ReputationPhase5Handler) ProcessARFReport(w http.ResponseWriter, r *htt
 		return
 	}
 
-	report, err := h.arfRepo.GetReportByID(r.Context(), id)
+	report, err := h.arfRepo.GetByID(r.Context(), id)
 	if err != nil {
 		h.logger.Error("Failed to get ARF report", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "ARF report not found")
@@ -464,7 +471,7 @@ func (h *ReputationPhase5Handler) GetPostmasterMetrics(w http.ResponseWriter, r 
 		}
 	}
 
-	metrics, err := h.postmasterRepo.GetMetricsByDomain(r.Context(), domainName, days)
+	metrics, err := h.postmasterRepo.ListByDomain(r.Context(), domainName, days)
 	if err != nil {
 		h.logger.Error("Failed to get Postmaster metrics", zap.String("domain", domainName), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve Postmaster metrics")
@@ -496,7 +503,7 @@ func (h *ReputationPhase5Handler) GetSNDSMetrics(w http.ResponseWriter, r *http.
 		}
 	}
 
-	metrics, err := h.sndsRepo.GetMetricsByIP(r.Context(), ipAddress, days)
+	metrics, err := h.sndsRepo.ListByIP(r.Context(), ipAddress, days)
 	if err != nil {
 		h.logger.Error("Failed to get SNDS metrics", zap.String("ip", ipAddress), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve SNDS metrics")
@@ -530,13 +537,13 @@ func (h *ReputationPhase5Handler) GetExternalMetricsTrends(w http.ResponseWriter
 		}
 	}
 
-	trends := make([]*MetricsTrendResponse, 0)
+	response := make(map[string]interface{})
 
 	if domain != "" {
 		// Get Postmaster trends
 		postmasterTrends, err := h.gmailPostmaster.GetTrends(r.Context(), domain, days)
 		if err == nil {
-			trends = append(trends, postmasterTrends...)
+			response["postmaster"] = postmasterTrends
 		}
 	}
 
@@ -544,11 +551,11 @@ func (h *ReputationPhase5Handler) GetExternalMetricsTrends(w http.ResponseWriter
 		// Get SNDS trends
 		sndsTrends, err := h.microsoftSNDS.GetTrends(r.Context(), ipAddress, days)
 		if err == nil {
-			trends = append(trends, sndsTrends...)
+			response["snds"] = sndsTrends
 		}
 	}
 
-	middleware.RespondSuccess(w, trends, "External metrics trends retrieved successfully")
+	middleware.RespondSuccess(w, response, "External metrics trends retrieved successfully")
 }
 
 // ============================================================================
@@ -574,13 +581,13 @@ type ProviderRateLimitResponse struct {
 // ListProviderRateLimits retrieves all provider-specific rate limits
 // GET /api/v1/reputation/provider-limits
 func (h *ReputationPhase5Handler) ListProviderRateLimits(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
+	domainFilter := r.URL.Query().Get("domain")
 
 	var limits []*domain.ProviderRateLimit
 	var err error
 
-	if domain != "" {
-		limits, err = h.providerLimitsRepo.GetLimitsByDomain(r.Context(), domain)
+	if domainFilter != "" {
+		limits, err = h.providerLimitsRepo.GetLimitsByDomain(r.Context(), domainFilter)
 	} else {
 		limits, err = h.providerLimitsRepo.GetAllLimits(r.Context())
 	}
@@ -629,17 +636,13 @@ func (h *ReputationPhase5Handler) UpdateProviderRateLimit(w http.ResponseWriter,
 	}
 
 	if req.MessagesPerHour != nil {
-		limit.MessagesPerHour = *req.MessagesPerHour
+		limit.MaxHourlyRate = *req.MessagesPerHour
 	}
 	if req.MessagesPerDay != nil {
-		limit.MessagesPerDay = *req.MessagesPerDay
+		limit.MaxDailyRate = *req.MessagesPerDay
 	}
-	if req.ConnectionsPerHour != nil {
-		limit.ConnectionsPerHour = *req.ConnectionsPerHour
-	}
-	if req.MaxRecipientsPerMsg != nil {
-		limit.MaxRecipientsPerMsg = *req.MaxRecipientsPerMsg
-	}
+	// Note: ConnectionsPerHour and MaxRecipientsPerMsg are not currently stored in ProviderRateLimit
+	// These would need to be added to the domain model if required
 
 	if err := h.providerLimitsRepo.UpdateLimit(r.Context(), limit); err != nil {
 		h.logger.Error("Failed to update provider rate limit", zap.Int64("id", id), zap.Error(err))
@@ -679,8 +682,16 @@ func (h *ReputationPhase5Handler) ResetProviderUsage(w http.ResponseWriter, r *h
 		return
 	}
 
-	if err := h.providerLimits.ResetUsage(r.Context(), id); err != nil {
-		h.logger.Error("Failed to reset provider usage", zap.Int64("id", id), zap.Error(err))
+	// Get the limit to find the domain
+	limit, err := h.providerLimitsRepo.GetLimitByID(r.Context(), id)
+	if err != nil {
+		h.logger.Error("Failed to get provider rate limit", zap.Int64("id", id), zap.Error(err))
+		middleware.RespondError(w, http.StatusNotFound, "Provider rate limit not found")
+		return
+	}
+
+	if err := h.providerLimits.ResetUsage(r.Context(), limit.Domain); err != nil {
+		h.logger.Error("Failed to reset provider usage", zap.String("domain", limit.Domain), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to reset provider usage")
 		return
 	}
@@ -729,7 +740,25 @@ func (h *ReputationPhase5Handler) GetCustomWarmupSchedule(w http.ResponseWriter,
 		return
 	}
 
-	response := customWarmupToResponse(schedule, true)
+	// Convert schedule slice to response format
+	dailyLimits := make([]int, len(schedule))
+	var scheduleName string
+	if len(schedule) > 0 {
+		scheduleName = schedule[0].ScheduleName
+		for _, day := range schedule {
+			if day.Day > 0 && day.Day <= len(dailyLimits) {
+				dailyLimits[day.Day-1] = day.MaxVolume
+			}
+		}
+	}
+
+	response := map[string]interface{}{
+		"domain":       domainName,
+		"name":         scheduleName,
+		"total_days":   len(schedule),
+		"daily_limits": dailyLimits,
+		"is_active":    len(schedule) > 0 && schedule[0].IsActive,
+	}
 	middleware.RespondSuccess(w, response, "Warmup schedule retrieved successfully")
 }
 
@@ -753,23 +782,32 @@ func (h *ReputationPhase5Handler) CreateCustomWarmupSchedule(w http.ResponseWrit
 		return
 	}
 
-	schedule := &domain.CustomWarmupSchedule{
-		Domain:      req.Domain,
-		Name:        req.Name,
-		Description: req.Description,
-		TotalDays:   len(req.DailyLimits),
-		CurrentDay:  0,
-		IsActive:    false,
-		CreatedAt:   time.Now().Unix(),
+	// Create schedule entries for each day
+	var schedules []*domain.CustomWarmupSchedule
+	for _, dayLimit := range req.DailyLimits {
+		schedules = append(schedules, &domain.CustomWarmupSchedule{
+			Domain:       req.Domain,
+			ScheduleName: req.Name,
+			Day:          dayLimit.Day,
+			MaxVolume:    dayLimit.MessageLimit,
+			CreatedAt:    time.Now().Unix(),
+			CreatedBy:    "api", // Could be extracted from auth context if available
+			IsActive:     false,
+		})
 	}
 
-	if err := h.warmupRepo.CreateSchedule(r.Context(), schedule, req.DailyLimits); err != nil {
+	if err := h.warmupRepo.CreateSchedule(r.Context(), schedules); err != nil {
 		h.logger.Error("Failed to create warmup schedule", zap.String("domain", req.Domain), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to create warmup schedule")
 		return
 	}
 
-	response := customWarmupToResponse(schedule, true)
+	// Return success response with created schedule info
+	response := map[string]interface{}{
+		"domain":     req.Domain,
+		"name":       req.Name,
+		"total_days": len(schedules),
+	}
 	middleware.RespondSuccess(w, response, "Warmup schedule created successfully")
 }
 
@@ -795,26 +833,54 @@ func (h *ReputationPhase5Handler) UpdateCustomWarmupSchedule(w http.ResponseWrit
 	}
 
 	schedule, err := h.warmupRepo.GetScheduleByID(r.Context(), id)
-	if err != nil {
+	if err != nil || len(schedule) == 0 {
 		h.logger.Error("Failed to get warmup schedule", zap.Int64("id", id), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "Warmup schedule not found")
 		return
 	}
 
+	// Get the domain from the first schedule entry
+	domainName := schedule[0].Domain
+	scheduleName := schedule[0].ScheduleName
 	if req.Name != nil {
-		schedule.Name = *req.Name
-	}
-	if req.Description != nil {
-		schedule.Description = *req.Description
+		scheduleName = *req.Name
 	}
 
-	if err := h.warmupRepo.UpdateSchedule(r.Context(), schedule, req.DailyLimits); err != nil {
-		h.logger.Error("Failed to update warmup schedule", zap.Int64("id", id), zap.Error(err))
-		middleware.RespondError(w, http.StatusInternalServerError, "Failed to update warmup schedule")
-		return
+	// Update daily limits if provided
+	if len(req.DailyLimits) > 0 {
+		// Create updated schedule entries
+		var updatedSchedules []*domain.CustomWarmupSchedule
+		for _, dayLimit := range req.DailyLimits {
+			updatedSchedules = append(updatedSchedules, &domain.CustomWarmupSchedule{
+				Domain:       domainName,
+				ScheduleName: scheduleName,
+				Day:          dayLimit.Day,
+				MaxVolume:    dayLimit.MessageLimit,
+				CreatedAt:    time.Now().Unix(),
+				CreatedBy:    "api",
+				IsActive:     schedule[0].IsActive,
+			})
+		}
+
+		// Delete old schedule and create new one
+		if err := h.warmupRepo.DeleteSchedule(r.Context(), domainName); err != nil {
+			h.logger.Error("Failed to delete old schedule", zap.String("domain", domainName), zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to update warmup schedule")
+			return
+		}
+
+		if err := h.warmupRepo.CreateSchedule(r.Context(), updatedSchedules); err != nil {
+			h.logger.Error("Failed to create updated schedule", zap.String("domain", domainName), zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to update warmup schedule")
+			return
+		}
 	}
 
-	response := customWarmupToResponse(schedule, true)
+	response := map[string]interface{}{
+		"domain":     domainName,
+		"name":       scheduleName,
+		"total_days": len(req.DailyLimits),
+	}
 	middleware.RespondSuccess(w, response, "Warmup schedule updated successfully")
 }
 
@@ -828,8 +894,17 @@ func (h *ReputationPhase5Handler) DeleteCustomWarmupSchedule(w http.ResponseWrit
 		return
 	}
 
-	if err := h.warmupRepo.DeleteSchedule(r.Context(), id); err != nil {
-		h.logger.Error("Failed to delete warmup schedule", zap.Int64("id", id), zap.Error(err))
+	// Get the schedule to find the domain
+	schedule, err := h.warmupRepo.GetScheduleByID(r.Context(), id)
+	if err != nil || len(schedule) == 0 {
+		h.logger.Error("Failed to get warmup schedule", zap.Int64("id", id), zap.Error(err))
+		middleware.RespondError(w, http.StatusNotFound, "Warmup schedule not found")
+		return
+	}
+
+	domainName := schedule[0].Domain
+	if err := h.warmupRepo.DeleteSchedule(r.Context(), domainName); err != nil {
+		h.logger.Error("Failed to delete warmup schedule", zap.String("domain", domainName), zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to delete warmup schedule")
 		return
 	}
@@ -868,7 +943,15 @@ type PredictionResponse struct {
 // GetLatestPredictions retrieves the latest predictions for all domains
 // GET /api/v1/reputation/predictions/latest
 func (h *ReputationPhase5Handler) GetLatestPredictions(w http.ResponseWriter, r *http.Request) {
-	predictions, err := h.predictionsRepo.GetLatestPredictions(r.Context())
+	limitStr := r.URL.Query().Get("limit")
+	limit := 50
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+			limit = l
+		}
+	}
+
+	predictions, err := h.predictionsRepo.GetLatestPredictions(r.Context(), limit)
 	if err != nil {
 		h.logger.Error("Failed to get latest predictions", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve predictions")
@@ -892,12 +975,8 @@ func (h *ReputationPhase5Handler) GetDomainPredictions(w http.ResponseWriter, r 
 		return
 	}
 
-	horizon := r.URL.Query().Get("horizon")
-	if horizon == "" {
-		horizon = "7d"
-	}
-
-	prediction, err := h.predictionsRepo.GetPredictionByDomain(r.Context(), domainName, horizon)
+	// Get the latest prediction for the domain
+	prediction, err := h.predictionsRepo.GetPredictionByDomain(r.Context(), domainName)
 	if err != nil {
 		h.logger.Error("Failed to get domain prediction", zap.String("domain", domainName), zap.Error(err))
 		middleware.RespondError(w, http.StatusNotFound, "Prediction not found")
@@ -983,7 +1062,7 @@ type Phase5AlertResponse struct {
 // ListPhase5Alerts retrieves all Phase 5 alerts with optional filters
 // GET /api/v1/reputation/alerts/phase5
 func (h *ReputationPhase5Handler) ListPhase5Alerts(w http.ResponseWriter, r *http.Request) {
-	domain := r.URL.Query().Get("domain")
+	domainFilter := r.URL.Query().Get("domain")
 	severity := r.URL.Query().Get("severity")
 	unacknowledgedOnly := r.URL.Query().Get("unacknowledged") == "true"
 
@@ -995,13 +1074,13 @@ func (h *ReputationPhase5Handler) ListPhase5Alerts(w http.ResponseWriter, r *htt
 		}
 	}
 
-	var alerts []*domain.Alert
+	var alerts []*domain.ReputationAlert
 	var err error
 
 	if unacknowledgedOnly {
 		alerts, err = h.alertsRepo.GetUnacknowledgedAlerts(r.Context(), limit)
-	} else if domain != "" {
-		alerts, err = h.alertsRepo.GetAlertsByDomain(r.Context(), domain, limit)
+	} else if domainFilter != "" {
+		alerts, err = h.alertsRepo.GetAlertsByDomain(r.Context(), domainFilter, limit)
 	} else {
 		alerts, err = h.alertsRepo.GetRecentAlerts(r.Context(), limit)
 	}
@@ -1014,9 +1093,9 @@ func (h *ReputationPhase5Handler) ListPhase5Alerts(w http.ResponseWriter, r *htt
 
 	// Filter by severity if specified
 	if severity != "" {
-		filtered := make([]*domain.Alert, 0)
+		filtered := make([]*domain.ReputationAlert, 0)
 		for _, alert := range alerts {
-			if alert.Severity == severity {
+			if string(alert.Severity) == severity {
 				filtered = append(filtered, alert)
 			}
 		}
@@ -1087,13 +1166,13 @@ func dmarcReportToResponse(report *domain.DMARCReport, includeRecords bool) *DMA
 		ID:               report.ID,
 		ReportID:         report.ReportID,
 		Domain:           report.Domain,
-		OrgName:          report.OrgName,
-		EmailAddress:     report.EmailAddress,
+		OrgName:          report.Organization,
+		EmailAddress:     "", // Not in DMARCReport struct
 		BeginTime:        report.BeginTime,
 		EndTime:          report.EndTime,
-		RecordCount:      report.RecordCount,
-		SPFAlignedCount:  report.SPFAlignedCount,
-		DKIMAlignedCount: report.DKIMAlignedCount,
+		RecordCount:      report.TotalMessages,
+		SPFAlignedCount:  report.SPFPass,
+		DKIMAlignedCount: report.DKIMPass,
 		ProcessedAt:      report.ProcessedAt,
 	}
 
@@ -1105,10 +1184,10 @@ func dmarcReportToResponse(report *domain.DMARCReport, includeRecords bool) *DMA
 				SourceIP:       record.SourceIP,
 				Count:          record.Count,
 				Disposition:    record.Disposition,
-				DMARCResult:    record.DMARCResult,
-				SPFDomain:      record.SPFDomain,
+				DMARCResult:    "", // Not in DMARCReportRecord
+				SPFDomain:      record.EnvelopeFrom,
 				SPFResult:      record.SPFResult,
-				DKIMDomain:     record.DKIMDomain,
+				DKIMDomain:     "", // Not in DMARCReportRecord
 				DKIMResult:     record.DKIMResult,
 				HeaderFrom:     record.HeaderFrom,
 			}
@@ -1121,12 +1200,12 @@ func dmarcReportToResponse(report *domain.DMARCReport, includeRecords bool) *DMA
 func dmarcActionToResponse(action *domain.DMARCAutoAction) *DMARCActionResponse {
 	return &DMARCActionResponse{
 		ID:          action.ID,
-		ReportID:    action.ReportID,
-		ActionType:  action.ActionType,
-		TargetIP:    action.TargetIP,
-		Reason:      action.Reason,
-		ActionTaken: action.ActionTaken,
-		TakenAt:     action.TakenAt,
+		ReportID:    0, // Not in DMARCAutoAction
+		ActionType:  string(action.IssueType),
+		TargetIP:    "", // Not in DMARCAutoAction
+		Reason:      action.Description,
+		ActionTaken: action.ActionTaken != "",
+		TakenAt:     &action.TakenAt,
 	}
 }
 
@@ -1137,16 +1216,16 @@ func arfReportToResponse(report *domain.ARFReport) *ARFReportResponse {
 		UserAgent:        report.UserAgent,
 		Version:          report.Version,
 		SourceIP:         report.SourceIP,
-		IncidentCount:    report.IncidentCount,
-		OriginalMailFrom: report.OriginalMailFrom,
+		IncidentCount:    0, // Not in ARFReport
+		OriginalMailFrom: "", // Not in ARFReport
 		OriginalRcptTo:   report.OriginalRcptTo,
-		ReportedDomain:   report.ReportedDomain,
-		ReportedURI:      report.ReportedURI,
-		AuthFailure:      report.AuthFailure,
-		DeliveryResult:   report.DeliveryResult,
-		ReceivedDate:     report.ReceivedDate,
-		ProcessedAt:      report.ProcessedAt,
-		ActionTaken:      report.ActionTaken,
+		ReportedDomain:   "", // Not in ARFReport
+		ReportedURI:      "", // Not in ARFReport
+		AuthFailure:      report.AuthenticationResults,
+		DeliveryResult:   "", // Not in ARFReport
+		ReceivedDate:     report.ReceivedAt,
+		ProcessedAt:      0, // Not in ARFReport (only Processed bool exists)
+		ActionTaken:      report.SuppressedRecipient != "",
 	}
 }
 
@@ -1154,15 +1233,15 @@ func postmasterMetricsToResponse(metrics *domain.PostmasterMetrics) *PostmasterM
 	return &PostmasterMetricsResponse{
 		ID:                 metrics.ID,
 		Domain:             metrics.Domain,
-		Date:               metrics.Date,
+		Date:               time.Unix(metrics.MetricDate, 0).Format(time.RFC3339),
 		SpamRate:           metrics.SpamRate,
 		IPReputation:       metrics.IPReputation,
 		DomainReputation:   metrics.DomainReputation,
-		FeedbackLoopRate:   metrics.FeedbackLoopRate,
+		FeedbackLoopRate:   float64(metrics.UserSpamReports),
 		AuthenticationRate: metrics.AuthenticationRate,
 		EncryptionRate:     metrics.EncryptionRate,
-		DeliveryErrors:     metrics.DeliveryErrors,
-		SyncedAt:           metrics.SyncedAt,
+		DeliveryErrors:     0, // Not in PostmasterMetrics
+		SyncedAt:           metrics.FetchedAt,
 	}
 }
 
@@ -1170,14 +1249,14 @@ func sndsMetricsToResponse(metrics *domain.SNDSMetrics) *SNDSMetricsResponse {
 	return &SNDSMetricsResponse{
 		ID:            metrics.ID,
 		IPAddress:     metrics.IPAddress,
-		Date:          metrics.Date,
+		Date:          time.Unix(metrics.MetricDate, 0).Format(time.RFC3339),
 		MessageCount:  metrics.MessageCount,
-		FilterResult:  metrics.FilterResult,
+		FilterResult:  metrics.FilterLevel,
 		ComplaintRate: metrics.ComplaintRate,
-		TrapHits:      metrics.TrapHits,
-		SampleData:    metrics.SampleData,
-		RCPT:          metrics.RCPT,
-		SyncedAt:      metrics.SyncedAt,
+		TrapHits:      metrics.SpamTrapHits,
+		SampleData:    0, // Not in SNDSMetrics
+		RCPT:          metrics.MessageCount,
+		SyncedAt:      metrics.FetchedAt,
 	}
 }
 
@@ -1185,39 +1264,70 @@ func providerRateLimitToResponse(limit *domain.ProviderRateLimit) *ProviderRateL
 	return &ProviderRateLimitResponse{
 		ID:                  limit.ID,
 		Domain:              limit.Domain,
-		Provider:            limit.Provider,
-		MessagesPerHour:     limit.MessagesPerHour,
-		MessagesPerDay:      limit.MessagesPerDay,
-		ConnectionsPerHour:  limit.ConnectionsPerHour,
-		MaxRecipientsPerMsg: limit.MaxRecipientsPerMsg,
-		CurrentUsageHour:    limit.CurrentUsageHour,
-		CurrentUsageDay:     limit.CurrentUsageDay,
-		LastResetHour:       limit.LastResetHour,
-		LastResetDay:        limit.LastResetDay,
-		UpdatedAt:           limit.UpdatedAt,
+		Provider:            string(limit.Provider),
+		MessagesPerHour:     limit.MaxHourlyRate,
+		MessagesPerDay:      limit.MaxDailyRate,
+		ConnectionsPerHour:  0, // Not stored in ProviderRateLimit
+		MaxRecipientsPerMsg: 0, // Not stored in ProviderRateLimit
+		CurrentUsageHour:    limit.CurrentHourCount,
+		CurrentUsageDay:     limit.CurrentDayCount,
+		LastResetHour:       limit.HourResetAt,
+		LastResetDay:        limit.DayResetAt,
+		UpdatedAt:           limit.LastUpdated,
 	}
 }
 
 func customWarmupToResponse(schedule *domain.CustomWarmupSchedule, includeLimits bool) *CustomWarmupScheduleResponse {
+	// CustomWarmupSchedule represents a single day, not a full schedule
+	var zero int64 = 0
 	resp := &CustomWarmupScheduleResponse{
 		ID:          schedule.ID,
 		Domain:      schedule.Domain,
-		Name:        schedule.Name,
-		Description: schedule.Description,
-		TotalDays:   schedule.TotalDays,
-		CurrentDay:  schedule.CurrentDay,
+		Name:        schedule.ScheduleName,
+		Description: "", // Not in CustomWarmupSchedule
+		TotalDays:   0, // Not in CustomWarmupSchedule (single day entry)
+		CurrentDay:  schedule.Day,
 		IsActive:    schedule.IsActive,
-		StartedAt:   schedule.StartedAt,
-		CompletedAt: schedule.CompletedAt,
+		StartedAt:   &zero, // Not in CustomWarmupSchedule
+		CompletedAt: &zero, // Not in CustomWarmupSchedule
 		CreatedAt:   schedule.CreatedAt,
 	}
 
-	if includeLimits && schedule.DailyLimits != nil {
-		resp.DailyLimits = make([]*WarmupDayLimit, len(schedule.DailyLimits))
-		for i, limit := range schedule.DailyLimits {
-			resp.DailyLimits[i] = &WarmupDayLimit{
-				Day:          limit.Day,
-				MessageLimit: limit.MessageLimit,
+	if includeLimits {
+		// CustomWarmupSchedule is a single day, create a single-element DailyLimits array
+		resp.DailyLimits = []*WarmupDayLimit{
+			{
+				Day:          schedule.Day,
+				MessageLimit: schedule.MaxVolume,
+			},
+		}
+	}
+
+	return resp
+}
+
+func predictionToResponse(pred *domain.ReputationPrediction, includeFeatures bool) *PredictionResponse {
+	resp := &PredictionResponse{
+		ID:                 pred.ID,
+		Domain:             pred.Domain,
+		PredictionDate:     time.Unix(pred.PredictedAt, 0).Format(time.RFC3339),
+		Horizon:            fmt.Sprintf("%dh", pred.PredictionHorizon),
+		PredictedScore:     pred.PredictedScore,
+		Confidence:         pred.ConfidenceLevel,
+		PredictedBounce:    pred.PredictedBounceRate,
+		PredictedComplaint: pred.PredictedComplaintRate,
+		TrendDirection:     "", // Not in ReputationPrediction
+		RiskLevel:          "", // Not in ReputationPrediction
+		RecommendedActions: nil, // Not in ReputationPrediction
+		GeneratedAt:        pred.PredictedAt,
+	}
+
+	if includeFeatures && pred.FeaturesUsed != nil {
+		// Convert map[string]interface{} to map[string]float64
+		resp.FeatureImportance = make(map[string]float64)
+		for k, v := range pred.FeaturesUsed {
+			if fval, ok := v.(float64); ok {
+				resp.FeatureImportance[k] = fval
 			}
 		}
 	}
@@ -1225,44 +1335,29 @@ func customWarmupToResponse(schedule *domain.CustomWarmupSchedule, includeLimits
 	return resp
 }
 
-func predictionToResponse(pred *domain.Prediction, includeFeatures bool) *PredictionResponse {
-	resp := &PredictionResponse{
-		ID:                 pred.ID,
-		Domain:             pred.Domain,
-		PredictionDate:     pred.PredictionDate,
-		Horizon:            pred.Horizon,
-		PredictedScore:     pred.PredictedScore,
-		Confidence:         pred.Confidence,
-		PredictedBounce:    pred.PredictedBounce,
-		PredictedComplaint: pred.PredictedComplaint,
-		TrendDirection:     pred.TrendDirection,
-		RiskLevel:          pred.RiskLevel,
-		RecommendedActions: pred.RecommendedActions,
-		GeneratedAt:        pred.GeneratedAt,
+func phase5AlertToResponse(alert *domain.ReputationAlert) *Phase5AlertResponse {
+	var acknowledgedAt, resolvedAt *int64
+	if alert.AcknowledgedAt != 0 {
+		acknowledgedAt = &alert.AcknowledgedAt
+	}
+	if alert.ResolvedAt != 0 {
+		resolvedAt = &alert.ResolvedAt
 	}
 
-	if includeFeatures {
-		resp.FeatureImportance = pred.FeatureImportance
-	}
-
-	return resp
-}
-
-func phase5AlertToResponse(alert *domain.Alert) *Phase5AlertResponse {
 	return &Phase5AlertResponse{
 		ID:             alert.ID,
 		Domain:         alert.Domain,
-		AlertType:      alert.AlertType,
-		Severity:       alert.Severity,
+		AlertType:      string(alert.AlertType),
+		Severity:       string(alert.Severity),
 		Title:          alert.Title,
 		Message:        alert.Message,
-		SourceType:     alert.SourceType,
-		SourceID:       alert.SourceID,
+		SourceType:     "", // Not in ReputationAlert
+		SourceID:       nil, // Not in ReputationAlert
 		Acknowledged:   alert.Acknowledged,
-		AcknowledgedAt: alert.AcknowledgedAt,
+		AcknowledgedAt: acknowledgedAt,
 		AcknowledgedBy: alert.AcknowledgedBy,
 		Resolved:       alert.Resolved,
-		ResolvedAt:     alert.ResolvedAt,
+		ResolvedAt:     resolvedAt,
 		CreatedAt:      alert.CreatedAt,
 	}
 }

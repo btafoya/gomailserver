@@ -91,12 +91,7 @@ Progress: [███████████████████████
 - Logging: zap (structured JSON)
 
 **Frontend** (Webmail):
-- Framework: Nuxt 3.20.2
-- UI Library: Vue 3.5.26
-- Styling: Tailwind CSS 3.4.19
-- State: Pinia 3.0.4
-- Rich Text: TipTap 2.27.1
-- Package Manager: pnpm
+ See WEBUI-DETAILS.md
 
 **Security**:
 - DKIM/SPF/DMARC validation and signing

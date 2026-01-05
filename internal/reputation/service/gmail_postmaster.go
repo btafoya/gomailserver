@@ -78,28 +78,24 @@ func (s *GmailPostmasterService) FetchDomainReputation(ctx context.Context, doma
 
 	// Convert to domain model
 	metrics := &domain.PostmasterMetrics{
-		Domain:         domainName,
-		FetchedAt:      time.Now().Unix(),
-		MetricDate:     metricDate.Unix(),
+		Domain:           domainName,
+		FetchedAt:        time.Now().Unix(),
+		MetricDate:       metricDate.Unix(),
 		DomainReputation: stats.DomainReputation,
-		IPReputation:    stats.IpReputation,
-		UserSpamReports: int(stats.UserReportedSpamRatio * 100), // Convert to count
+		UserSpamReports:  int(stats.UserReportedSpamRatio * 100), // Convert to count
+		SpamRate:         stats.UserReportedSpamRatio,
+		EncryptionRate:   stats.InboundEncryptionRatio,
 	}
 
-	// Calculate spam rate (user reported spam ratio)
-	if stats.UserReportedSpamRatio != nil {
-		metrics.SpamRate = *stats.UserReportedSpamRatio
-	}
-
-	// Calculate authentication rate
-	if stats.SpfSuccessRatio != nil && stats.DkimSuccessRatio != nil && stats.DmarcSuccessRatio != nil {
-		authRate := (*stats.SpfSuccessRatio + *stats.DkimSuccessRatio + *stats.DmarcSuccessRatio) / 3.0
+	// Calculate authentication rate (average of SPF, DKIM, DMARC)
+	if stats.SpfSuccessRatio > 0 || stats.DkimSuccessRatio > 0 || stats.DmarcSuccessRatio > 0 {
+		authRate := (stats.SpfSuccessRatio + stats.DkimSuccessRatio + stats.DmarcSuccessRatio) / 3.0
 		metrics.AuthenticationRate = authRate
 	}
 
-	// Calculate encryption rate (TLS)
-	if stats.InboundEncryptionRatio != nil {
-		metrics.EncryptionRate = *stats.InboundEncryptionRatio
+	// Set IP reputation from first IP if available
+	if len(stats.IpReputations) > 0 && stats.IpReputations[0] != nil {
+		metrics.IPReputation = stats.IpReputations[0].Reputation
 	}
 
 	// Store raw response for debugging
@@ -254,6 +250,47 @@ func (s *GmailPostmasterService) GetMetricsHistory(ctx context.Context, domainNa
 // GetReputationTrend returns domain reputation trend over time
 func (s *GmailPostmasterService) GetReputationTrend(ctx context.Context, domainName string, days int) ([]string, error) {
 	return s.metricsRepo.GetReputationTrend(ctx, domainName, days)
+}
+
+// GetTrends returns combined trend data for a domain
+func (s *GmailPostmasterService) GetTrends(ctx context.Context, domainName string, days int) (map[string]interface{}, error) {
+	// Get metrics history
+	metrics, err := s.GetMetricsHistory(ctx, domainName, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metrics history: %w", err)
+	}
+
+	// Get reputation trend
+	reputationTrend, err := s.GetReputationTrend(ctx, domainName, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reputation trend: %w", err)
+	}
+
+	// Extract trends
+	spamRates := make([]float64, 0, len(metrics))
+	authRates := make([]float64, 0, len(metrics))
+	encryptionRates := make([]float64, 0, len(metrics))
+	dates := make([]int64, 0, len(metrics))
+
+	for _, m := range metrics {
+		spamRates = append(spamRates, m.SpamRate)
+		authRates = append(authRates, m.AuthenticationRate)
+		encryptionRates = append(encryptionRates, m.EncryptionRate)
+		dates = append(dates, m.MetricDate)
+	}
+
+	trends := map[string]interface{}{
+		"domain":             domainName,
+		"days":               days,
+		"reputation_trend":   reputationTrend,
+		"spam_rate_trend":    spamRates,
+		"auth_rate_trend":    authRates,
+		"encryption_trend":   encryptionRates,
+		"dates":              dates,
+		"data_points":        len(metrics),
+	}
+
+	return trends, nil
 }
 
 // Helper function to map reputation to severity

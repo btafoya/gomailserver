@@ -201,3 +201,47 @@ func (s *ProviderRateLimitsService) InitializeDefaultLimits(ctx context.Context,
 	s.logger.Info("Initialized default provider rate limits", zap.String("domain", domainName))
 	return nil
 }
+
+// InitializeLimits initializes default rate limits for a domain (alias for InitializeDefaultLimits)
+func (s *ProviderRateLimitsService) InitializeLimits(ctx context.Context, domainName string) error {
+	return s.InitializeDefaultLimits(ctx, domainName)
+}
+
+// ResetUsage resets usage counters for a domain's provider limits
+func (s *ProviderRateLimitsService) ResetUsage(ctx context.Context, domainName string) error {
+	// Get all limits for the domain
+	limits, err := s.limitsRepo.ListByDomain(ctx, domainName)
+	if err != nil {
+		return fmt.Errorf("failed to get domain limits: %w", err)
+	}
+
+	now := time.Now()
+	newHourReset := now.Add(1 * time.Hour).Unix()
+	newDayReset := now.Add(24 * time.Hour).Unix()
+
+	// Reset all providers for this domain
+	for _, limit := range limits {
+		// Reset hourly
+		if err := s.limitsRepo.ResetHourly(ctx, domainName, limit.Provider, newHourReset); err != nil {
+			s.logger.Error("Failed to reset hourly counter",
+				zap.String("domain", domainName),
+				zap.String("provider", string(limit.Provider)),
+				zap.Error(err),
+			)
+			return err
+		}
+
+		// Reset daily
+		if err := s.limitsRepo.ResetDaily(ctx, domainName, limit.Provider, newDayReset); err != nil {
+			s.logger.Error("Failed to reset daily counter",
+				zap.String("domain", domainName),
+				zap.String("provider", string(limit.Provider)),
+				zap.Error(err),
+			)
+			return err
+		}
+	}
+
+	s.logger.Info("Reset usage counters for all providers", zap.String("domain", domainName))
+	return nil
+}

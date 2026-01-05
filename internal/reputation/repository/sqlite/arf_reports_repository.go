@@ -247,3 +247,101 @@ func (r *arfReportsRepository) GetComplaintRate(ctx context.Context, domainName 
 	// from the events repository or another source
 	return float64(complaintCount), nil
 }
+
+// ListByDomain returns all ARF reports for a specific domain
+func (r *arfReportsRepository) ListByDomain(ctx context.Context, domainName string, limit, offset int) ([]*domain.ARFReport, error) {
+	query := `
+		SELECT
+			id, received_at, feedback_type, user_agent, version,
+			original_rcpt_to, arrival_date, reporting_mta, source_ip,
+			authentication_results, message_id, subject, raw_report,
+			processed, suppressed_recipient
+		FROM arf_reports
+		WHERE original_rcpt_to LIKE '%@' || ? || '%'
+		   OR reporting_mta LIKE '%' || ? || '%'
+		ORDER BY received_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, domainName, domainName, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list ARF reports by domain: %w", err)
+	}
+	defer rows.Close()
+
+	var reports []*domain.ARFReport
+	for rows.Next() {
+		report := &domain.ARFReport{}
+		err := rows.Scan(
+			&report.ID,
+			&report.ReceivedAt,
+			&report.FeedbackType,
+			&report.UserAgent,
+			&report.Version,
+			&report.OriginalRcptTo,
+			&report.ArrivalDate,
+			&report.ReportingMTA,
+			&report.SourceIP,
+			&report.AuthenticationResults,
+			&report.MessageID,
+			&report.Subject,
+			&report.RawReport,
+			&report.Processed,
+			&report.SuppressedRecipient,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan ARF report: %w", err)
+		}
+		reports = append(reports, report)
+	}
+
+	return reports, rows.Err()
+}
+
+// GetRecentReports returns the most recent ARF reports across all domains
+func (r *arfReportsRepository) GetRecentReports(ctx context.Context, limit int) ([]*domain.ARFReport, error) {
+	query := `
+		SELECT
+			id, received_at, feedback_type, user_agent, version,
+			original_rcpt_to, arrival_date, reporting_mta, source_ip,
+			authentication_results, message_id, subject, raw_report,
+			processed, suppressed_recipient
+		FROM arf_reports
+		ORDER BY received_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent ARF reports: %w", err)
+	}
+	defer rows.Close()
+
+	var reports []*domain.ARFReport
+	for rows.Next() {
+		report := &domain.ARFReport{}
+		err := rows.Scan(
+			&report.ID,
+			&report.ReceivedAt,
+			&report.FeedbackType,
+			&report.UserAgent,
+			&report.Version,
+			&report.OriginalRcptTo,
+			&report.ArrivalDate,
+			&report.ReportingMTA,
+			&report.SourceIP,
+			&report.AuthenticationResults,
+			&report.MessageID,
+			&report.Subject,
+			&report.RawReport,
+			&report.Processed,
+			&report.SuppressedRecipient,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan ARF report: %w", err)
+		}
+		reports = append(reports, report)
+	}
+
+	return reports, rows.Err()
+}

@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // DMARC Report Models
 
@@ -55,16 +58,23 @@ const (
 )
 
 type AlignmentAnalysis struct {
-	Domain             string
-	ReportID           int64
-	TotalMessages      int
-	AlignmentPassRate  float64
-	SPFPassRate        float64
-	DKIMPassRate       float64
-	SPFAlignmentRate   float64
-	DKIMAlignmentRate  float64
-	Issues             []*AlignmentIssue
-	RecommendedActions []string
+	Domain                string
+	ReportID              int64
+	TotalMessages         int
+	AlignmentPassRate     float64
+	SPFPassRate           float64
+	DKIMPassRate          float64
+	SPFAlignmentRate      float64
+	DKIMAlignmentRate     float64
+	OverallAlignmentRate  float64
+	SPFAligned            int
+	DKIMAligned           int
+	BothAligned           int
+	SPFMisaligned         int
+	DKIMMisaligned        int
+	BothMisaligned        int
+	Issues                []*AlignmentIssue
+	RecommendedActions    []string
 }
 
 type AlignmentIssue struct {
@@ -265,4 +275,46 @@ func (a *ReputationAlert) IsUnresolved() bool {
 
 func (p *ReputationPrediction) IsHighConfidence() bool {
 	return p.ConfidenceLevel >= 0.7
+}
+
+// DetailsJSON serializes the Details map to JSON for database storage
+func (a *ReputationAlert) DetailsJSON() string {
+	if a.Details == nil {
+		return "{}"
+	}
+	data, err := json.Marshal(a.Details)
+	if err != nil {
+		return "{}"
+	}
+	return string(data)
+}
+
+// ParseDetailsJSON deserializes the Details field from JSON
+func (a *ReputationAlert) ParseDetailsJSON(jsonStr string) error {
+	if jsonStr == "" || jsonStr == "{}" {
+		a.Details = make(map[string]interface{})
+		return nil
+	}
+	return json.Unmarshal([]byte(jsonStr), &a.Details)
+}
+
+// FeaturesUsedJSON serializes the FeaturesUsed map to JSON for database storage
+func (p *ReputationPrediction) FeaturesUsedJSON() string {
+	if p.FeaturesUsed == nil {
+		return "{}"
+	}
+	data, err := json.Marshal(p.FeaturesUsed)
+	if err != nil {
+		return "{}"
+	}
+	return string(data)
+}
+
+// ParseFeaturesJSON deserializes the FeaturesUsed field from JSON
+func (p *ReputationPrediction) ParseFeaturesJSON(jsonStr string) error {
+	if jsonStr == "" || jsonStr == "{}" {
+		p.FeaturesUsed = make(map[string]interface{})
+		return nil
+	}
+	return json.Unmarshal([]byte(jsonStr), &p.FeaturesUsed)
 }

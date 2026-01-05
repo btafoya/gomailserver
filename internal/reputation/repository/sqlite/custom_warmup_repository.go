@@ -218,3 +218,89 @@ func (r *customWarmupRepository) SetActive(ctx context.Context, domainName strin
 
 	return nil
 }
+
+// GetActiveSchedule retrieves the active schedule for a domain
+func (r *customWarmupRepository) GetActiveSchedule(ctx context.Context, domainName string) ([]*domain.CustomWarmupSchedule, error) {
+	query := `
+		SELECT
+			id, domain, schedule_name, day, max_volume,
+			created_at, created_by, is_active
+		FROM custom_warmup_schedules
+		WHERE domain = ? AND is_active = 1
+		ORDER BY day ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, domainName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query active schedule: %w", err)
+	}
+	defer rows.Close()
+
+	var schedule []*domain.CustomWarmupSchedule
+	for rows.Next() {
+		day := &domain.CustomWarmupSchedule{}
+		err := rows.Scan(
+			&day.ID,
+			&day.Domain,
+			&day.ScheduleName,
+			&day.Day,
+			&day.MaxVolume,
+			&day.CreatedAt,
+			&day.CreatedBy,
+			&day.IsActive,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan schedule day: %w", err)
+		}
+		schedule = append(schedule, day)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating schedule days: %w", err)
+	}
+
+	return schedule, nil
+}
+
+// GetScheduleByID retrieves a custom warmup schedule by ID
+func (r *customWarmupRepository) GetScheduleByID(ctx context.Context, id int64) ([]*domain.CustomWarmupSchedule, error) {
+	query := `
+		SELECT
+			id, domain, schedule_name, day, max_volume,
+			created_at, created_by, is_active
+		FROM custom_warmup_schedules
+		WHERE id = ?
+		ORDER BY day ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query schedule by ID: %w", err)
+	}
+	defer rows.Close()
+
+	var schedule []*domain.CustomWarmupSchedule
+	for rows.Next() {
+		day := &domain.CustomWarmupSchedule{}
+		err := rows.Scan(
+			&day.ID,
+			&day.Domain,
+			&day.ScheduleName,
+			&day.Day,
+			&day.MaxVolume,
+			&day.CreatedAt,
+			&day.CreatedBy,
+			&day.IsActive,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan schedule day: %w", err)
+		}
+		schedule = append(schedule, day)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating schedule days: %w", err)
+	}
+
+	return schedule, nil
+}

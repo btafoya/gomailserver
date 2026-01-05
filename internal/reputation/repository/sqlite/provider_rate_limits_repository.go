@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/btafoya/gomailserver/internal/reputation/domain"
 	"github.com/btafoya/gomailserver/internal/reputation/repository"
@@ -108,7 +109,7 @@ func (r *providerRateLimitsRepository) IncrementHourly(ctx context.Context, doma
 		WHERE domain = ? AND provider = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, count, domain.Now(), domainName, string(provider))
+	_, err := r.db.ExecContext(ctx, query, count, time.Now().Unix(), domainName, string(provider))
 	if err != nil {
 		return fmt.Errorf("failed to increment hourly counter: %w", err)
 	}
@@ -125,7 +126,7 @@ func (r *providerRateLimitsRepository) IncrementDaily(ctx context.Context, domai
 		WHERE domain = ? AND provider = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, count, domain.Now(), domainName, string(provider))
+	_, err := r.db.ExecContext(ctx, query, count, time.Now().Unix(), domainName, string(provider))
 	if err != nil {
 		return fmt.Errorf("failed to increment daily counter: %w", err)
 	}
@@ -143,7 +144,7 @@ func (r *providerRateLimitsRepository) ResetHourly(ctx context.Context, domainNa
 		WHERE domain = ? AND provider = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, newResetTime, domain.Now(), domainName, string(provider))
+	_, err := r.db.ExecContext(ctx, query, newResetTime, time.Now().Unix(), domainName, string(provider))
 	if err != nil {
 		return fmt.Errorf("failed to reset hourly counter: %w", err)
 	}
@@ -161,7 +162,7 @@ func (r *providerRateLimitsRepository) ResetDaily(ctx context.Context, domainNam
 		WHERE domain = ? AND provider = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, newResetTime, domain.Now(), domainName, string(provider))
+	_, err := r.db.ExecContext(ctx, query, newResetTime, time.Now().Unix(), domainName, string(provider))
 	if err != nil {
 		return fmt.Errorf("failed to reset daily counter: %w", err)
 	}
@@ -225,9 +226,141 @@ func (r *providerRateLimitsRepository) SetCircuitBreaker(ctx context.Context, do
 		WHERE domain = ? AND provider = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, active, domain.Now(), domainName, string(provider))
+	_, err := r.db.ExecContext(ctx, query, active, time.Now().Unix(), domainName, string(provider))
 	if err != nil {
 		return fmt.Errorf("failed to set circuit breaker: %w", err)
+	}
+
+	return nil
+}
+
+// GetLimitsByDomain returns all provider limits for a domain (alias for ListByDomain)
+func (r *providerRateLimitsRepository) GetLimitsByDomain(ctx context.Context, domainName string) ([]*domain.ProviderRateLimit, error) {
+	return r.ListByDomain(ctx, domainName)
+}
+
+// GetAllLimits returns all provider limits across all domains
+func (r *providerRateLimitsRepository) GetAllLimits(ctx context.Context) ([]*domain.ProviderRateLimit, error) {
+	query := `
+		SELECT
+			id, domain, provider, max_hourly_rate, max_daily_rate,
+			current_hour_count, current_day_count, hour_reset_at, day_reset_at,
+			circuit_breaker_active, last_updated
+		FROM provider_rate_limits
+		ORDER BY domain ASC, provider ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all provider rate limits: %w", err)
+	}
+	defer rows.Close()
+
+	var limits []*domain.ProviderRateLimit
+	for rows.Next() {
+		limit := &domain.ProviderRateLimit{}
+		err := rows.Scan(
+			&limit.ID,
+			&limit.Domain,
+			&limit.Provider,
+			&limit.MaxHourlyRate,
+			&limit.MaxDailyRate,
+			&limit.CurrentHourCount,
+			&limit.CurrentDayCount,
+			&limit.HourResetAt,
+			&limit.DayResetAt,
+			&limit.CircuitBreakerActive,
+			&limit.LastUpdated,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan provider rate limit: %w", err)
+		}
+		limits = append(limits, limit)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating provider rate limits: %w", err)
+	}
+
+	return limits, nil
+}
+
+// GetLimitByID retrieves a rate limit by ID
+func (r *providerRateLimitsRepository) GetLimitByID(ctx context.Context, id int64) (*domain.ProviderRateLimit, error) {
+	query := `
+		SELECT
+			id, domain, provider, max_hourly_rate, max_daily_rate,
+			current_hour_count, current_day_count, hour_reset_at, day_reset_at,
+			circuit_breaker_active, last_updated
+		FROM provider_rate_limits
+		WHERE id = ?
+	`
+
+	limit := &domain.ProviderRateLimit{}
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&limit.ID,
+		&limit.Domain,
+		&limit.Provider,
+		&limit.MaxHourlyRate,
+		&limit.MaxDailyRate,
+		&limit.CurrentHourCount,
+		&limit.CurrentDayCount,
+		&limit.HourResetAt,
+		&limit.DayResetAt,
+		&limit.CircuitBreakerActive,
+		&limit.LastUpdated,
+	)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("rate limit not found with id %d", id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider rate limit by id: %w", err)
+	}
+
+	return limit, nil
+}
+
+// UpdateLimit updates an existing rate limit
+func (r *providerRateLimitsRepository) UpdateLimit(ctx context.Context, limit *domain.ProviderRateLimit) error {
+	query := `
+		UPDATE provider_rate_limits
+		SET domain = ?,
+		    provider = ?,
+		    max_hourly_rate = ?,
+		    max_daily_rate = ?,
+		    current_hour_count = ?,
+		    current_day_count = ?,
+		    hour_reset_at = ?,
+		    day_reset_at = ?,
+		    circuit_breaker_active = ?,
+		    last_updated = ?
+		WHERE id = ?
+	`
+
+	result, err := r.db.ExecContext(ctx, query,
+		limit.Domain,
+		string(limit.Provider),
+		limit.MaxHourlyRate,
+		limit.MaxDailyRate,
+		limit.CurrentHourCount,
+		limit.CurrentDayCount,
+		limit.HourResetAt,
+		limit.DayResetAt,
+		limit.CircuitBreakerActive,
+		time.Now().Unix(),
+		limit.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update provider rate limit: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rate limit found with id %d", limit.ID)
 	}
 
 	return nil

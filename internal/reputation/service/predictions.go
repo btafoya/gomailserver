@@ -60,7 +60,7 @@ func (s *PredictionsService) GeneratePrediction(ctx context.Context, domainName 
 	// Calculate current rates
 	complaints := eventCounts[string(domain.EventComplaint)]
 	bounces := eventCounts[string(domain.EventBounce)]
-	delivered := eventCounts[string(domain.EventDelivery)]
+	_ = eventCounts[string(domain.EventDelivery)] // delivered count not used in prediction
 
 	currentComplaintRate := float64(complaints) / float64(totalEvents)
 	currentBounceRate := float64(bounces) / float64(totalEvents)
@@ -125,7 +125,7 @@ func (s *PredictionsService) GeneratePrediction(ctx context.Context, domainName 
 // calculateScoreTrend calculates the score change trend
 func (s *PredictionsService) calculateScoreTrend(ctx context.Context, domainName string) float64 {
 	// Get current score
-	currentScore, err := s.scoresRepo.GetReputationScore(ctx, domainName)
+	_, err := s.scoresRepo.GetReputationScore(ctx, domainName)
 	if err != nil {
 		return 0
 	}
@@ -247,4 +247,11 @@ func (s *PredictionsService) GeneratePredictionsForAllDomains(ctx context.Contex
 	}
 
 	return nil
+}
+
+// GeneratePredictions generates predictions for a domain (alias for GeneratePrediction with default horizon)
+func (s *PredictionsService) GeneratePredictions(ctx context.Context, domainName string) error {
+	// Use default 24-hour prediction horizon
+	_, err := s.GeneratePrediction(ctx, domainName, 24)
+	return err
 }

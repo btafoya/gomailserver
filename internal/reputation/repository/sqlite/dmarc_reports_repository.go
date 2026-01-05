@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/btafoya/gomailserver/internal/reputation/domain"
 	"github.com/btafoya/gomailserver/internal/reputation/repository"
@@ -238,7 +239,7 @@ func (r *dmarcReportsRepository) GetDomainStats(ctx context.Context, domainName 
 
 	startTime := int64(0)
 	if days > 0 {
-		startTime = domain.Now() - int64(days*24*3600)
+		startTime = time.Now().Unix() - int64(days*24*3600)
 	}
 
 	var total, spfPass, dkimPass, alignmentPass int64
@@ -270,6 +271,96 @@ func (r *dmarcReportsRepository) GetDomainStats(ctx context.Context, domainName 
 	}
 
 	return stats, nil
+}
+
+// GetRecentReports returns the most recent DMARC reports across all domains
+func (r *dmarcReportsRepository) GetRecentReports(ctx context.Context, limit int) ([]*domain.DMARCReport, error) {
+	query := `
+		SELECT id, domain, report_id, begin_time, end_time, organization,
+		       total_messages, spf_pass, dkim_pass, alignment_pass,
+		       raw_xml, processed_at
+		FROM dmarc_reports
+		ORDER BY processed_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query recent reports: %w", err)
+	}
+	defer rows.Close()
+
+	var reports []*domain.DMARCReport
+	for rows.Next() {
+		report := &domain.DMARCReport{}
+		err := rows.Scan(
+			&report.ID,
+			&report.Domain,
+			&report.ReportID,
+			&report.BeginTime,
+			&report.EndTime,
+			&report.Organization,
+			&report.TotalMessages,
+			&report.SPFPass,
+			&report.DKIMPass,
+			&report.AlignmentPass,
+			&report.RawXML,
+			&report.ProcessedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan report: %w", err)
+		}
+		reports = append(reports, report)
+	}
+
+	return reports, rows.Err()
+}
+
+// GetRecentActions returns recent DMARC auto-actions
+func (r *dmarcReportsRepository) GetRecentActions(ctx context.Context, limit int) ([]*domain.DMARCAutoAction, error) {
+	query := `
+		SELECT id, domain, issue_type, description, action_taken,
+		       taken_at, success, error_message
+		FROM dmarc_auto_actions
+		ORDER BY taken_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query recent actions: %w", err)
+	}
+	defer rows.Close()
+
+	var actions []*domain.DMARCAutoAction
+	for rows.Next() {
+		action := &domain.DMARCAutoAction{}
+		var issueType string
+		var errorMsg sql.NullString
+
+		err := rows.Scan(
+			&action.ID,
+			&action.Domain,
+			&issueType,
+			&action.Description,
+			&action.ActionTaken,
+			&action.TakenAt,
+			&action.Success,
+			&errorMsg,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan action: %w", err)
+		}
+
+		action.IssueType = domain.DMARCIssueType(issueType)
+		if errorMsg.Valid {
+			action.ErrorMessage = errorMsg.String
+		}
+
+		actions = append(actions, action)
+	}
+
+	return actions, rows.Err()
 }
 
 // CreateRecord stores a DMARC report record

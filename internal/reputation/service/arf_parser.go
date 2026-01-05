@@ -173,3 +173,47 @@ func (s *ARFParserService) extractDomain(email string) string {
 func (s *ARFParserService) GetComplaintRate(ctx context.Context, domain string, hours int) (float64, error) {
 	return s.arfRepo.GetComplaintRate(ctx, domain, hours)
 }
+
+// ProcessUnprocessed processes all unprocessed ARF reports (alias for ProcessUnprocessedReports)
+func (s *ARFParserService) ProcessUnprocessed(ctx context.Context) error {
+	return s.ProcessUnprocessedReports(ctx)
+}
+
+// ProcessReport processes a single ARF report (alias for ProcessComplaint)
+func (s *ARFParserService) ProcessReport(ctx context.Context, report *domain.ARFReport) error {
+	return s.ProcessComplaint(ctx, report)
+}
+
+// GetARFStats returns ARF complaint statistics for a domain
+func (s *ARFParserService) GetARFStats(ctx context.Context, domainName string, days int) (map[string]interface{}, error) {
+	// Get complaint rate
+	hours := days * 24
+	complaintRate, err := s.GetComplaintRate(ctx, domainName, hours)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get complaint rate: %w", err)
+	}
+
+	// Get recent reports
+	startTime := time.Now().Add(-time.Duration(days) * 24 * time.Hour).Unix()
+	endTime := time.Now().Unix()
+	reports, err := s.arfRepo.ListByTimeRange(ctx, startTime, endTime, 1000, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reports: %w", err)
+	}
+
+	// Count by feedback type
+	feedbackTypes := make(map[string]int)
+	for _, report := range reports {
+		feedbackTypes[report.FeedbackType]++
+	}
+
+	stats := map[string]interface{}{
+		"domain":          domainName,
+		"complaint_rate":  complaintRate,
+		"total_complaints": len(reports),
+		"feedback_types":  feedbackTypes,
+		"days":            days,
+	}
+
+	return stats, nil
+}

@@ -20,6 +20,9 @@ type DMARCReportsRepository interface {
 	// ListByDomain returns all reports for a domain
 	ListByDomain(ctx context.Context, domain string, limit, offset int) ([]*domain.DMARCReport, error)
 
+	// GetRecentReports returns the most recent reports across all domains
+	GetRecentReports(ctx context.Context, limit int) ([]*domain.DMARCReport, error)
+
 	// ListByTimeRange returns reports within a time range
 	ListByTimeRange(ctx context.Context, startTime, endTime int64, limit, offset int) ([]*domain.DMARCReport, error)
 
@@ -31,6 +34,9 @@ type DMARCReportsRepository interface {
 
 	// GetRecordsByReportID retrieves all records for a report
 	GetRecordsByReportID(ctx context.Context, reportID int64) ([]*domain.DMARCReportRecord, error)
+
+	// GetRecentActions returns recent DMARC auto-actions
+	GetRecentActions(ctx context.Context, limit int) ([]*domain.DMARCAutoAction, error)
 }
 
 type DMARCActionsRepository interface {
@@ -52,6 +58,12 @@ type ARFReportsRepository interface {
 
 	// GetByID retrieves a report by ID
 	GetByID(ctx context.Context, id int64) (*domain.ARFReport, error)
+
+	// ListByDomain returns all ARF reports for a domain
+	ListByDomain(ctx context.Context, domain string, limit, offset int) ([]*domain.ARFReport, error)
+
+	// GetRecentReports returns the most recent ARF reports
+	GetRecentReports(ctx context.Context, limit int) ([]*domain.ARFReport, error)
 
 	// ListUnprocessed returns unprocessed complaints
 	ListUnprocessed(ctx context.Context, limit int) ([]*domain.ARFReport, error)
@@ -120,6 +132,18 @@ type ProviderRateLimitsRepository interface {
 	// ListByDomain returns all provider limits for a domain
 	ListByDomain(ctx context.Context, domain string) ([]*domain.ProviderRateLimit, error)
 
+	// GetLimitsByDomain returns all provider limits for a domain (alias for ListByDomain)
+	GetLimitsByDomain(ctx context.Context, domain string) ([]*domain.ProviderRateLimit, error)
+
+	// GetAllLimits returns all provider limits across all domains
+	GetAllLimits(ctx context.Context) ([]*domain.ProviderRateLimit, error)
+
+	// GetLimitByID retrieves a rate limit by ID
+	GetLimitByID(ctx context.Context, id int64) (*domain.ProviderRateLimit, error)
+
+	// UpdateLimit updates an existing rate limit
+	UpdateLimit(ctx context.Context, limit *domain.ProviderRateLimit) error
+
 	// SetCircuitBreaker activates/deactivates circuit breaker
 	SetCircuitBreaker(ctx context.Context, domain string, provider domain.MailProvider, active bool) error
 }
@@ -142,6 +166,12 @@ type CustomWarmupRepository interface {
 	// ListActiveSchedules returns all active custom schedules
 	ListActiveSchedules(ctx context.Context) (map[string][]*domain.CustomWarmupSchedule, error)
 
+	// GetActiveSchedule retrieves the active schedule for a domain
+	GetActiveSchedule(ctx context.Context, domain string) ([]*domain.CustomWarmupSchedule, error)
+
+	// GetScheduleByID retrieves a custom warmup schedule by ID
+	GetScheduleByID(ctx context.Context, id int64) ([]*domain.CustomWarmupSchedule, error)
+
 	// SetActive activates/deactivates a schedule
 	SetActive(ctx context.Context, domain string, active bool) error
 }
@@ -155,8 +185,17 @@ type PredictionsRepository interface {
 	// GetLatest returns the latest prediction for a domain
 	GetLatest(ctx context.Context, domain string) (*domain.ReputationPrediction, error)
 
+	// GetLatestPredictions returns the latest predictions for all domains
+	GetLatestPredictions(ctx context.Context, limit int) ([]*domain.ReputationPrediction, error)
+
+	// GetPredictionByDomain returns the latest prediction for a domain (alias for GetLatest)
+	GetPredictionByDomain(ctx context.Context, domain string) (*domain.ReputationPrediction, error)
+
 	// ListByDomain returns prediction history for a domain
 	ListByDomain(ctx context.Context, domain string, limit int) ([]*domain.ReputationPrediction, error)
+
+	// GetPredictionHistory returns prediction history for a domain (alias for ListByDomain)
+	GetPredictionHistory(ctx context.Context, domain string, days int) ([]*domain.ReputationPrediction, error)
 
 	// GetByHorizon returns predictions for a specific time horizon
 	GetByHorizon(ctx context.Context, domain string, hours int) (*domain.ReputationPrediction, error)
@@ -173,6 +212,9 @@ type AlertsRepository interface {
 
 	// ListUnacknowledged returns unacknowledged alerts
 	ListUnacknowledged(ctx context.Context, limit int) ([]*domain.ReputationAlert, error)
+
+	// GetUnacknowledgedAlerts returns unacknowledged alerts (alias for ListUnacknowledged)
+	GetUnacknowledgedAlerts(ctx context.Context, limit int) ([]*domain.ReputationAlert, error)
 
 	// ListByDomain returns alerts for a domain
 	ListByDomain(ctx context.Context, domain string, limit, offset int) ([]*domain.ReputationAlert, error)
@@ -191,4 +233,10 @@ type AlertsRepository interface {
 
 	// GetUnacknowledgedCountByDomain returns count of unacknowledged alerts for a domain
 	GetUnacknowledgedCountByDomain(ctx context.Context, domain string) (int, error)
+
+	// GetAlertsByDomain returns alerts for a domain (alias for ListByDomain with default offset)
+	GetAlertsByDomain(ctx context.Context, domain string, limit int) ([]*domain.ReputationAlert, error)
+
+	// GetRecentAlerts returns recent alerts across all domains
+	GetRecentAlerts(ctx context.Context, limit int) ([]*domain.ReputationAlert, error)
 }
