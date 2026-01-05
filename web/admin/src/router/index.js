@@ -123,6 +123,12 @@ const routes = [
         path: 'reputation/predictions',
         name: 'ReputationPredictions',
         component: () => import('@/views/reputation/Predictions.vue')
+      },
+      // Phase 6 reputation routes
+      {
+        path: 'reputation/operational-mail',
+        name: 'ReputationOperationalMail',
+        component: () => import('@/views/reputation/OperationalMail.vue')
       }
     ]
   }

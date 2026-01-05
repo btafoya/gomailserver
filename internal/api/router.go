@@ -347,6 +347,33 @@ func NewRouter(config RouterConfig) *Router {
 						r.Get("/alerts/phase5", phase5Handler.ListPhase5Alerts)
 						r.Post("/alerts/{id}/acknowledge", phase5Handler.AcknowledgeAlert)
 						r.Post("/alerts/{id}/resolve", phase5Handler.ResolveAlert)
+
+						// Phase 6 WebUI Polish endpoints
+						phase6Handler := handlers.NewReputationPhase6Handler(
+							config.AlertsRepo,
+							config.ScoresRepo,
+							config.CircuitRepo,
+						)
+
+						// Operational mail management
+						r.Get("/operational-mail", phase6Handler.GetOperationalMail)
+						r.Post("/operational-mail/{id}/read", phase6Handler.MarkOperationalMailRead)
+						r.Delete("/operational-mail/{id}", phase6Handler.DeleteOperationalMail)
+						r.Post("/operational-mail/{id}/spam", phase6Handler.MarkOperationalMailSpam)
+						r.Post("/operational-mail/{id}/forward", phase6Handler.ForwardOperationalMail)
+
+						// Deliverability status dashboard
+						r.Get("/deliverability", phase6Handler.GetDeliverabilityStatus)
+						r.Get("/deliverability/{domain}", phase6Handler.GetDeliverabilityStatus)
+
+						// Circuit breaker manual controls (enhanced)
+						r.Get("/circuit-breakers/active", phase6Handler.GetCircuitBreakers)
+						r.Post("/circuit-breakers/{id}/resume", phase6Handler.ResumeCircuitBreaker)
+						r.Post("/circuit-breakers/pause", phase6Handler.PauseCircuitBreaker)
+
+						// Enhanced alerts endpoints for Phase 6 frontend
+						r.Get("/alerts/unread", phase6Handler.GetUnreadAlertCount)
+						r.Post("/alerts/{id}/read", phase6Handler.MarkAlertRead)
 					}
 				})
 			}
