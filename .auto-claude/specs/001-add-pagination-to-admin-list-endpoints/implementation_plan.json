@@ -1,0 +1,13 @@
+{
+  "feature": "Add pagination to admin List endpoints",
+  "description": "Implement pagination for domain, user, and alias List handlers using the existing PaginatedResponse middleware. Currently these handlers return all records without pagination.",
+  "created_at": "2026-01-05T22:01:07.555Z",
+  "updated_at": "2026-01-05T22:04:11.584Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "phases": [],
+  "workflow_type": "development",
+  "services_involved": [],
+  "final_acceptance": [],
+  "spec_file": "spec.md"
+}
