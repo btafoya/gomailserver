@@ -107,6 +107,54 @@ make build
 make install
 ```
 
+#### systemd Installation (Recommended for Production)
+
+For production deployments with systemd:
+
+```bash
+# Build the binary
+make build
+
+# Install as systemd service (requires root)
+sudo ./scripts/install-systemd.sh --start
+
+# The installer will:
+# - Create gomailserver user and group
+# - Install binary to /usr/local/bin
+# - Set up directories (/var/lib/gomailserver, /var/log/gomailserver)
+# - Install configuration to /etc/gomailserver
+# - Install and enable systemd service
+# - Optionally start the service (--start flag)
+```
+
+**systemd Service Management:**
+```bash
+# Start the service
+sudo systemctl start gomailserver
+
+# Stop the service
+sudo systemctl stop gomailserver
+
+# Restart the service
+sudo systemctl restart gomailserver
+
+# Check status
+sudo systemctl status gomailserver
+
+# View logs
+sudo journalctl -u gomailserver -f
+
+# Enable on boot
+sudo systemctl enable gomailserver
+```
+
+**Installer Options:**
+- `--start` - Start service immediately after installation
+- `--enable` - Enable service on boot (default)
+- `--no-enable` - Don't enable on boot
+- `--user USER` - Run as custom user (default: gomailserver)
+- `--group GROUP` - Run as custom group (default: gomailserver)
+
 ### Configuration
 
 Copy the example configuration:
