@@ -10,9 +10,13 @@ const props = defineProps({
   class: String
 })
 
-const tabs = inject('tabs')
+const tabs = inject('tabs', null)
 
-const isActive = computed(() => tabs.activeTab.value === props.value)
+if (!tabs) {
+  console.error('TabsContent must be used within a Tabs component')
+}
+
+const isActive = computed(() => tabs?.activeTab.value === props.value)
 </script>
 
 <template>

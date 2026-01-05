@@ -11,12 +11,16 @@ const props = defineProps({
   disabled: Boolean
 })
 
-const tabs = inject('tabs')
+const tabs = inject('tabs', null)
 
-const isActive = computed(() => tabs.activeTab.value === props.value)
+if (!tabs) {
+  console.error('TabsTrigger must be used within a Tabs component')
+}
+
+const isActive = computed(() => tabs?.activeTab.value === props.value)
 
 const handleClick = () => {
-  if (!props.disabled) {
+  if (!props.disabled && tabs) {
     tabs.selectTab(props.value)
   }
 }
