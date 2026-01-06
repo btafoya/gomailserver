@@ -1,0 +1,1 @@
+import{aa as r,a6 as a}from"./B65yq0Zd.js";import{u as o}from"./vVceqDKj.js";const n=r(t=>{const e=o();if(t.meta.requiresAuth&&!e.isLoggedIn)return a("/login");if(t.path==="/login"&&e.isLoggedIn)return a("/portal");if(t.path==="/"&&e.isLoggedIn)return a("/portal")});export{n as default};

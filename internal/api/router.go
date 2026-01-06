@@ -15,7 +15,6 @@ import (
 	repRepository "github.com/btafoya/gomailserver/internal/reputation/repository"
 	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 	"github.com/btafoya/gomailserver/internal/service"
-	"github.com/btafoya/gomailserver/internal/webmail"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -421,13 +420,11 @@ func NewRouter(config RouterConfig) *Router {
 	// Mount at root level for PostmarkApp client compatibility
 	r.Mount("/", postmark.NewRouter(config.DB, config.QueueService, config.Logger))
 
-	// Webmail UI - Serves at /webmail/* with embedded or proxied assets
-	r.Mount("/webmail", webmail.Handler(config.Logger))
-
-	// Admin UI - must be last to act as catch-all for SPA routing
-	// Serves at /admin/* with embedded or proxied assets
-	// Using unified handler for Phase 1 migration
+	// Unified UI - serves admin, portal, and webmail
+	// All three route to the same Nuxt.js app but with different base paths
 	r.Mount("/admin", admin.UnifiedHandler(config.Logger))
+	r.Mount("/portal", admin.UnifiedHandler(config.Logger))
+	r.Mount("/webmail", admin.UnifiedHandler(config.Logger))
 
 	return r
 }

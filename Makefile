@@ -25,12 +25,9 @@ build: build-ui
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 build-ui:
-	@echo "Building admin UI..."
-	@cd web/admin && npm install && npm run build
-	@echo "Admin UI build complete"
-	@echo "Building webmail UI..."
-	@cd web/webmail && pnpm install && pnpm run build
-	@echo "Webmail UI build complete"
+	@echo "Building unified UI..."
+	@cd unified && pnpm install && pnpm run build
+	@echo "Unified UI build complete"
 
 build-static: build-ui
 	@echo "Building static binary..."

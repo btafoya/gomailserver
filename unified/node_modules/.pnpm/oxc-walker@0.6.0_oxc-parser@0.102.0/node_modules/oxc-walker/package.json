@@ -1,0 +1,60 @@
+{
+  "name": "oxc-walker",
+  "type": "module",
+  "version": "0.6.0",
+  "description": "",
+  "license": "MIT",
+  "repository": "oxc-project/oxc-walker",
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "oxc-parser": ">=0.98.0"
+  },
+  "dependencies": {
+    "magic-regexp": "^0.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@vitest/coverage-v8": "4.0.10",
+    "knip": "^5.69.1",
+    "lint-staged": "16.2.6",
+    "oxc-parser": "0.98.0",
+    "oxfmt": "^0.14.0",
+    "oxlint": "^1.29.0",
+    "simple-git-hooks": "2.13.1",
+    "typescript": "5.9.3",
+    "unbuild": "3.6.1",
+    "vitest": "4.0.10"
+  },
+  "resolutions": {
+    "oxc-walker": "link:."
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,mjs,cjs}": [
+      "pnpm run fmt"
+    ],
+    "*.{js,ts,mjs,cjs,json,.*rc}": [
+      "pnpm run lint --fix"
+    ]
+  },
+  "scripts": {
+    "build": "unbuild",
+    "dev": "vitest dev",
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "test": "pnpm test:unit && pnpm test:types",
+    "test:unit": "vitest",
+    "test:types": "tsc --noEmit"
+  }
+}

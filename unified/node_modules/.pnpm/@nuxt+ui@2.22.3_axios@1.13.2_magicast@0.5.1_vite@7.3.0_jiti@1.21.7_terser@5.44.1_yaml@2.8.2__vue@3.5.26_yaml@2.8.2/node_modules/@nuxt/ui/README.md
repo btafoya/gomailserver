@@ -1,0 +1,88 @@
+[![nuxt-ui.png](https://volta.s3.fr-par.scw.cloud/nuxt_ui_social_card_531d133fa2.png)](https://ui2.nuxt.com)
+
+# Nuxt UI
+
+[![npm version][npm-version-src]][npm-version-href]
+[![npm downloads][npm-downloads-src]][npm-downloads-href]
+[![License][license-src]][license-href]
+[![Nuxt][nuxt-src]][nuxt-href]
+
+Nuxt UI is a module that provides a set of Vue components and composables built with [Tailwind CSS](https://tailwindcss.com/) and [Headless UI](https://headlessui.dev/) to help you build beautiful and accessible user interfaces.
+
+Its goal is to provide everything related to UI when building a Nuxt app. This includes components, icons, colors, dark mode but also keyboard shortcuts.
+
+## Features
+
+- Built with [Headless UI](https://headlessui.dev/) and [Tailwind CSS](https://tailwindcss.com/)
+- HMR support through Nuxt App Config
+- Dark mode support
+- Support for LTR and RTL languages
+- Keyboard shortcuts
+- Bundled icons
+- Fully typed
+- [Figma Kit](https://www.figma.com/community/file/1436401057300493073)
+
+Read more on [ui2.nuxt.com](https://ui2.nuxt.com)
+
+## Installation
+
+```bash
+# npm
+npm install @nuxt/ui@2
+# yarn
+yarn add @nuxt/ui@2
+# pnpm
+pnpm add @nuxt/ui@2
+# bun
+bun add @nuxt/ui@2
+```
+
+Next, register the `@nuxt/ui` module in your `nuxt.config.ts`:
+
+```ts
+export default defineNuxtConfig({
+  modules: ['@nuxt/ui']
+})
+```
+
+## Documentation
+
+Visit https://ui2.nuxt.com to explore the documentation.
+
+## Credits
+
+- [nuxt/nuxt](https://github.com/nuxt/nuxt)
+- [nuxt-modules/color-mode](https://github.com/nuxt-modules/color-mode)
+- [nuxt-modules/tailwindcss](https://github.com/nuxt-modules/tailwindcss)
+- [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss)
+- [tailwindlabs/headlessui](https://github.com/tailwindlabs/headlessui)
+- [vueuse/vueuse](https://github.com/vueuse/vueuse)
+- [egoist/tailwindcss-icons](https://github.com/egoist/tailwindcss-icons)
+
+## Contributing
+
+Thank you for considering contributing to Nuxt UI. Here are a few ways you can get involved:
+
+- Reporting Bugs: If you come across any bugs or issues, please check out the reporting bugs guide to learn how to submit a bug report.
+- Suggestions: Have any thoughts to enhance Nuxt UI? We'd love to hear them! Check out the [contribution guide](https://ui2.nuxt.com/getting-started/contributing) to share your suggestions.
+
+## Local Development
+
+Follow the docs to [Set up your local development environment](https://ui2.nuxt.com/getting-started/contributing#_2-local-development-setup) and contribute.
+
+## License
+
+Licensed under the [MIT license](https://github.com/nuxt/ui/blob/v2/LICENSE.md).
+
+<!-- Badges -->
+[npm-version-src]: https://img.shields.io/npm/v/@nuxt/ui/latest.svg?style=flat&colorA=18181B&colorB=28CF8D
+[npm-version-href]: https://npmjs.com/package/@nuxt/ui
+
+[npm-downloads-src]: https://img.shields.io/npm/dm/@nuxt/ui.svg?style=flat&colorA=18181B&colorB=28CF8D
+[npm-downloads-href]: https://npmjs.com/package/@nuxt/ui
+
+[license-src]: https://img.shields.io/github/license/nuxt/ui.svg?style=flat&colorA=18181B&colorB=28CF8D
+[license-href]: https://github.com/nuxt/ui/blob/main/LICENSE.md
+
+[nuxt-src]: https://img.shields.io/badge/Nuxt-18181B?logo=nuxt.js
+[nuxt-href]: https://nuxt.com

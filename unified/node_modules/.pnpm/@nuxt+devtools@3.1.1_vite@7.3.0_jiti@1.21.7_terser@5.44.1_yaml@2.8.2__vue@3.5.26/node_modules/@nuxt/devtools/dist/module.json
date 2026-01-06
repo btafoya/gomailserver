@@ -1,0 +1,9 @@
+{
+  "name": "@nuxt/devtools",
+  "configKey": "devtools",
+  "version": "3.1.1",
+  "builder": {
+    "@nuxt/module-builder": "1.0.2",
+    "unbuild": "3.6.1"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "copy-paste",
+  "version": "2.2.0",
+  "description": "A command line utility that allows read/write (i.e copy/paste) access to the system clipboard.",
+  "keywords": [
+    "copy",
+    "paste",
+    "copy and paste",
+    "clipboard"
+  ],
+  "maintainers": [
+    {
+      "name": "Xavi",
+      "email": "xavi.rmz@gmail.com",
+      "web": "http://xavi.co"
+    }
+  ],
+  "main": "./index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xavi-/node-copy-paste"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.4.8"
+  },
+  "scripts": {
+    "test": "node --test test/*js"
+  }
+}

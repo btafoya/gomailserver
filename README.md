@@ -8,7 +8,7 @@
 
 A modern, composable, all-in-one mail server written in Go 1.23.5+ designed to replace complex mail server stacks (Postfix, Dovecot, OpenDKIM, etc.) with a single daemon. **81% complete** (244/303 tasks) with core mail functionality operational and comprehensive reputation management with advanced automation complete.
 
-Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security features including DKIM, SPF, DMARC, DANE, MTA-STS, PGP/GPG, antivirus, and anti-spam capabilities. Features automated reputation management with external feedback integration (Gmail Postmaster Tools, Microsoft SNDS), DMARC report processing, and a complete webmail interface with contact/calendar integration.
+Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security features including DKIM, SPF, DMARC, DANE, MTA-STS, PGP/GPG, antivirus, and anti-spam capabilities. Features automated reputation management with external feedback integration (Gmail Postmaster Tools, Microsoft SNDS), DMARC report processing, and complete web interfaces with unified admin/portal (Vue.js) and dedicated webmail client (Nuxt.js) including contact/calendar integration.
 
 ## Features
 
@@ -42,10 +42,12 @@ Implements SMTP, IMAP, CalDAV, CardDAV with comprehensive email security feature
 - **Unlimited**: Domains, users, aliases with configurable quotas
 
 ### Web Interfaces
-- **Admin UI**: Modern web interface for domain/user/alias management (Vue.js + shadcn-vue)
-- **User Portal**: Self-service portal for account management, quotas, and settings
+- **Unified Web Interface**: Single Nuxt.js application with three sections:
+  - **Admin** (`/admin/*`): Domain/user/alias management and system administration
+  - **Portal** (`/portal/*`): User self-service portal for account management and settings
+  - **Webmail** (`/webmail/*`): Gmail-like email interface with rich text composer
 - **Setup Wizard**: Guided first-run configuration for system, domain, and admin setup
-- **Webmail**: Gmail-like interface with categories, conversation view, contact/calendar integration, PGP support
+- **Features**: Unified authentication, responsive design, dark mode support
   - Contact autocomplete and search (CardDAV integration)
   - Calendar widget with upcoming events (CalDAV integration)
   - Event creation and invitation handling
@@ -417,10 +419,8 @@ gomailserver/
 │   └── webdav/                # WebDAV server (CalDAV/CardDAV integration)
 ├── pkg/
 │   └── sieve/                 # Sieve interpreter (future)
-├── web/
-│   ├── admin/                 # Admin UI (Vue.js 3, shadcn-vue, Tailwind CSS 4)
-│   ├── portal/                # User portal (Vue.js 3, Pinia, Tailwind CSS)
-│   └── webmail/               # Webmail client (future)
+├── unified/                  # Unified web interface (Nuxt.js 3 - admin/portal/webmail)
+├── unified-go/                # Embedded frontend assets
 ├── tests/                     # Integration tests
 ├── Makefile                   # Build automation
 ├── Dockerfile                 # Docker container
@@ -463,13 +463,13 @@ cp ./data/mailserver.db ./backups/mailserver-$(date +%Y%m%d).db
 - **MIME**: emersion/go-message/mail
 - **Authentication**: JWT with bcrypt
 
-### Frontend (Webmail)
-- **Framework**: Vite
-- **UI Library**: Vue 3.5.26
-- **Styling**: Tailwind CSS 3.4.19
-- **State Management**: Pinia 3.0.4
-- **Rich Text**: TipTap 2.27.1
-- **Features**: Dark mode, responsive, modern UI
+### Frontend
+- **Unified Web Interface**: Nuxt.js 3 application serving admin, portal, and webmail under `/admin/*`, `/portal/*`, `/webmail/*`
+  - Vue 3.5.26, Nuxt UI, Tailwind CSS 4.1.18, Pinia 3.0.4
+  - Admin: Domain/user/alias management with modern dashboard
+  - Portal: User self-service with account management and settings
+  - Webmail: Gmail-like email interface with rich text composer
+- **Features**: Dark mode, responsive design, modern UI components, unified authentication
 
 ### DevOps
 - **Package Manager**: pnpm (frontend)

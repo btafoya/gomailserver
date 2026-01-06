@@ -1,0 +1,28 @@
+{
+	"prefix": "heroicons",
+	"name": "HeroIcons",
+	"total": 1288,
+	"version": "2.2.0",
+	"author": {
+		"name": "Refactoring UI Inc",
+		"url": "https://github.com/tailwindlabs/heroicons"
+	},
+	"license": {
+		"title": "MIT",
+		"spdx": "MIT",
+		"url": "https://github.com/tailwindlabs/heroicons/blob/master/LICENSE"
+	},
+	"samples": [
+		"camera",
+		"building-library",
+		"receipt-refund",
+		"bookmark",
+		"cloud",
+		"folder"
+	],
+	"category": "UI Other / Mixed Grid",
+	"tags": [
+		"Has Padding"
+	],
+	"palette": false
+}

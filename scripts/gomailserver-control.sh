@@ -1,8 +1,6 @@
 #!/bin/bash
-
-################################################################################
+#
 # gomailserver Control Script
-################################################################################
 #
 # This script manages the gomailserver daemon, providing start, stop, restart,
 # and status operations. It supports both development and production modes.
@@ -21,36 +19,51 @@
 #   Development:  Uses ./gomailserver.yaml for local testing
 #   Production:   Uses /etc/gomailserver/gomailserver.yaml for deployment
 #
-################################################################################
 
-set -e
+# Exit on error, undefined variables, and pipe failures
+set -euo pipefail
+# Trap to cleanup on script exit
+trap cleanup EXIT
 
-# Script directory and project root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# ==============================================================================
+# Configuration and Path Setup
+# ==============================================================================
 
-# Binary location
-BINARY_NAME="gomailserver"
-BINARY_PATH="$PROJECT_ROOT/build/$BINARY_NAME"
+# Get script directory and project root (resolves symlinks)
+get_script_dir() {
+    local source="${BASH_SOURCE[0]}"
+    while [ -L "$source" ]; do
+        local dir
+        dir="$(cd -P "$(dirname "$source")" && pwd)"
+        source="$(readlink "$source")"
+        [[ $source != /* ]] && source="$dir/$source"
+    done
+    cd -P "$(dirname "$source")" && pwd
+}
 
-# PID file location
-PID_DIR="$PROJECT_ROOT/data"
-PID_FILE="$PID_DIR/gomailserver.pid"
-WEBUI_PID_FILE="$PID_DIR/webui.pid"
+readonly SCRIPT_DIR="$(get_script_dir)"
+readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Log file location
-LOG_DIR="$PROJECT_ROOT/data"
-LOG_FILE="$LOG_DIR/gomailserver.log"
-WEBUI_LOG_FILE="$LOG_DIR/webui.log"
+# Binary configuration
+readonly BINARY_NAME="gomailserver"
+readonly BINARY_PATH="$PROJECT_ROOT/build/$BINARY_NAME"
+
+# Directory configuration
+readonly PID_DIR="$PROJECT_ROOT/data"
+readonly LOG_DIR="$PROJECT_ROOT/data"
+readonly PID_FILE="$PID_DIR/gomailserver.pid"
+readonly WEBUI_PID_FILE="$PID_DIR/webui.pid"
+readonly LOG_FILE="$LOG_DIR/gomailserver.log"
+readonly WEBUI_LOG_FILE="$LOG_DIR/webui.log"
 
 # Configuration files
-DEV_CONFIG="$PROJECT_ROOT/gomailserver.yaml"
-PROD_CONFIG="/etc/gomailserver/gomailserver.yaml"
+readonly DEV_CONFIG="$PROJECT_ROOT/gomailserver.yaml"
+readonly PROD_CONFIG="/etc/gomailserver/gomailserver.yaml"
 
-# WebUI directory
-WEBUI_DIR="$PROJECT_ROOT/web/unified"
+# WebUI configuration
+readonly WEBUI_DIR="$PROJECT_ROOT/web/unified"
 
-# Default mode is production
+# Default mode
 MODE="production"
 
 ################################################################################
@@ -62,53 +75,108 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Print colored message
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# ==============================================================================
+# Logging Functions
+# ==============================================================================
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
+# Enhanced logging with consistent formatting and optional timestamps
+log() {
+    local level="$1"
+    local message="$2"
+    local color="$3"
+    local timestamp
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-################################################################################
-# Parse command line arguments
-################################################################################
-parse_args() {
-    # Check for --dev flag
-    if [[ " $* " =~ " --dev " ]] || [[ " $* " =~ " -d " ]]; then
-        MODE="development"
-        log_info "Mode: Development"
+    # Add timestamp for warnings and errors
+    if [[ "$level" =~ ^(WARNING|ERROR)$ ]]; then
+        timestamp="$(date '+%Y-%m-%d %H:%M:%S') "
     else
+        timestamp=""
+    fi
+
+    echo -e "${color}[$level]${NC} ${timestamp}$message" >&2
+}
+
+log_info() { log "INFO" "$1" "$BLUE"; }
+log_success() { log "SUCCESS" "$1" "$GREEN"; }
+log_warning() { log "WARNING" "$1" "$YELLOW"; }
+log_error() { log "ERROR" "$1" "$RED"; }
+
+# ==============================================================================
+# Argument Parsing and Validation
+# ==============================================================================
+
+# Parse and validate command line arguments
+parse_args() {
+    local args=("$@")
+
+    # Process flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dev|-d)
+                MODE="development"
+                log_info "Mode: Development"
+                shift
+                ;;
+            --help|-h)
+                show_usage
+                exit 0
+                ;;
+            -*)
+                log_error "Unknown option: $1"
+                echo ""
+                show_usage
+                exit 1
+                ;;
+            *)
+                # Non-flag arguments handled elsewhere
+                break
+                ;;
+        esac
+    done
+
+    # Set default mode if not specified
+    if [[ "$MODE" != "development" ]]; then
+        MODE="production"
         log_info "Mode: Production"
     fi
 }
 
-################################################################################
+# ==============================================================================
+# Process Management Functions
+# ==============================================================================
+
 # Check if the server is running
-################################################################################
 # Returns: 0 if running, 1 if not running
 is_running() {
-    if [ -f "$PID_FILE" ]; then
-        local pid=$(cat "$PID_FILE")
-        if ps -p "$pid" > /dev/null 2>&1; then
-            return 0  # Running
-        else
-            # PID file exists but process is not running
-            log_warning "Stale PID file found, removing..."
-            rm -f "$PID_FILE"
-            return 1  # Not running
-        fi
+    local pid
+
+    # Check if PID file exists
+    if [[ ! -f "$PID_FILE" ]]; then
+        return 1  # Not running
     fi
-    return 1  # Not running
+
+    # Read PID safely
+    if ! pid=$(<"$PID_FILE"); then
+        log_warning "Failed to read PID file: $PID_FILE"
+        return 1
+    fi
+
+    # Validate PID format (should be numeric)
+    if ! [[ "$pid" =~ ^[0-9]+$ ]]; then
+        log_warning "Invalid PID format in $PID_FILE: $pid"
+        rm -f "$PID_FILE"
+        return 1
+    fi
+
+    # Check if process is actually running
+    if ps -p "$pid" > /dev/null 2>&1; then
+        return 0  # Running
+    else
+        # PID file exists but process is not running
+        log_warning "Stale PID file found, removing..."
+        rm -f "$PID_FILE"
+        return 1  # Not running
+    fi
 }
 
 ################################################################################
@@ -131,20 +199,41 @@ is_webui_running() {
 }
 
 ################################################################################
-# Build the server binary
-################################################################################
+# Build the server binary with validation
 build_server() {
+    local start_time
+    start_time=$(date +%s)
+
     log_info "Building gomailserver..."
 
-    # Navigate to project root
-    cd "$PROJECT_ROOT"
+    # Validate we're in the correct directory
+    if [[ ! -f "$PROJECT_ROOT/Makefile" ]]; then
+        log_error "Makefile not found in $PROJECT_ROOT"
+        return 1
+    fi
 
-    # Build using make
+    # Navigate to project root (with error checking)
+    if ! cd "$PROJECT_ROOT"; then
+        log_error "Failed to change to project root: $PROJECT_ROOT"
+        return 1
+    fi
+
+    # Build using make with timing
+    log_info "Running make build..."
     if make build; then
-        log_success "Build completed successfully"
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        log_success "Build completed successfully in ${duration}s"
+
+        # Verify binary was created
+        if [[ ! -x "$BINARY_PATH" ]]; then
+            log_error "Build succeeded but binary not found: $BINARY_PATH"
+            return 1
+        fi
+
         return 0
     else
-        log_error "Build failed"
+        log_error "Build failed after ${duration:-?}s"
         return 1
     fi
 }
@@ -278,16 +367,23 @@ start_server() {
         config_file="$DEV_CONFIG"
 
         # Create development config if it doesn't exist
-        if [ ! -f "$config_file" ]; then
-            log_warning "Development config not found, copying from example..."
-            if [ -f "$PROJECT_ROOT/gomailserver.example.yaml" ]; then
-                cp "$PROJECT_ROOT/gomailserver.example.yaml" "$config_file"
+    if [[ ! -f "$config_file" ]]; then
+        log_warning "Development config not found, copying from example..."
+
+        local example_config="$PROJECT_ROOT/gomailserver.example.yaml"
+        if [[ -f "$example_config" ]]; then
+            if cp "$example_config" "$config_file"; then
                 log_info "Created development config at $config_file"
             else
-                log_error "Example config not found, cannot create development config"
+                log_error "Failed to copy example config to $config_file"
                 return 1
             fi
+        else
+            log_error "Example config not found at $example_config"
+            log_info "Please create a development config manually or run from project root"
+            return 1
         fi
+    fi
     else
         config_file="$PROD_CONFIG"
 
@@ -495,6 +591,97 @@ EOF
 main() {
     # Check if no arguments provided
     if [ $# -eq 0 ]; then
+        show_usage
+        exit 1
+    fi
+
+    # Parse command
+    local command="$1"
+    shift
+
+    # Parse remaining arguments for flags
+    parse_args "$@"
+
+    # Execute command
+    case "$command" in
+        start)
+            start_server
+            exit $?
+            ;;
+        stop)
+            stop_server
+            exit $?
+            ;;
+        restart)
+            restart_server
+            exit $?
+            ;;
+        status)
+            show_status
+            exit $?
+            ;;
+        build)
+            build_server
+            exit $?
+            ;;
+        help|--help|-h)
+            show_usage
+            exit 0
+            ;;
+        *)
+            log_error "Unknown command: $command"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+}
+
+# ==============================================================================
+# Utility Functions
+# ==============================================================================
+
+# Cleanup function called on script exit
+cleanup() {
+    # Placeholder for future cleanup operations
+    return 0
+}
+
+# Validate script environment
+validate_environment() {
+    local errors=0
+
+    # Check if we're in a reasonable directory
+    if [[ ! -d "$PROJECT_ROOT" ]]; then
+        log_error "Project root not found: $PROJECT_ROOT"
+        ((errors++))
+    fi
+
+    # Check for required commands
+    local required_cmds=("ps" "mkdir" "rm" "cat")
+    for cmd in "${required_cmds[@]}"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            log_error "Required command not found: $cmd"
+            ((errors++))
+        fi
+    done
+
+    return $errors
+}
+
+# ==============================================================================
+# Main Script Logic
+# ==============================================================================
+
+main() {
+    # Validate environment first
+    if ! validate_environment; then
+        log_error "Environment validation failed. Please check your setup."
+        exit 1
+    fi
+
+    # Check if no arguments provided
+    if [[ $# -eq 0 ]]; then
         show_usage
         exit 1
     fi
