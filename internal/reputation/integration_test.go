@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/btafoya/gomailserver/internal/reputation/domain"
+	"github.com/btafoya/gomailserver/internal/reputation/service"
 	"go.uber.org/zap"
 )
 
@@ -293,8 +294,24 @@ func TestSchedulerIntegration(t *testing.T) {
 	}
 	defer db.Close()
 
+	// Create services needed for scheduler
+	circuitBreakerSvc := service.NewCircuitBreakerService(
+		db.EventsRepo,
+		db.ScoresRepo,
+		db.CircuitBreakerRepo,
+		db.TelemetryService,
+		zap.NewNop(),
+	)
+	warmUpSvc := service.NewWarmUpService(
+		db.EventsRepo,
+		db.ScoresRepo,
+		db.WarmUpRepo,
+		db.TelemetryService,
+		zap.NewNop(),
+	)
+
 	// Create scheduler
-	scheduler := NewScheduler(db.TelemetryService, zap.NewNop())
+	scheduler := NewScheduler(db.TelemetryService, circuitBreakerSvc, warmUpSvc, zap.NewNop())
 
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

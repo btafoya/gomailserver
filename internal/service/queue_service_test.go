@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -8,16 +9,28 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	repService "github.com/btafoya/gomailserver/internal/reputation/service"
 )
 
 // mockQueueRepository is a test double for QueueRepository
 type mockQueueRepository struct {
-	enqueueFunc       func(*domain.QueueItem) error
-	getPendingFunc    func() ([]*domain.QueueItem, error)
-	getByIDFunc       func(int64) (*domain.QueueItem, error)
-	updateStatusFunc  func(int64, string, string) error
-	updateRetryFunc   func(int64, int, time.Time) error
-	deleteFunc        func(int64) error
+	enqueueFunc      func(*domain.QueueItem) error
+	getPendingFunc   func() ([]*domain.QueueItem, error)
+	getByIDFunc      func(int64) (*domain.QueueItem, error)
+	updateStatusFunc func(int64, string, string) error
+	updateRetryFunc  func(int64, int, time.Time) error
+	deleteFunc       func(int64) error
+}
+
+// mockTelemetryService is a test double for TelemetryService
+type mockTelemetryService struct{}
+
+func (m *mockTelemetryService) RecordDelivery(ctx context.Context, domainName, recipientDomain, ip string) error {
+	return nil
+}
+
+func (m *mockTelemetryService) RecordBounce(ctx context.Context, domainName, recipientDomain, ip, bounceType string, statusCode int, response string) error {
+	return nil
 }
 
 func (m *mockQueueRepository) Enqueue(item *domain.QueueItem) error {
@@ -66,10 +79,11 @@ func (m *mockQueueRepository) Delete(id int64) error {
 func TestQueueService_Enqueue(t *testing.T) {
 	logger := zap.NewNop()
 	tmpDir := t.TempDir()
+	var telemetrySvc *repService.TelemetryService
 
 	t.Run("enqueues message successfully", func(t *testing.T) {
 		repo := &mockQueueRepository{}
-		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
+		svc := NewQueueServiceWithPath(repo, telemetrySvc, logger, tmpDir)
 
 		_, err := svc.Enqueue("sender@example.com", []string{"recipient@example.com"}, []byte("test message data"))
 		if err != nil {
@@ -85,7 +99,7 @@ func TestQueueService_Enqueue(t *testing.T) {
 				return nil
 			},
 		}
-		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
+		svc := NewQueueServiceWithPath(repo, telemetrySvc, logger, tmpDir)
 
 		recipients := []string{"user1@example.com", "user2@example.com", "user3@example.com"}
 		_, err := svc.Enqueue("sender@example.com", recipients, []byte("test message data"))
@@ -130,7 +144,7 @@ func TestQueueService_Enqueue(t *testing.T) {
 				return errors.New("database error")
 			},
 		}
-		svc := NewQueueServiceWithPath(repo, logger, tmpDir)
+		svc := NewQueueServiceWithPath(repo, nil, logger, tmpDir)
 
 		_, err := svc.Enqueue("sender@example.com", []string{"recipient@example.com"}, []byte("test data"))
 
@@ -143,7 +157,7 @@ func TestQueueService_Enqueue(t *testing.T) {
 func TestQueueService_CalculateNextRetry(t *testing.T) {
 	logger := zap.NewNop()
 	repo := &mockQueueRepository{}
-	svc := NewQueueService(repo, logger)
+	svc := NewQueueService(repo, nil, logger)
 
 	// Test exponential backoff schedule
 	tests := []struct {
@@ -192,7 +206,7 @@ func TestQueueService_GetPending(t *testing.T) {
 			},
 		}
 
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueService(repo, nil, logger)
 		items, err := svc.GetPending()
 
 		if err != nil {
@@ -211,7 +225,7 @@ func TestQueueService_GetPending(t *testing.T) {
 			},
 		}
 
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueService(repo, nil, logger)
 		items, err := svc.GetPending()
 
 		if err == nil {
@@ -236,7 +250,7 @@ func TestQueueService_MarkDelivered(t *testing.T) {
 			},
 		}
 
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueService(repo, nil, logger)
 		err := svc.MarkDelivered(1)
 
 		if err != nil {
@@ -264,7 +278,7 @@ func TestQueueService_MarkFailed(t *testing.T) {
 			},
 		}
 
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueService(repo, nil, logger)
 		err := svc.MarkFailed(1, "SMTP connection refused")
 
 		if err != nil {
@@ -296,7 +310,7 @@ func TestQueueService_IncrementRetry(t *testing.T) {
 			},
 		}
 
-		svc := NewQueueService(repo, logger)
+		svc := NewQueueService(repo, nil, logger)
 		now := time.Now()
 		err := svc.IncrementRetry(1, 2, now)
 
