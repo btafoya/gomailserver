@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package handlers
 
 import (
@@ -15,9 +18,9 @@ import (
 
 // ReputationPhase6Handler handles Phase 6 WebUI endpoints
 type ReputationPhase6Handler struct {
-	alertsRepo          repository.AlertsRepository
-	scoresRepo          repository.ScoresRepository
-	circuitBreakerRepo  repository.CircuitBreakerRepository
+	alertsRepo         repository.AlertsRepository
+	scoresRepo         repository.ScoresRepository
+	circuitBreakerRepo repository.CircuitBreakerRepository
 	// TODO: Add operational mail repository when IMAP integration is ready
 }
 
@@ -173,10 +176,10 @@ func (h *ReputationPhase6Handler) GetDeliverabilityStatus(w http.ResponseWriter,
 	var err error
 
 	if domainName != "" {
-		score, err = h.scoresRepo.GetByDomain(ctx, domainName)
+		score, err = h.scoresRepo.GetReputationScore(ctx, domainName)
 	} else {
 		// Get first domain or average score
-		scores, err := h.scoresRepo.GetAll(ctx)
+		scores, err := h.scoresRepo.ListAllScores(ctx)
 		if err == nil && len(scores) > 0 {
 			score = scores[0]
 		}
@@ -194,7 +197,7 @@ func (h *ReputationPhase6Handler) GetDeliverabilityStatus(w http.ResponseWriter,
 	dnsHealth := getDNSHealth(ctx, score.Domain)
 
 	response := map[string]interface{}{
-		"reputationScore": score.Score,
+		"reputationScore": score.ReputationScore,
 		"trend":           trend,
 		"dnsHealth":       dnsHealth,
 		"lastChecked":     time.Now().Unix(),
@@ -207,9 +210,9 @@ func (h *ReputationPhase6Handler) GetDeliverabilityStatus(w http.ResponseWriter,
 func calculateTrend(score *domain.ReputationScore) string {
 	// TODO: Implement trend calculation based on historical scores
 	// For now, return based on current score
-	if score.Score >= 80 {
+	if score.ReputationScore >= 80 {
 		return "stable"
-	} else if score.Score >= 60 {
+	} else if score.ReputationScore >= 60 {
 		return "improving"
 	}
 	return "declining"
@@ -254,7 +257,7 @@ func (h *ReputationPhase6Handler) GetCircuitBreakers(w http.ResponseWriter, r *h
 	var err error
 
 	if domainName != "" {
-		breakers, err = h.circuitBreakerRepo.GetByDomain(ctx, domainName, 10)
+		breakers, err = h.circuitBreakerRepo.GetBreakerHistory(ctx, domainName, 10)
 	} else {
 		breakers, err = h.circuitBreakerRepo.GetActiveBreakers(ctx)
 	}
@@ -282,18 +285,18 @@ func (h *ReputationPhase6Handler) GetCircuitBreakers(w http.ResponseWriter, r *h
 		}
 
 		enhanced := map[string]interface{}{
-			"id":            breaker.ID,
-			"domain":        breaker.Domain,
-			"triggerType":   breaker.TriggerType,
-			"triggerValue":  breaker.TriggerValue,
-			"threshold":     breaker.Threshold,
-			"reason":        fmt.Sprintf("%s rate exceeded threshold", breaker.TriggerType),
-			"pausedAt":      breaker.PausedAt,
-			"resumedAt":     breaker.ResumedAt,
-			"autoResumed":   breaker.AutoResumed,
-			"autoResumeAt":  autoResumeAt,
-			"adminNotes":    breaker.AdminNotes,
-			"status":        status,
+			"id":           breaker.ID,
+			"domain":       breaker.Domain,
+			"triggerType":  breaker.TriggerType,
+			"triggerValue": breaker.TriggerValue,
+			"threshold":    breaker.Threshold,
+			"reason":       fmt.Sprintf("%s rate exceeded threshold", breaker.TriggerType),
+			"pausedAt":     breaker.PausedAt,
+			"resumedAt":    breaker.ResumedAt,
+			"autoResumed":  breaker.AutoResumed,
+			"autoResumeAt": autoResumeAt,
+			"adminNotes":   breaker.AdminNotes,
+			"status":       status,
 		}
 
 		enhancedBreakers = append(enhancedBreakers, enhanced)
@@ -432,17 +435,17 @@ func (h *ReputationPhase6Handler) GetAlerts(w http.ResponseWriter, r *http.Reque
 	alertsResponse := make([]map[string]interface{}, 0, len(alerts))
 	for _, alert := range alerts {
 		alertsResponse = append(alertsResponse, map[string]interface{}{
-			"id":              alert.ID,
-			"domain":          alert.Domain,
-			"alertType":       alert.AlertType,
-			"severity":        string(alert.Severity),
-			"title":           alert.Title,
-			"message":         alert.Message,
-			"metadata":        alert.Details,
-			"createdAt":       alert.CreatedAt,
-			"readAt":          alert.AcknowledgedAt,
-			"acknowledgedAt":  alert.AcknowledgedAt,
-			"acknowledgedBy":  alert.AcknowledgedBy,
+			"id":             alert.ID,
+			"domain":         alert.Domain,
+			"alertType":      alert.AlertType,
+			"severity":       string(alert.Severity),
+			"title":          alert.Title,
+			"message":        alert.Message,
+			"metadata":       alert.Details,
+			"createdAt":      alert.CreatedAt,
+			"readAt":         alert.AcknowledgedAt,
+			"acknowledgedAt": alert.AcknowledgedAt,
+			"acknowledgedBy": alert.AcknowledgedBy,
 		})
 	}
 
@@ -541,7 +544,7 @@ func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 
 func respondError(w http.ResponseWriter, status int, message string) {
 	respondJSON(w, status, map[string]string{
-		"error":   message,
-		"status":  http.StatusText(status),
+		"error":  message,
+		"status": http.StatusText(status),
 	})
 }
