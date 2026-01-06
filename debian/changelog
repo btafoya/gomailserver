@@ -1,0 +1,5 @@
+gomailserver ({{VERSION}}) {{DISTRO}}; urgency=medium
+
+  * Automated build for {{DISTRO}} {{ARCH}}
+
+ -- btafoya <btafoya@users.noreply.github.com>  {{DATE}}

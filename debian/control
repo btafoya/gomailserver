@@ -1,0 +1,19 @@
+Package: gomailserver
+Version: {{VERSION}}
+Section: mail
+Priority: optional
+Architecture: {{ARCH}}
+Maintainer: btafoya <btafoya@users.noreply.github.com>
+Homepage: https://github.com/btafoya/gomailserver
+Description: Modern, secure mail server written in Go
+ gomailserver is a full-featured mail server implementation that includes:
+  * SMTP, IMAP, and POP3 support
+  * Web-based administration interface
+  * Webmail client
+  * CalDAV/CardDAV support
+  * DKIM, SPF, and DMARC support
+  * Automatic TLS with Let's Encrypt
+  * Greylist and anti-spam features
+  * PostgreSQL and SQLite support
+Depends: ca-certificates, adduser
+Recommends: sqlite3

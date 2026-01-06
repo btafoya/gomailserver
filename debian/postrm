@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        # Remove user and data directories only on purge
+        if id -u gomailserver >/dev/null 2>&1; then
+            deluser --system gomailserver || true
+        fi
+        
+        # Remove data directories (be careful with this)
+        # Uncomment if you want to remove data on purge
+        # rm -rf /var/lib/gomailserver
+        # rm -rf /var/log/gomailserver
+        # rm -rf /etc/gomailserver
+        ;;
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Do nothing
+        ;;
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

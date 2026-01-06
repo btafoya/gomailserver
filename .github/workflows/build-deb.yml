@@ -1,0 +1,185 @@
+name: Build and Publish DEB Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        default: '0.0.1'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-debs:
+    name: Build DEB for ${{ matrix.distro }}-${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: ['focal', 'jammy', 'noble', 'bullseye', 'bookworm']
+        arch: ['amd64', 'arm64']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.5'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+
+      - name: Install cross-compilation tools
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Build UI components
+        run: |
+          cd web/admin && npm install && npm run build
+          cd ../webmail && pnpm install && pnpm run build
+
+      - name: Build Go binary
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            export GOARCH=arm64
+            export CC=aarch64-linux-gnu-gcc
+            export CGO_ENABLED=1
+          else
+            export GOARCH=amd64
+            export CGO_ENABLED=1
+          fi
+          
+          mkdir -p build
+          go build -ldflags "-X main.Version=${VERSION} -s -w" \
+            -o build/gomailserver ./cmd/gomailserver
+
+      - name: Create DEB package structure
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          DISTRO: ${{ matrix.distro }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          PKG_DIR="gomailserver_${VERSION}_${ARCH}"
+          mkdir -p "${PKG_DIR}/DEBIAN"
+          mkdir -p "${PKG_DIR}/usr/bin"
+          mkdir -p "${PKG_DIR}/usr/share/gomailserver"
+          mkdir -p "${PKG_DIR}/lib/systemd/system"
+          
+          # Copy binary
+          cp build/gomailserver "${PKG_DIR}/usr/bin/"
+          chmod 755 "${PKG_DIR}/usr/bin/gomailserver"
+          
+          # Copy web assets
+          cp -r web/admin/dist "${PKG_DIR}/usr/share/gomailserver/admin"
+          cp -r web/webmail/dist "${PKG_DIR}/usr/share/gomailserver/webmail"
+          
+          # Copy example config
+          cp gomailserver.example.yaml "${PKG_DIR}/usr/share/gomailserver/"
+          
+          # Copy systemd service file if exists
+          if [ -f scripts/gomailserver.service ]; then
+            cp scripts/gomailserver.service "${PKG_DIR}/lib/systemd/system/"
+          fi
+          
+          # Generate control file
+          cat debian/control | \
+            sed "s/{{VERSION}}/${VERSION}/" | \
+            sed "s/{{ARCH}}/${ARCH}/" > "${PKG_DIR}/DEBIAN/control"
+          
+          # Generate changelog
+          DATE=$(date -R)
+          cat debian/changelog | \
+            sed "s/{{VERSION}}/${VERSION}/" | \
+            sed "s/{{DISTRO}}/${DISTRO}/" | \
+            sed "s/{{ARCH}}/${ARCH}/" | \
+            sed "s/{{DATE}}/${DATE}/" > "${PKG_DIR}/DEBIAN/changelog"
+          
+          # Copy maintainer scripts
+          cp debian/postinst "${PKG_DIR}/DEBIAN/"
+          cp debian/prerm "${PKG_DIR}/DEBIAN/"
+          cp debian/postrm "${PKG_DIR}/DEBIAN/"
+          chmod 755 "${PKG_DIR}/DEBIAN/postinst"
+          chmod 755 "${PKG_DIR}/DEBIAN/prerm"
+          chmod 755 "${PKG_DIR}/DEBIAN/postrm"
+          
+          # Calculate installed size (in KB)
+          SIZE=$(du -sk "${PKG_DIR}" | cut -f1)
+          echo "Installed-Size: ${SIZE}" >> "${PKG_DIR}/DEBIAN/control"
+          
+          # Build the .deb package
+          dpkg-deb --build "${PKG_DIR}"
+          
+          # Rename to include distro in filename
+          mv "${PKG_DIR}.deb" "gomailserver_${VERSION}~${DISTRO}_${ARCH}.deb"
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.distro }}-${{ matrix.arch }}
+          path: "*.deb"
+          retention-days: 5
+
+  publish-to-apt-repo:
+    name: Publish to APT Repository
+    runs-on: ubuntu-latest
+    needs: build-debs
+    strategy:
+      max-parallel: 1
+      matrix:
+        distro: ['focal', 'jammy', 'noble', 'bullseye', 'bookworm']
+        arch: ['amd64', 'arm64']
+    
+    steps:
+      - name: Download DEB artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-${{ matrix.distro }}-${{ matrix.arch }}
+
+      - name: Add to APT repository
+        uses: smeinecke/apt-repo-action@v2.1.6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_supported_arch: |
+            amd64
+            arm64
+          repo_supported_version: |
+            focal
+            jammy
+            noble
+            bullseye
+            bookworm
+          file: "*~${{ matrix.distro }}_*.deb"
+          file_target_version: ${{ matrix.distro }}
+          private_key: ${{ secrets.APT_SIGNING_KEY }}
+          public_key: ${{ secrets.APT_SIGNING_PUBKEY }}
+          key_passphrase: ${{ secrets.APT_SIGNING_KEY_PASSPHRASE }}
+          page_branch: gh-pages
+          repo_folder: repo

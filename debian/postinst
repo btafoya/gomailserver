@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+# Create gomailserver user if it doesn't exist
+if ! id -u gomailserver >/dev/null 2>&1; then
+    adduser --system --group --home /var/lib/gomailserver --no-create-home \
+        --disabled-password --shell /bin/false gomailserver
+fi
+
+# Create necessary directories
+mkdir -p /var/lib/gomailserver
+mkdir -p /var/log/gomailserver
+mkdir -p /etc/gomailserver
+
+# Set ownership
+chown -R gomailserver:gomailserver /var/lib/gomailserver
+chown -R gomailserver:gomailserver /var/log/gomailserver
+chown -R root:gomailserver /etc/gomailserver
+chmod 750 /etc/gomailserver
+
+# Copy example config if config doesn't exist
+if [ ! -f /etc/gomailserver/gomailserver.yaml ]; then
+    if [ -f /usr/share/gomailserver/gomailserver.example.yaml ]; then
+        cp /usr/share/gomailserver/gomailserver.example.yaml /etc/gomailserver/gomailserver.yaml
+        chown root:gomailserver /etc/gomailserver/gomailserver.yaml
+        chmod 640 /etc/gomailserver/gomailserver.yaml
+        echo "Example configuration copied to /etc/gomailserver/gomailserver.yaml"
+        echo "Please edit it before starting the service."
+    fi
+fi
+
+# Reload systemd if systemctl is available
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload || true
+    echo "To enable gomailserver at boot, run: sudo systemctl enable gomailserver"
+    echo "To start gomailserver, run: sudo systemctl start gomailserver"
+fi
+
+exit 0

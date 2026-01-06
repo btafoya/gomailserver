@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+# Stop service if it's running
+if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active --quiet gomailserver; then
+        systemctl stop gomailserver || true
+    fi
+    if systemctl is-enabled --quiet gomailserver 2>/dev/null; then
+        systemctl disable gomailserver || true
+    fi
+fi
+
+exit 0
