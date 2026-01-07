@@ -61,7 +61,7 @@ readonly DEV_CONFIG="$PROJECT_ROOT/gomailserver.yaml"
 readonly PROD_CONFIG="/etc/gomailserver/gomailserver.yaml"
 
 # WebUI configuration
-readonly WEBUI_DIR="$PROJECT_ROOT/web/unified"
+readonly WEBUI_DIR="$PROJECT_ROOT/unified"
 
 # Default mode
 MODE="production"

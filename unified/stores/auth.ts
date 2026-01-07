@@ -1,19 +1,12 @@
 import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router'
-
+ 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null as string | null,
     user: null as any,
     isAuthenticated: false
   }),
-
-  getters: {
-    getToken: (state) => state.token,
-    getUser: (state) => state.user,
-    isLoggedIn: (state) => state.isAuthenticated
-  },
-
+ 
   actions: {
     initializeAuth() {
       const token = localStorage.getItem('token')
@@ -23,37 +16,35 @@ export const useAuthStore = defineStore('auth', {
         // TODO: Validate token and fetch user info
       }
     },
-
+ 
     async login(credentials: { email: string, password: string }) {
       try {
-        const { $api } = useNuxtApp()
-        const response = await $api.post('/auth/login', credentials)
-
-        this.token = response.data.token
+        const response = await fetch('http://localhost:8980/api/v1/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials)
+        })
+        const data = await response.json()
+        this.token = data.token
         this.isAuthenticated = true
-
+ 
         localStorage.setItem('token', this.token)
-
-        // Redirect to portal for logged in users
-        const router = useRouter()
-        await router.push('/portal')
-
-        return response.data
+ 
+        return data
       } catch (error) {
         throw error
       }
     },
-
+ 
     logout() {
       this.token = null
       this.user = null
       this.isAuthenticated = false
       localStorage.removeItem('token')
-
-      const router = useRouter()
-      router.push('/login')
     },
-
+ 
     checkAuth() {
       const token = localStorage.getItem('token')
       if (token) {
