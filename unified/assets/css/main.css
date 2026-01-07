@@ -27,6 +27,7 @@ body {
 :root {
   /* Professional Dashboard Color Palette */
   --color-primary: 59 130 246; /* #3B82F6 - Trust Blue */
+  --color-primary-foreground: 255 255 255; /* #FFFFFF */
   --color-secondary: 96 165 250; /* #60A5FA */
   --color-background: 248 250 252; /* #F8FAFC */
   --color-foreground: 30 41 59; /* #1E293B */
@@ -61,6 +62,7 @@ body {
 .dark {
   /* Dark Mode Professional Color Palette */
   --color-primary: 239 68 68; /* #EF4444 */
+  --color-primary-foreground: 255 255 255; /* #FFFFFF */
   --color-secondary: 96 165 250; /* #60A5FA */
   --color-background: 15 23 42; /* #0F172A */
   --color-foreground: 248 250 252; /* #F8FAFC */

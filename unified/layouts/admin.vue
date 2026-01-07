@@ -64,7 +64,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { Sun, Moon, Bell } from 'lucide-vue-next'
 
 // Theme management
@@ -80,6 +79,7 @@ const toggleTheme = () => {
 }
 
 // Breadcrumb generation based on route
+// useRoute is auto-imported by Nuxt 3
 const breadcrumbs = computed(() => {
   const route = useRoute()
   const path = route.path.replace('/admin', '').trim()
