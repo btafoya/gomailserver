@@ -11,68 +11,29 @@ import (
 	"strings"
 
 	"github.com/btafoya/gomailserver/internal/config"
-	webunified "github.com/btafoya/gomailserver/unified-go"
+	"github.com/btafoya/gomailserver/unified-go"
 	"go.uber.org/zap"
 )
 
 // UnifiedHandler returns an HTTP handler for the unified UI
-// In development mode (with -tags dev), it proxies to Vite dev server
+// In development mode (with -tags dev), it returns 404 for UI routes
 // In production mode, it serves embedded static files with SPA fallback
-// This handler works for /admin, /portal, and /webmail routes
 func UnifiedHandler(logger *zap.Logger, webUIConfig *config.WebUIConfig) http.Handler {
 	if webunified.DevMode {
-		return unifiedDevModeHandler(logger, webUIConfig)
-	}
-	return unifiedProdModeHandler(logger)
-}
-
-// unifiedDevModeHandler proxies requests to Vite dev server if running
-// Falls back to embedded assets if Vite is not available
-func unifiedDevModeHandler(logger *zap.Logger, config *config.WebUIConfig) http.Handler {
-	viteURL := fmt.Sprintf("http://localhost:%d", config.VitePort)
-
-	// Try to connect to Vite dev server
-	if isViteRunning(viteURL) {
-		logger.Info("Unified UI: Proxying to Vite dev server", zap.String("url", viteURL))
-		target, _ := url.Parse(viteURL)
-		proxy := httputil.NewSingleHostReverseProxy(target)
-
-		// Modify the request to handle multiple prefixes (/admin, /portal, /webmail)
-		originalDirector := proxy.Director
-		proxy.Director = func(req *http.Request) {
-			originalDirector(req)
-			req.Host = target.Host
-			path := req.URL.Path
-			path = strings.TrimPrefix(path, "/admin")
-			path = strings.TrimPrefix(path, "/portal")
-			path = strings.TrimPrefix(path, "/webmail")
-			if path == "" {
-				path = "/"
-			}
-			req.URL.Path = path
-		}
-
+		// Development mode: Nuxt dev server handles all UI routes
+		// Return 404 for UI routes since they're handled by Nuxt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var stripPrefix string
-			if strings.HasPrefix(r.URL.Path, "/admin") {
-				stripPrefix = "/admin"
-			} else if strings.HasPrefix(r.URL.Path, "/portal") {
-				stripPrefix = "/portal"
-			} else if strings.HasPrefix(r.URL.Path, "/webmail") {
-				stripPrefix = "/webmail"
-			}
-			http.StripPrefix(stripPrefix, proxy).ServeHTTP(w, r)
+			logger.Debug("Development mode: rejecting UI route on API server",
+				zap.String("path", r.URL.Path))
+			http.Error(w, "UI routes not available on API server. Use Nuxt dev server on port configured WebUI port.", http.StatusNotFound)
 		})
 	}
-
-	logger.Warn("Unified UI: Vite dev server not running, serving embedded assets")
 	return unifiedProdModeHandler(logger)
 }
 
-// serveFile attempts to serve a file from the embedded filesystem
+// serveFile attempts to serve a file from embedded filesystem
 // Returns true if successful, false if file not found
 func serveFile(fsys fs.FS, w http.ResponseWriter, r *http.Request, name string) bool {
-	// Clean the path
 	name = path.Clean(name)
 	if name == "/" {
 		name = "index.html"
@@ -80,21 +41,18 @@ func serveFile(fsys fs.FS, w http.ResponseWriter, r *http.Request, name string) 
 		name = strings.TrimPrefix(name, "/")
 	}
 
-	// Try to open the file
 	f, err := fsys.Open(name)
 	if err != nil {
 		return false
 	}
 	defer f.Close()
 
-	// Check if it's a directory
 	stat, err := f.Stat()
 	if err != nil {
 		return false
 	}
 
 	if stat.IsDir() {
-		// Try index.html in the directory
 		indexPath := path.Join(name, "index.html")
 		indexFile, err := fsys.Open(indexPath)
 		if err != nil {
@@ -111,19 +69,8 @@ func serveFile(fsys fs.FS, w http.ResponseWriter, r *http.Request, name string) 
 		return true
 	}
 
-	// Serve the file
 	http.ServeContent(w, r, name, stat.ModTime(), f.(io.ReadSeeker))
 	return true
-}
-
-// isViteRunning checks if Vite dev server is running
-func isViteRunning(viteURL string) bool {
-	resp, err := http.Get(viteURL)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
 }
 
 // unifiedProdModeHandler serves embedded static files with SPA fallback

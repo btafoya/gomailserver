@@ -1,7 +1,8 @@
-const API_BASE = 'http://localhost:8980/api/v1'
+import { useApiBase } from '../useApiBase'
 
 export const getAuthToken = () => {
-  return typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('token')
 }
 
 export const getAuthHeaders = () => {
@@ -11,6 +12,10 @@ export const getAuthHeaders = () => {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   }
 }
+
+const getApiBase = () => useApiBase()
+
+const API_BASE = getApiBase()
 
 export interface User {
   id: number

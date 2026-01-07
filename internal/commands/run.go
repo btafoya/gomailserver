@@ -275,13 +275,9 @@ func run(cmd *cobra.Command, args []string) error {
 	imapServer := imap.NewServer(&cfg.IMAP, tlsCfg, imapBackend, logger)
 
 	// Create Admin API server
-	// Use WebUI port if enabled, otherwise fall back to API port
-	apiConfig := cfg.API
-	if cfg.WebUI.Enabled {
-		apiConfig.Port = cfg.WebUI.Port
-	}
+	// API always runs on api.port (8980) - separate from WebUI
 	apiServer := api.NewServer(
-		&apiConfig,
+		&cfg.API,
 		cfg,
 		cfgFile,
 		db,

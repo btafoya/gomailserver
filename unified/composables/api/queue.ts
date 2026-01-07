@@ -1,9 +1,4 @@
-/**
- * Queue API composable
- * Handles mail queue operations
- */
-
-const API_BASE = 'http://localhost:8980/api/v1'
+import { useApiBase } from '../useApiBase'
 
 export const getAuthToken = () => {
   return typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -30,6 +25,8 @@ export interface QueueMessage {
 }
 
 export const useQueueApi = () => {
+  const API_BASE = useApiBase()
+
   const getQueue = async (): Promise<QueueMessage[]> => {
     const response = await fetch(`${API_BASE}/queue`, {
       method: 'GET',

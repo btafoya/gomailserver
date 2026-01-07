@@ -64,6 +64,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { Sun, Moon, Bell } from 'lucide-vue-next'
 
 // Theme management
@@ -80,7 +81,8 @@ const toggleTheme = () => {
 
 // Breadcrumb generation based on route
 const breadcrumbs = computed(() => {
-  const path = window.location.pathname.replace('/admin', '').trim()
+  const route = useRoute()
+  const path = route.path.replace('/admin', '').trim()
   if (!path) return ['Dashboard']
 
   const parts = path.split('/').filter(Boolean)

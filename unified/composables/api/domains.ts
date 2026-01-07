@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8980/api/v1'
+import { useApiBase } from '../useApiBase'
 
 export const getAuthToken = () => {
   return typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -46,6 +46,8 @@ export interface DomainCreateRequest {
 }
 
 export const useDomainsApi = () => {
+  const API_BASE = useApiBase()
+
   const getDomains = async (): Promise<Domain[]> => {
     const response = await fetch(`${API_BASE}/domains`, {
       method: 'GET',

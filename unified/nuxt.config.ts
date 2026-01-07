@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     public: {
       // API base URL - can be overridden via NUXT_PUBLIC_API_BASE environment variable
       // In development, this is set by the control script based on gomailserver.yaml
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080/api/v1'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8980/api/v1'
     }
   },
   app: {
@@ -30,11 +30,10 @@ export default defineNuxtConfig({
   // Vite dev server configuration
   vite: {
     server: {
-      // Proxy API requests to the Go backend
-      // Target port is read from NUXT_PUBLIC_API_BASE or defaults to 8080
+      // Proxy API requests to the Go backend API server (port 8980)
       proxy: {
         '/api': {
-          target: process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://localhost:8080',
+          target: 'http://localhost:8980',
           changeOrigin: true
         }
       }

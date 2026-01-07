@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/btafoya/gomailserver/internal/admin"
 	"github.com/btafoya/gomailserver/internal/api/handlers"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
 	calendarService "github.com/btafoya/gomailserver/internal/calendar/service"
+	"github.com/btafoya/gomailserver/internal/config"
 	contactService "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/postmark"
 	"github.com/btafoya/gomailserver/internal/repository"
@@ -34,6 +34,7 @@ type Router struct {
 	settingsService *service.SettingsService
 	apiKeyRepo      repository.APIKeyRepository
 	jwtSecret       string
+	webUIConfig     *config.WebUIConfig
 }
 
 // RouterConfig contains dependencies for the API router
@@ -420,12 +421,6 @@ func NewRouter(config RouterConfig) *Router {
 	// PostmarkApp API compatibility endpoints
 	// Mount at root level for PostmarkApp client compatibility
 	r.Mount("/", postmark.NewRouter(config.DB, config.QueueService, config.Logger))
-
-	// Unified UI - serves admin, portal, and webmail
-	// All three route to the same Nuxt.js app but with different base paths
-	r.Mount("/admin", admin.UnifiedHandler(config.Logger, &config.WebUI))
-	r.Mount("/portal", admin.UnifiedHandler(config.Logger, &config.WebUI))
-	r.Mount("/webmail", admin.UnifiedHandler(config.Logger, &config.WebUI))
 
 	return r
 }

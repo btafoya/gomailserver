@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8980/api/v1'
+import { useApiBase } from '../useApiBase'
 
 export const getAuthToken = () => {
   return typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -30,9 +30,8 @@ export interface AliasCreateRequest {
 }
 
 export const useAliasesApi = () => {
-  /**
-   * Get all aliases
-   */
+  const API_BASE = useApiBase()
+
   const getAliases = async (): Promise<Alias[]> => {
     const response = await fetch(`${API_BASE}/aliases`, {
       method: 'GET',
@@ -47,9 +46,6 @@ export const useAliasesApi = () => {
     return data.data || []
   }
 
-  /**
-   * Get a specific alias by ID
-   */
   const getAlias = async (id: number): Promise<Alias> => {
     const response = await fetch(`${API_BASE}/aliases/${id}`, {
       method: 'GET',
@@ -64,9 +60,6 @@ export const useAliasesApi = () => {
     return data.data
   }
 
-  /**
-   * Create a new alias
-   */
   const createAlias = async (alias: AliasCreateRequest): Promise<Alias> => {
     const response = await fetch(`${API_BASE}/aliases`, {
       method: 'POST',
@@ -83,9 +76,6 @@ export const useAliasesApi = () => {
     return data.data
   }
 
-  /**
-   * Update an alias
-   */
   const updateAlias = async (id: number, alias: Partial<AliasCreateRequest>): Promise<Alias> => {
     const response = await fetch(`${API_BASE}/aliases/${id}`, {
       method: 'PUT',
@@ -102,9 +92,6 @@ export const useAliasesApi = () => {
     return data.data
   }
 
-  /**
-   * Delete an alias
-   */
   const deleteAlias = async (id: number): Promise<void> => {
     const response = await fetch(`${API_BASE}/aliases/${id}`, {
       method: 'DELETE',

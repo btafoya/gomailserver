@@ -1,9 +1,4 @@
-/**
- * Authentication API composable
- * Handles login, logout, token refresh operations
- */
-
-const API_BASE = 'http://localhost:8980/api/v1'
+import { useApiBase } from '../useApiBase'
 
 interface LoginRequest {
   email: string
@@ -21,6 +16,8 @@ interface LoginResponse {
 }
 
 export const useAuthApi = () => {
+  const API_BASE = useApiBase()
+
   const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',

@@ -116,9 +116,6 @@
       "#tailwind-config": [
         "./tailwind/expose"
       ],
-      "#tailwind-config/*": [
-        "./tailwind/expose/*"
-      ],
       "#nuxt-icon-server-bundle": [
         "./nuxt-icon-server-bundle"
       ]

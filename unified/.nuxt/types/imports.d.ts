@@ -102,6 +102,7 @@ declare global {
   const tryUseNuxtApp: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/nuxt').tryUseNuxtApp
   const unref: typeof import('vue').unref
   const updateAppConfig: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/config').updateAppConfig
+  const useApiBase: typeof import('../../composables/useApiBase').useApiBase
   const useAppConfig: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/config').useAppConfig
   const useAsyncData: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/asyncData').useAsyncData
   const useAttrs: typeof import('vue').useAttrs
@@ -115,6 +116,7 @@ declare global {
   const useError: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/error').useError
   const useFetch: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/fetch').useFetch
   const useFormGroup: typeof import('../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/composables/useFormGroup').useFormGroup
+  const useGoBackendPort: typeof import('../../composables/useApiBase').useGoBackendPort
   const useHead: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/head').useHead
   const useHeadSafe: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/head').useHeadSafe
   const useHydration: typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/hydrate').useHydration
@@ -310,6 +312,7 @@ declare module 'vue' {
     readonly tryUseNuxtApp: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/nuxt')['tryUseNuxtApp']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
     readonly updateAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/config')['updateAppConfig']>
+    readonly useApiBase: UnwrapRef<typeof import('../../composables/useApiBase')['useApiBase']>
     readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/config')['useAppConfig']>
     readonly useAsyncData: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/asyncData')['useAsyncData']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
@@ -323,6 +326,7 @@ declare module 'vue' {
     readonly useError: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/error')['useError']>
     readonly useFetch: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/fetch')['useFetch']>
     readonly useFormGroup: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/composables/useFormGroup')['useFormGroup']>
+    readonly useGoBackendPort: UnwrapRef<typeof import('../../composables/useApiBase')['useGoBackendPort']>
     readonly useHead: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/head')['useHead']>
     readonly useHeadSafe: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/head')['useHeadSafe']>
     readonly useHydration: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/composables/hydrate')['useHydration']>

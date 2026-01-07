@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useApiBase } from '../composables/useApiBase'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -13,13 +14,13 @@ export const useAuthStore = defineStore('auth', {
       if (token) {
         this.token = token
         this.isAuthenticated = true
-        // TODO: Validate token and fetch user info
       }
     },
 
     async login(credentials: { email: string, password: string }) {
       try {
-        const response = await fetch('http://localhost:8980/api/v1/auth/login', {
+        const API_BASE = useApiBase()
+        const response = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -32,7 +33,6 @@ export const useAuthStore = defineStore('auth', {
 
         localStorage.setItem('token', this.token)
 
-        // Navigate using window.location (works outside Nuxt context)
         window.location.href = '/portal'
         return data
       } catch (error) {
@@ -46,7 +46,6 @@ export const useAuthStore = defineStore('auth', {
       this.isAuthenticated = false
       localStorage.removeItem('token')
 
-      // Navigate using window.location
       window.location.href = '/login'
     },
 

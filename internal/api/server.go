@@ -21,6 +21,7 @@ import (
 // Server represents the admin API HTTP server
 type Server struct {
 	config     *config.APIConfig
+	fullConfig *config.Config
 	httpServer *http.Server
 	logger     *zap.Logger
 	router     *Router
@@ -99,6 +100,7 @@ func NewServer(
 		DB:                 db.DB,
 		JWTSecret:          cfg.JWTSecret,
 		CORSOrigins:        cfg.CORSOrigins,
+		WebUIConfig:        &fullConfig.WebUI,
 	})
 
 	httpServer := &http.Server{
@@ -111,6 +113,7 @@ func NewServer(
 
 	return &Server{
 		config:     cfg,
+		fullConfig: fullConfig,
 		httpServer: httpServer,
 		logger:     logger,
 		router:     router,

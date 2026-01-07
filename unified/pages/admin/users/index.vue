@@ -55,27 +55,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Plus } from 'lucide-vue-next'
-import { useAuthStore } from '~/stores/auth'
+import { useUsersApi } from '~/composables/api/users'
 
 definePageMeta({
   middleware: 'auth',
   layout: 'admin'
 })
 
-const authStore = useAuthStore()
-const API_BASE = 'http://localhost:8980/api/v1'
-
-const getAuthToken = () => {
-  return typeof window !== 'undefined' ? localStorage.getItem('token') : null
-}
-
-const getAuthHeaders = () => {
-  const token = getAuthToken()
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  }
-}
+const { getUsers, deleteUser: removeUser } = useUsersApi()
 
 interface User {
   id: number
@@ -97,60 +84,36 @@ interface User {
   last_login?: string
 }
 
-const getUsers = async (): Promise<User[]> => {
-  const response = await fetch(`${API_BASE}/users`, {
-    method: 'GET',
-    headers: getAuthHeaders()
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch users')
-  }
-
-  const data = await response.json()
-  return data.data || []
-}
-
-const deleteUser = async (id) => {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders()
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to delete user')
-  }
-}
-
 const logout = () => {
-  authStore.logout()
+  localStorage.removeItem('token')
+  navigateTo('/login')
 }
 
-const users = ref([])
+const users = ref<User[]>([])
 const loading = ref(false)
-const error = ref(null)
+const error = ref<string | null>(null)
 
 const loadUsers = async () => {
   loading.value = true
   error.value = null
   try {
     users.value = await getUsers()
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message
   } finally {
     loading.value = false
   }
 }
 
-const handleDelete = async (id, email) => {
+const handleDelete = async (id: number, email: string) => {
   if (!confirm(`Are you sure you want to delete user "${email}"? This action cannot be undone.`)) {
     return
   }
 
   try {
-    await deleteUser(id)
+    await removeUser(id)
     users.value = users.value.filter(u => u.id !== id)
-  } catch (err) {
+  } catch (err: any) {
     error.value = err.message
   }
 }
@@ -159,7 +122,7 @@ const goToCreate = () => {
   navigateTo('/admin/users/create')
 }
 
-const goToEdit = (id) => {
+const goToEdit = (id: number) => {
   navigateTo(`/admin/users/${id}`)
 }
 

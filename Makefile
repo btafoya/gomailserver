@@ -24,6 +24,12 @@ build: build-ui
 	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
+build-dev:
+	@echo "Building $(BINARY_NAME) (dev mode with Nuxt support)..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -tags dev $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME) (dev mode)"
+
 build-ui:
 	@echo "Building unified UI..."
 	@cd unified && pnpm install && pnpm run build

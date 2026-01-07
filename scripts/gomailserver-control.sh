@@ -218,9 +218,14 @@ build_server() {
         return 1
     fi
 
-    # Build using make with timing
+    # Build using make with dev tag if in dev mode
     log_info "Running make build..."
-    if make build; then
+    local build_cmd="build"
+    if [ "$MODE" = "development" ]; then
+        build_cmd="build-dev"
+    fi
+
+    if make $build_cmd; then
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         log_success "Build completed successfully in ${duration}s"
@@ -245,8 +250,9 @@ get_webui_port() {
     local config_file="$1"
 
     if [ -f "$config_file" ]; then
-        # Try to extract port from yaml format (webui: port: XXXX)
-        local port=$(grep -E '^\s*port:\s*[0-9]+' "$config_file" 2>/dev/null | head -1 | grep -oE '[0-9]+' || echo "")
+        # Try to extract webui port specifically from webui: section
+        # Look for "webui:" then find "port:" after it
+        local port=$(awk '/webui:/,/port:/ { if (/port:/) { print $2; exit } }' "$config_file" 2>/dev/null | tr -d '[:space:]' || echo "")
 
         if [ -n "$port" ]; then
             echo "$port"
@@ -298,20 +304,19 @@ start_webui() {
 
     log_info "Starting WebUI development server..."
 
-    # Get the Go server port from config for API proxying
-    local config_file="$DEV_CONFIG"
-    local go_port
-    go_port=$(get_webui_port "$config_file")
+    # Get the WebUI port from config
+    local webui_port
+    webui_port=$(get_webui_port "$CONFIG_FILE")
 
-    # Export environment variables for Nuxt to use
-    export NUXT_PUBLIC_API_BASE="http://localhost:${go_port}/api/v1"
+    # Export environment variable for API base URL (uses API port 8980, not webui port)
+    export NUXT_PUBLIC_API_BASE="http://localhost:8980/api/v1"
     log_info "API base URL: $NUXT_PUBLIC_API_BASE"
 
     # Navigate to WebUI directory
     cd "$WEBUI_DIR"
 
-    # Start the WebUI in the background with environment variables
-    NUXT_PUBLIC_API_BASE="$NUXT_PUBLIC_API_BASE" pnpm dev > "$WEBUI_LOG_FILE" 2>&1 &
+    # Start the Nuxt dev server on the configured webui.port
+    NUXT_PUBLIC_API_BASE="$NUXT_PUBLIC_API_BASE" PORT="$webui_port" pnpm dev > "$WEBUI_LOG_FILE" 2>&1 &
     local pid=$!
 
     # Save PID to file
@@ -330,8 +335,10 @@ start_webui() {
         log_success "WebUI started successfully (PID: $pid)"
         log_info "WebUI logs: $WEBUI_LOG_FILE"
         log_info "WebUI available at:"
-        log_info "  - Local:   http://localhost:5173/admin/"
-        log_info "  - Network: Check logs for all network URLs"
+        log_info "  - Local:   http://localhost:${webui_port}/admin/"
+        log_info "  - Local:   http://localhost:${webui_port}/webmail/"
+        log_info "  - Local:   http://localhost:${webui_port}/portal/"
+        echo - "WebUI:  http://localhost:${webui_port}/admin/"
         return 0
     else
         log_error "WebUI failed to start, check logs at $WEBUI_LOG_FILE"
@@ -563,8 +570,12 @@ show_status() {
         log_success "WebUI is running (PID: $webui_pid)"
         webui_running=true
         log_info "WebUI URLs:"
-        log_info "  - Local:   http://localhost:5173/admin/"
-        log_info "  - Network: Check $WEBUI_LOG_FILE for all network URLs"
+        # Get the port from config
+        local webui_port
+        webui_port=$(get_webui_port "$DEV_CONFIG")
+        log_info "  - Admin:    http://localhost:${webui_port}/admin/"
+        log_info "  - Webmail:  http://localhost:${webui_port}/webmail/"
+        log_info "  - Portal:   http://localhost:${webui_port}/portal/"
     else
         log_info "WebUI is not running (only runs in --dev mode)"
     fi
@@ -597,7 +608,7 @@ Options:
 
 Examples:
   $0 start          Start in production mode
-  $0 start --dev    Start in development mode (includes WebUI at http://localhost:5173)
+  $0 start --dev    Start in development mode (includes WebUI at http://localhost:3005/admin/)
   $0 stop           Stop the server (and WebUI if running)
   $0 restart --dev  Restart in development mode
   $0 status         Check if server and WebUI are running
@@ -616,7 +627,8 @@ PID Files:
 
 Development Mode:
   In --dev mode, the script automatically starts the unified WebUI development
-  server (Vite) at http://localhost:5173 alongside the gomailserver backend.
+  server (Vite) at the port configured in gomailserver.yaml (default: http://localhost:3005)
+  alongside the gomailserver backend.
   The WebUI is automatically stopped when the server is stopped.
 
 EOF
