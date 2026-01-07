@@ -15,6 +15,15 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 
 interface _GlobalComponents {
   'AdminSidebar': typeof import("../../components/admin/Sidebar.vue").default
+  'AdminReputationCircuitBreakersCard': typeof import("../../components/admin/reputation/CircuitBreakersCard.vue").default
+  'AdminReputationDeliverabilityCard': typeof import("../../components/admin/reputation/DeliverabilityCard.vue").default
+  'AdminReputationOperationalMail': typeof import("../../components/admin/reputation/OperationalMail.vue").default
+  'AdminReputationRecentAlertsTimeline': typeof import("../../components/admin/reputation/RecentAlertsTimeline.vue").default
+  'AdminReputationScoreGauge': typeof import("../../components/admin/reputation/ScoreGauge.vue").default
+  'AdminSetupStep1System': typeof import("../../components/admin/setup/Step1System.vue").default
+  'AdminSetupStep2Domain': typeof import("../../components/admin/setup/Step2Domain.vue").default
+  'AdminSetupStep3Admin': typeof import("../../components/admin/setup/Step3Admin.vue").default
+  'AdminSetupStep4Review': typeof import("../../components/admin/setup/Step4Review.vue").default
   'UAccordion': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue").default
   'UAlert': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue").default
   'UAvatar': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue").default
@@ -90,6 +99,15 @@ interface _GlobalComponents {
   'Body': typeof import("../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/head/runtime/components").Body
   'NuxtIsland': typeof import("../../node_modules/.pnpm/nuxt@3.20.2_@parcel+watcher@2.5.1_@vue+compiler-sfc@3.5.26_cac@6.7.14_db0@0.3.4_ioredis_08cdc1528ee70955f497bd6c87fc8bee/node_modules/nuxt/dist/app/components/nuxt-island").default
   'LazyAdminSidebar': LazyComponent<typeof import("../../components/admin/Sidebar.vue").default>
+  'LazyAdminReputationCircuitBreakersCard': LazyComponent<typeof import("../../components/admin/reputation/CircuitBreakersCard.vue").default>
+  'LazyAdminReputationDeliverabilityCard': LazyComponent<typeof import("../../components/admin/reputation/DeliverabilityCard.vue").default>
+  'LazyAdminReputationOperationalMail': LazyComponent<typeof import("../../components/admin/reputation/OperationalMail.vue").default>
+  'LazyAdminReputationRecentAlertsTimeline': LazyComponent<typeof import("../../components/admin/reputation/RecentAlertsTimeline.vue").default>
+  'LazyAdminReputationScoreGauge': LazyComponent<typeof import("../../components/admin/reputation/ScoreGauge.vue").default>
+  'LazyAdminSetupStep1System': LazyComponent<typeof import("../../components/admin/setup/Step1System.vue").default>
+  'LazyAdminSetupStep2Domain': LazyComponent<typeof import("../../components/admin/setup/Step2Domain.vue").default>
+  'LazyAdminSetupStep3Admin': LazyComponent<typeof import("../../components/admin/setup/Step3Admin.vue").default>
+  'LazyAdminSetupStep4Review': LazyComponent<typeof import("../../components/admin/setup/Step4Review.vue").default>
   'LazyUAccordion': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue").default>
   'LazyUAlert': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue").default>
   'LazyUAvatar': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue").default>

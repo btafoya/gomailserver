@@ -101,9 +101,46 @@
               <span>Management</span>
               <ChevronRight class="h-4 w-4" />
             </button>
-          </div>
+           </div>
 
-          <!-- Group: System -->
+           <!-- Group: Reputation Management -->
+           <div v-if="reputationGroupOpen">
+             <button
+               @click="reputationGroupOpen = false"
+               class="w-full flex items-center justify-between px-3 py-2 mb-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+             >
+               <span>Reputation Management</span>
+               <ChevronDown class="h-4 w-4" />
+             </button>
+             <div class="space-y-1">
+               <NuxtLink
+                 v-for="item in reputationGroupItems"
+                 :key="item.to"
+                 :to="item.to"
+                 :class="[
+                   'sidebar-nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg border border-transparent transition-all duration-200 cursor-pointer',
+                   isActive(item.to)
+                     ? 'bg-blue-600 text-white shadow-md'
+                     : 'hover:bg-gray-800 text-gray-300 hover:text-white hover:border-gray-700'
+                 ]"
+                 @click="handleNavClick"
+               >
+                 <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+                 <span class="font-medium">{{ item.label }}</span>
+               </NuxtLink>
+             </div>
+           </div>
+           <div v-else>
+             <button
+               @click="reputationGroupOpen = true"
+               class="w-full flex items-center justify-between px-3 py-2 mb-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+             >
+               <span>Reputation Management</span>
+               <ChevronRight class="h-4 w-4" />
+             </button>
+           </div>
+
+           <!-- Group: System -->
           <div v-if="systemGroupOpen">
             <button
               @click="systemGroupOpen = false"
@@ -177,16 +214,17 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Home, Users, Globe, Mail, Settings, Menu, X, LogOut, ChevronDown, ChevronRight, ShieldCheck } from 'lucide-vue-next'
+ import { Home, Users, Globe, Mail, Settings, Menu, X, LogOut, ChevronDown, ChevronRight, ShieldCheck, AlertTriangle, TrendingUp, FileText, BarChart, Sliders, Calendar, Brain } from 'lucide-vue-next'
 
 // useRoute is auto-imported by Nuxt 3
 const route = useRoute()
 const isOpen = ref(true) // Visible by default on desktop
 
-// Collapsible groups state
-const mainGroupOpen = ref(true)
-const managementGroupOpen = ref(true)
-const systemGroupOpen = ref(true)
+ // Collapsible groups state
+ const mainGroupOpen = ref(true)
+ const managementGroupOpen = ref(true)
+ const reputationGroupOpen = ref(true)
+ const systemGroupOpen = ref(true)
 
 // Main group: Dashboard, Queue
 const mainGroupItems = ref([
@@ -202,24 +240,73 @@ const mainGroupItems = ref([
   }
 ])
 
-// Management group: Users, Domains, Aliases
-const managementGroupItems = ref([
-  {
-    to: '/admin/users/',
-    label: 'Users',
-    icon: Users
-  },
-  {
-    to: '/admin/domains/',
-    label: 'Domains',
-    icon: Globe
-  },
-  {
-    to: '/admin/aliases/',
-    label: 'Aliases',
-    icon: Mail
-  }
-])
+ // Management group: Users, Domains, Aliases
+ const managementGroupItems = ref([
+   {
+     to: '/admin/users/',
+     label: 'Users',
+     icon: Users
+   },
+   {
+     to: '/admin/domains/',
+     label: 'Domains',
+     icon: Globe
+   },
+   {
+     to: '/admin/aliases/',
+     label: 'Aliases',
+     icon: Mail
+   }
+ ])
+
+ // Reputation Management group: 9 items
+ const reputationGroupItems = ref([
+   {
+     to: '/admin/reputation',
+     label: 'Overview',
+     icon: Home
+   },
+   {
+     to: '/admin/reputation/circuit-breakers',
+     label: 'Circuit Breakers',
+     icon: AlertTriangle
+   },
+   {
+     to: '/admin/reputation/warmup',
+     label: 'Warm-up',
+     icon: TrendingUp
+   },
+   {
+     to: '/admin/reputation/audit',
+     label: 'Audit',
+     icon: ShieldCheck
+   },
+   {
+     to: '/admin/reputation/dmarc-reports',
+     label: 'DMARC Reports',
+     icon: FileText
+   },
+   {
+     to: '/admin/reputation/external-metrics',
+     label: 'External Metrics',
+     icon: BarChart
+   },
+   {
+     to: '/admin/reputation/provider-limits',
+     label: 'Provider Limits',
+     icon: Sliders
+   },
+   {
+     to: '/admin/reputation/warmup-scheduler',
+     label: 'Warmup Scheduler',
+     icon: Calendar
+   },
+   {
+     to: '/admin/reputation/predictions',
+     label: 'Predictions',
+     icon: Brain
+   }
+ ])
 
 // System group: Settings
 const systemGroupItems = ref([
