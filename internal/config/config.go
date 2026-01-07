@@ -70,15 +70,16 @@ type APIConfig struct {
 	ReadTimeout    int      `mapstructure:"read_timeout" yaml:"read_timeout" env:"API_READ_TIMEOUT" default:"15"`
 	WriteTimeout   int      `mapstructure:"write_timeout" yaml:"write_timeout" env:"API_WRITE_TIMEOUT" default:"15"`
 	MaxHeaderBytes int      `mapstructure:"max_header_bytes" yaml:"max_header_bytes" env:"API_MAX_HEADER_BYTES" default:"1048576"` // 1MB
-	AdminToken     string   `mapstructure:"admin_token" yaml:"admin_token" env:"API_ADMIN_TOKEN"`                                   // Bearer token for admin endpoints (deprecated, use JWT)
-	JWTSecret      string   `mapstructure:"jwt_secret" yaml:"jwt_secret" env:"API_JWT_SECRET"`                                      // Secret for signing JWT tokens
-	CORSOrigins    []string `mapstructure:"cors_origins" yaml:"cors_origins" env:"API_CORS_ORIGINS"`                                // Allowed CORS origins
+	AdminToken     string   `mapstructure:"admin_token" yaml:"admin_token" env:"API_ADMIN_TOKEN"`                                  // Bearer token for admin endpoints (deprecated, use JWT)
+	JWTSecret      string   `mapstructure:"jwt_secret" yaml:"jwt_secret" env:"API_JWT_SECRET"`                                     // Secret for signing JWT tokens
+	CORSOrigins    []string `mapstructure:"cors_origins" yaml:"cors_origins" env:"API_CORS_ORIGINS"`                               // Allowed CORS origins
 }
 
 // WebUIConfig holds Web UI (admin and webmail) server configuration
 type WebUIConfig struct {
-	Enabled bool `mapstructure:"enabled" yaml:"enabled" env:"WEBUI_ENABLED" default:"true"`
-	Port    int  `mapstructure:"port" yaml:"port" env:"WEBUI_PORT" default:"8080"`
+	Enabled  bool `mapstructure:"enabled" yaml:"enabled" env:"WEBUI_ENABLED" default:"true"`
+	Port     int  `mapstructure:"port" yaml:"port" env:"WEBUI_PORT" default:"8080"`
+	VitePort int  `mapstructure:"vite_port" yaml:"vite_port" env:"WEBUI_VITE_PORT" default:"5173"` // Dev mode Vite server port
 }
 
 // WebDAVConfig holds WebDAV/CalDAV/CardDAV server configuration

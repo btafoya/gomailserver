@@ -17,10 +17,10 @@
     <div class="flex-1 p-4 md:p-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-3xl font-bold tracking-tight">Mail Queue</h2>
-        <UButton variant="outline">
-          <RefreshCw class="mr-2 h-4 w-4" />
-          Refresh Queue
-        </UButton>
+          <UButton @click="handleRefresh" :disabled="loading">
+            <RefreshCw class="mr-2 h-4 w-4" />
+            Refresh Queue
+          </UButton>
       </div>
 
       <div class="grid gap-4 md:grid-cols-3 mb-6">
@@ -100,9 +100,12 @@
               </td>
               <td class="px-6 py-4 text-sm text-muted-foreground">{{ formatTime(msg.created_at) }}</td>
               <td class="px-6 py-4 text-sm">
-                <button class="text-primary hover:underline">View</button>
-                <span class="mx-2 text-muted-foreground">|</span>
-                <button class="text-red-600 hover:underline">Delete</button>
+                <button @click="handleRetry(msg.id)" class="text-yellow-600 hover:underline mr-2" v-if="msg.status === 'failed'">
+                  Retry
+                </button>
+                <button @click="handleDelete(msg.id)" class="text-red-600 hover:underline">
+                  Delete
+                </button>
               </td>
             </tr>
           </tbody>
@@ -112,61 +115,90 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { RefreshCw, Mail, Clock, XCircle } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
+import { useQueueApi } from '~/composables/api/queue'
 
 definePageMeta({
   middleware: 'auth',
   layout: 'admin'
 })
 
-// TODO: Replace with actual API call once backend is configured
-const queue = ref([
-  { id: 'MQ-001', from: 'admin@example.com', to: 'user1@example.com', subject: 'Welcome to system', size: 2456, attempts: 1, status: 'pending', created_at: new Date() },
-  { id: 'MQ-002', from: 'user2@example.com', to: 'support@example.com', subject: 'Help needed', size: 1024, attempts: 3, status: 'failed', created_at: new Date(Date.now() - 3600000) },
-  { id: 'MQ-003', from: 'newsletter@example.com', to: 'user1@example.com', subject: 'Weekly Newsletter', size: 8192, attempts: 1, status: 'processing', created_at: new Date(Date.now() - 7200000) },
-  { id: 'MQ-004', from: 'admin@example.com', to: 'all@example.com', subject: 'System maintenance notice', size: 5120, attempts: 2, status: 'retrying', created_at: new Date(Date.now() - 14400000) },
-  { id: 'MQ-005', from: 'user3@example.com', to: 'external@domain.com', subject: 'Project update', size: 4096, attempts: 1, status: 'pending', created_at: new Date(Date.now() - 28800000) },
-  { id: 'MQ-006', from: 'support@example.com', to: 'user4@example.com', subject: 'Ticket resolved', size: 1536, attempts: 1, status: 'pending', created_at: new Date(Date.now() - 43200000) },
-  { id: 'MQ-007', from: 'newsletter@example.com', to: 'user2@example.com', subject: 'Special offers', size: 7680, attempts: 4, status: 'failed', created_at: new Date(Date.now() - 86400000) },
-  { id: 'MQ-008', from: 'user5@example.com', to: 'manager@example.com', subject: 'Quarterly report', size: 25600, attempts: 1, status: 'processing', created_at: new Date(Date.now() - 172800000) },
-  { id: 'MQ-009', from: 'system@example.com', to: 'admin@example.com', subject: 'Daily summary', size: 1280, attempts: 2, status: 'retrying', created_at: new Date(Date.now() - 345600000) },
-  { id: 'MQ-010', from: 'user6@example.com', to: 'colleague@example.com', subject: 'Meeting notes', size: 3072, attempts: 1, status: 'pending', created_at: new Date(Date.now() - 518400000) },
-  { id: 'MQ-011', from: 'external@outside.com', to: 'user7@example.com', subject: 'Inquiry about services', size: 2048, attempts: 5, status: 'failed', created_at: new Date(Date.now() - 864000000) },
-  { id: 'MQ-012', from: 'newsletter@example.com', to: 'all@example.com', subject: 'Monthly digest', size: 12288, attempts: 1, status: 'pending', created_at: new Date(Date.now() - 1728000000) }
-])
-
-const loading = ref(false)
-const error = ref(null)
-
-const pendingCount = computed(() => queue.value.filter(m => ['pending', 'retrying'].includes(m.status)).length)
-const failedCount = computed(() => queue.value.filter(m => m.status === 'failed').length)
-
 const authStore = useAuthStore()
+const { getQueue, retryMessage, deleteMessage, refreshQueue } = useQueueApi()
 
 const logout = () => {
   authStore.logout()
 }
 
-const formatSize = (bytes) => {
+const queue = ref<QueueMessage[]>([])
+const loading = ref(false)
+const error = ref(null)
+
+const loadQueue = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await getQueue()
+    queue.value = data
+  } catch (err: any) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleRefresh = async () => {
+  await refreshQueue()
+  await loadQueue()
+}
+
+const handleRetry = async (id: string) => {
+  try {
+    await retryMessage(id)
+    await loadQueue()
+  } catch (err: any) {
+    error.value = err.message
+  }
+}
+
+const handleDelete = async (id: string) => {
+  if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+    return
+  }
+
+  try {
+    await deleteMessage(id)
+    await loadQueue()
+  } catch (err: any) {
+    error.value = err.message
+  }
+}
+
+const pendingCount = computed(() => queue.value.filter(m => ['pending', 'retrying'].includes(m.status)).length)
+const failedCount = computed(() => queue.value.filter(m => m.status === 'failed').length)
+
+const formatSize = (bytes: number) => {
+  if (!bytes) return '0 B'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1048576).toFixed(1)} MB`
 }
 
-const formatTime = (date) => {
+const formatTime = (date: string) => {
   const now = new Date()
-  const diff = Math.floor((now - date) / 1000)
+  const parsedDate = new Date(date)
+  const diff = Math.floor((now.getTime() - parsedDate.getTime()) / 1000)
 
   if (diff < 60) return `${diff}s ago`
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return new Date(date).toLocaleDateString()
+  return parsedDate.toLocaleDateString()
 }
 
-const getStatusClass = (status) => {
+const getStatusClass = (status: string) => {
   switch (status) {
     case 'pending':
       return 'bg-blue-100 text-blue-800'
@@ -180,4 +212,8 @@ const getStatusClass = (status) => {
       return 'bg-gray-100 text-gray-800'
   }
 }
+
+onMounted(() => {
+  loadQueue()
+})
 </script>

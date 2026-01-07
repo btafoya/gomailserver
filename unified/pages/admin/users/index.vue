@@ -2,7 +2,7 @@
   <div class="flex-1 p-4 md:p-8">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-3xl font-bold tracking-tight">Users</h2>
-      <UButton>
+        <UButton @click="goToCreate">
         <Plus class="mr-2 h-4 w-4" />
         Create User
       </UButton>
@@ -37,20 +37,23 @@
             <td class="px-6 py-4 text-sm text-foreground">{{ user.full_name || user.email }}</td>
             <td class="px-6 py-4 text-sm text-muted-foreground">{{ user.domain }}</td>
             <td class="px-6 py-4 text-sm text-muted-foreground">{{ new Date(user.created_at).toLocaleDateString() }}</td>
-            <td class="px-6 py-4 text-sm">
-              <NuxtLink :to="`/admin/users/${user.id}`" class="text-primary hover:underline">
-                Edit
-              </NuxtLink>
-            </td>
-          </tr>
-        </tbody>
+              <td class="px-6 py-4 text-sm">
+                <button @click="goToEdit(user.id)" class="text-primary hover:underline mr-2">
+                  Edit
+                </button>
+                <button @click="handleDelete(user.id, user.email)" class="text-red-600 hover:underline">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
       </table>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
 
@@ -59,19 +62,108 @@ definePageMeta({
   layout: 'admin'
 })
 
-// TODO: Replace with actual API call once backend is configured
-const users = ref([
-  { id: 1, email: 'admin@example.com', full_name: 'Admin User', domain: 'example.com', created_at: new Date().toISOString() },
-  { id: 2, email: 'user1@example.com', full_name: 'User One', domain: 'example.com', created_at: new Date().toISOString() },
-  { id: 3, email: 'user2@example.com', full_name: 'User Two', domain: 'example.com', created_at: new Date().toISOString() }
-])
-
-const loading = ref(false)
-const error = ref(null)
-
 const authStore = useAuthStore()
+const API_BASE = 'http://localhost:8980/api/v1'
+
+const getAuthToken = () => {
+  return typeof window !== 'undefined' ? localStorage.getItem('token') : null
+}
+
+const getAuthHeaders = () => {
+  const token = getAuthToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  }
+}
+
+interface User {
+  id: number
+  email: string
+  full_name: string
+  display_name?: string
+  domain_id: number
+  domain_name?: string
+  quota: number
+  used_quota: number
+  status: string
+  forward_to?: string
+  auto_reply_enabled: boolean
+  auto_reply_subject?: string
+  auto_reply_body?: string
+  spam_threshold: number
+  totp_enabled: boolean
+  created_at: string
+  last_login?: string
+}
+
+const getUsers = async (): Promise<User[]> => {
+  const response = await fetch(`${API_BASE}/users`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch users')
+  }
+
+  const data = await response.json()
+  return data.data || []
+}
+
+const deleteUser = async (id) => {
+  const response = await fetch(`${API_BASE}/users/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to delete user')
+  }
+}
 
 const logout = () => {
   authStore.logout()
 }
+
+const users = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+const loadUsers = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    users.value = await getUsers()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleDelete = async (id, email) => {
+  if (!confirm(`Are you sure you want to delete user "${email}"? This action cannot be undone.`)) {
+    return
+  }
+
+  try {
+    await deleteUser(id)
+    users.value = users.value.filter(u => u.id !== id)
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
+const goToCreate = () => {
+  navigateTo('/admin/users/create')
+}
+
+const goToEdit = (id) => {
+  navigateTo(`/admin/users/${id}`)
+}
+
+onMounted(() => {
+  loadUsers()
+})
 </script>

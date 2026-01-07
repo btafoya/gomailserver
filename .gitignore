@@ -82,3 +82,4 @@ gha-creds-*.json
 
 # Auto Claude data directory
 .auto-claude/
+/unified/.nuxt/dist/

@@ -81,6 +81,7 @@ type RouterConfig struct {
 	DB              *sql.DB
 	JWTSecret       string
 	CORSOrigins     []string
+	WebUIConfig     *config.WebUIConfig
 }
 
 // NewRouter creates a new API router with all routes configured
@@ -422,9 +423,9 @@ func NewRouter(config RouterConfig) *Router {
 
 	// Unified UI - serves admin, portal, and webmail
 	// All three route to the same Nuxt.js app but with different base paths
-	r.Mount("/admin", admin.UnifiedHandler(config.Logger))
-	r.Mount("/portal", admin.UnifiedHandler(config.Logger))
-	r.Mount("/webmail", admin.UnifiedHandler(config.Logger))
+	r.Mount("/admin", admin.UnifiedHandler(config.Logger, &config.WebUI))
+	r.Mount("/portal", admin.UnifiedHandler(config.Logger, &config.WebUI))
+	r.Mount("/webmail", admin.UnifiedHandler(config.Logger, &config.WebUI))
 
 	return r
 }

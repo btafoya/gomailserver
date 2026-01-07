@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modern Professional Typography */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
 /* Ensure proper viewport and overflow handling */
 html {
   overflow-x: hidden;
@@ -20,47 +23,226 @@ body {
   overflow-x: hidden;
 }
 
-/* Color scheme variables for Nuxt UI */
+/* Color scheme variables for Professional Admin Dashboard */
 :root {
-  --color-background: 0 0% 100%;
-  --color-foreground: 0 0% 3.9%;
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 0 0% 3.9%;
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 0 0% 3.9%;
-  --color-primary: 0 0% 9%;
-  --color-primary-foreground: 0 0% 98%;
-  --color-secondary: 0 0% 96.1%;
-  --color-secondary-foreground: 0 0% 9%;
-  --color-muted: 0 0% 96.1%;
-  --color-muted-foreground: 0 0% 45.1%;
-  --color-accent: 0 0% 96.1%;
-  --color-accent-foreground: 0 0% 9%;
-  --color-destructive: 0 84.2% 60.2%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 0 0% 89.8%;
-  --color-input: 0 0% 89.8%;
-  --color-ring: 0 0% 3.9%;
+  /* Professional Dashboard Color Palette */
+  --color-primary: 59 130 246; /* #3B82F6 - Trust Blue */
+  --color-secondary: 96 165 250; /* #60A5FA */
+  --color-background: 248 250 252; /* #F8FAFC */
+  --color-foreground: 30 41 59; /* #1E293B */
+  --color-card: 255 255 255; /* #FFFFFF */
+  --color-card-foreground: 30 41 59; /* #1E293B */
+  --color-popover: 255 255 255; /* #FFFFFF */
+  --color-popover-foreground: 30 41 59; /* #1E293B */
+  --color-muted: 241 245 249; /* #F1F5F9 */
+  --color-muted-foreground: 100 116 139; /* #64748B */
+  --color-accent: 241 245 249; /* #F1F5F9 */
+  --color-accent-foreground: 59 130 246; /* #3B82F6 */
+  --color-destructive: 239 68 68; /* #EF4444 */
+  --color-destructive-foreground: 255 255 255; /* #FFFFFF */
+  --color-border: 226 232 240; /* #E2E8F0 */
+  --color-input: 226 232 240; /* #E2E8F0 */
+  --color-ring: 59 130 246; /* #3B82F6 */
+
+  /* Typography */
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Animation timings */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Sidebar */
+  --sidebar-width: 250px;
+  --sidebar-width-collapsed: 64px;
 }
 
 .dark {
-  --color-background: 0 0% 3.9%;
-  --color-foreground: 0 0% 98%;
-  --color-card: 0 0% 3.9%;
-  --color-card-foreground: 0 0% 98%;
-  --color-popover: 0 0% 3.9%;
-  --color-popover-foreground: 0 0% 98%;
-  --color-primary: 0 0% 98%;
-  --color-primary-foreground: 0 0% 9%;
-  --color-secondary: 0 0% 14.9%;
-  --color-secondary-foreground: 0 0% 98%;
-  --color-muted: 0 0% 14.9%;
-  --color-muted-foreground: 0 0% 63.9%;
-  --color-accent: 0 0% 14.9%;
-  --color-accent-foreground: 0 0% 98%;
-  --color-destructive: 0 62.8% 30.6%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 0 0% 14.9%;
-  --color-input: 0 0% 14.9%;
-  --color-ring: 0 0% 83.1%;
+  /* Dark Mode Professional Color Palette */
+  --color-primary: 239 68 68; /* #EF4444 */
+  --color-secondary: 96 165 250; /* #60A5FA */
+  --color-background: 15 23 42; /* #0F172A */
+  --color-foreground: 248 250 252; /* #F8FAFC */
+  --color-card: 30 41 59; /* #1E293B */
+  --color-card-foreground: 248 250 252; /* #F8FAFC */
+  --color-popover: 30 41 59; /* #1E293B */
+  --color-popover-foreground: 248 250 252; /* #F8FAFC */
+  --color-muted: 30 41 59; /* #1E293B */
+  --color-muted-foreground: 203 213 225; /* #CBD5E1 */
+  --color-accent: 30 41 59; /* #1E293B */
+  --color-accent-foreground: 248 250 252; /* #F8FAFC */
+  --color-destructive: 248 113 113; /* #F87171 */
+  --color-destructive-foreground: 248 250 252; /* #F8FAFC */
+  --color-border: 30 41 59; /* #1E293B */
+  --color-input: 30 41 59; /* #1E293B */
+  --color-ring: 147 197 253; /* #93C5FD */
+}
+
+/* Font application */
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* Smooth transition utilities */
+.transition-smooth {
+  transition: all var(--transition-base);
+}
+
+.transition-fast {
+  transition: all var(--transition-fast);
+}
+
+.transition-slow {
+  transition: all var(--transition-slow);
+}
+
+/* Hover feedback utilities */
+.hover-effect:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.hover-effect-dark:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* Focus states for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}
+
+/* Sidebar specific styles */
+.sidebar-container {
+  width: var(--sidebar-width);
+  transition: width var(--transition-base);
+}
+
+.sidebar-container.collapsed {
+  width: var(--sidebar-width-collapsed);
+}
+
+.sidebar-nav-item {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-nav-item:hover {
+  opacity: 0.9;
+  transform: translateX(4px);
+}
+
+.sidebar-nav-item.active {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Backdrop for mobile drawer */
+.backdrop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  transition: opacity var(--transition-base);
+  z-index: 40;
+}
+
+/* Responsive container */
+.content-wrapper {
+  max-width: 80rem; /* 1280px */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Breadcrumb navigation */
+.breadcrumb-item {
+  color: var(--color-muted-foreground);
+  transition: color var(--transition-fast);
+  cursor: pointer;
+}
+
+.breadcrumb-item:hover {
+  color: var(--color-primary);
+}
+
+.breadcrumb-item.active {
+  color: var(--color-foreground);
+  font-weight: 500;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile-first responsive */
+@media (max-width: 640px) {
+  .content-wrapper {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .content-wrapper {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-wrapper {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }

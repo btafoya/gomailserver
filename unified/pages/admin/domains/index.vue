@@ -17,7 +17,7 @@
     <div class="flex-1 p-4 md:p-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-3xl font-bold tracking-tight">Domains</h2>
-        <UButton>
+        <UButton @click="goToCreate">
           <Plus class="mr-2 h-4 w-4" />
           Add Domain
         </UButton>
@@ -59,9 +59,12 @@
                 </span>
               </td>
               <td class="px-6 py-4 text-sm">
-                <NuxtLink :to="`/admin/domains/${domain.id}`" class="text-primary hover:underline">
+                <button @click="goToEdit(domain.id)" class="text-primary hover:underline mr-2">
                   Edit
-                </NuxtLink>
+                </button>
+                <button @click="handleDelete(domain.id)" class="text-red-600 hover:underline">
+                  Delete
+                </button>
               </td>
             </tr>
           </tbody>
@@ -72,9 +75,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
+import { useDomainsApi } from '~/composables/api/domains'
 
 definePageMeta({
   middleware: 'auth',
@@ -82,21 +86,51 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
+const { getDomains, deleteDomain } = useDomainsApi()
 
 const logout = () => {
   authStore.logout()
 }
 
-// TODO: Replace with actual API call once backend is configured
-const domains = ref([
-  { id: 1, name: 'example.com', user_count: 3, alias_count: 5, created_at: new Date().toISOString() },
-  { id: 2, name: 'mail.example.com', user_count: 2, alias_count: 3, created_at: new Date(Date.now() - 86400000).toISOString() },
-  { id: 3, name: 'news.example.com', user_count: 1, alias_count: 2, created_at: new Date(Date.now() - 172800000).toISOString() },
-  { id: 4, name: 'support.example.com', user_count: 0, alias_count: 1, created_at: new Date(Date.now() - 259200000).toISOString() },
-  { id: 5, name: 'dev.example.com', user_count: 0, alias_count: 0, created_at: new Date(Date.now() - 345600000).toISOString() }
-])
-
+const domains = ref([])
 const loading = ref(false)
 const error = ref(null)
 const domainCount = computed(() => domains.value.length)
+
+const loadDomains = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    domains.value = await getDomains()
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleDelete = async (id) => {
+  if (!confirm('Are you sure you want to delete this domain? This action cannot be undone.')) {
+    return
+  }
+
+  try {
+    await deleteDomain(id)
+    domains.value = domains.value.filter(d => d.id !== id)
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
+const goToCreate = () => {
+  navigateTo('/admin/domains/create')
+}
+
+const goToEdit = (id) => {
+  navigateTo(`/admin/domains/${id}`)
+}
+
+onMounted(() => {
+  loadDomains()
+})
 </script>

@@ -239,6 +239,27 @@ build_server() {
 }
 
 ################################################################################
+# Extract webui.port from the configuration file
+################################################################################
+get_webui_port() {
+    local config_file="$1"
+
+    if [ -f "$config_file" ]; then
+        # Try to extract port from yaml format (webui: port: XXXX)
+        local port=$(grep -E '^\s*port:\s*[0-9]+' "$config_file" 2>/dev/null | head -1 | grep -oE '[0-9]+' || echo "")
+
+        if [ -n "$port" ]; then
+            echo "$port"
+            return 0
+        fi
+    fi
+
+    # Default to 8080 if not found
+    echo "8080"
+    return 1
+}
+
+################################################################################
 # Start the WebUI development server
 ################################################################################
 start_webui() {
@@ -277,15 +298,31 @@ start_webui() {
 
     log_info "Starting WebUI development server..."
 
+    # Get the Go server port from config for API proxying
+    local config_file="$DEV_CONFIG"
+    local go_port
+    go_port=$(get_webui_port "$config_file")
+
+    # Export environment variables for Nuxt to use
+    export NUXT_PUBLIC_API_BASE="http://localhost:${go_port}/api/v1"
+    log_info "API base URL: $NUXT_PUBLIC_API_BASE"
+
     # Navigate to WebUI directory
     cd "$WEBUI_DIR"
 
-    # Start the WebUI in the background
-    pnpm dev > "$WEBUI_LOG_FILE" 2>&1 &
+    # Start the WebUI in the background with environment variables
+    NUXT_PUBLIC_API_BASE="$NUXT_PUBLIC_API_BASE" pnpm dev > "$WEBUI_LOG_FILE" 2>&1 &
     local pid=$!
 
     # Save PID to file
     echo "$pid" > "$WEBUI_PID_FILE"
+    
+    # Extract actual WebUI port from logs
+    WEBUI_PORT=$(grep -oPmP 'Local:.*http://localhost:\([0-9][0-9]*\)/' "$WEBUI_LOG_FILE" 2>/dev/null | head -1 | sed 's/.*http:\/\/localhost:\([0-9][0-9]*\)//')
+
+    if [ -z "$WEBUI_PORT" ]; then
+        WEBUI_PORT="5173"
+    fi
 
     # Wait a moment and check if the process is still running
     sleep 2

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/btafoya/gomailserver/internal/config"
 	webunified "github.com/btafoya/gomailserver/unified-go"
 	"go.uber.org/zap"
 )
@@ -17,17 +19,17 @@ import (
 // In development mode (with -tags dev), it proxies to Vite dev server
 // In production mode, it serves embedded static files with SPA fallback
 // This handler works for /admin, /portal, and /webmail routes
-func UnifiedHandler(logger *zap.Logger) http.Handler {
+func UnifiedHandler(logger *zap.Logger, webUIConfig *config.WebUIConfig) http.Handler {
 	if webunified.DevMode {
-		return unifiedDevModeHandler(logger)
+		return unifiedDevModeHandler(logger, webUIConfig)
 	}
 	return unifiedProdModeHandler(logger)
 }
 
 // unifiedDevModeHandler proxies requests to Vite dev server if running
 // Falls back to embedded assets if Vite is not available
-func unifiedDevModeHandler(logger *zap.Logger) http.Handler {
-	viteURL := "http://localhost:5173"
+func unifiedDevModeHandler(logger *zap.Logger, config *config.WebUIConfig) http.Handler {
+	viteURL := fmt.Sprintf("http://localhost:%d", config.VitePort)
 
 	// Try to connect to Vite dev server
 	if isViteRunning(viteURL) {
