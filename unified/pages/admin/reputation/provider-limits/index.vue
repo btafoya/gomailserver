@@ -9,43 +9,43 @@
         </p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" @click="refreshData" :disabled="isLoading">
+        <UButton variant="outline" @click="refreshData" :disabled="isLoading">
           <RefreshCw v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
           <RefreshCw v-else class="h-4 w-4 mr-2" />
           Refresh
-        </Button>
-        <Button @click="openInitializeDialog" :disabled="isLoading">
+        </UButton>
+        <UButton @click="openInitializeDialog" :disabled="isLoading">
           <Plus class="h-4 w-4 mr-2" />
           Initialize Defaults
-        </Button>
+        </UButton>
       </div>
     </div>
 
     <!-- Domain Filter -->
-    <Card>
-      <CardContent class="pt-6">
+    <UCard>
+      <UCardContent class="pt-6">
         <div class="flex items-end gap-4">
           <div class="flex-1 space-y-2">
             <label class="text-sm font-medium">Filter by Domain</label>
-            <Select v-model="selectedDomain" @update:model-value="applyFilter">
-              <SelectTrigger>
-                <SelectValue placeholder="All domains" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All domains</SelectItem>
-                <SelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
+            <USelect v-model="selectedDomain" @update:model-value="applyFilter">
+              <USelectTrigger>
+                <USelectValue placeholder="All domains" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem value="">All domains</USelectItem>
+                <USelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Limits Table -->
-    <Card>
-      <CardContent class="pt-6">
+    <UCard>
+      <UCardContent class="pt-6">
         <!-- Loading State -->
         <div v-if="isLoading && limits.length === 0" class="flex items-center justify-center py-12">
           <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
@@ -61,29 +61,29 @@
         </div>
 
         <!-- Table -->
-        <Table v-else>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Domain</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Daily Limit</TableHead>
-              <TableHead>Current Usage</TableHead>
-              <TableHead>Utilization</TableHead>
-              <TableHead>Last Reset</TableHead>
-              <TableHead class="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="limit in filteredLimits" :key="limit.id">
-              <TableCell class="font-medium">{{ limit.domain }}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{{ limit.provider }}</Badge>
-              </TableCell>
-              <TableCell>{{ limit.daily_limit.toLocaleString() }}</TableCell>
-              <TableCell>{{ limit.current_usage.toLocaleString() }}</TableCell>
-              <TableCell class="w-48">
+        <UTable v-else>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Provider</UTableHead>
+              <UTableHead>Daily Limit</UTableHead>
+              <UTableHead>Current Usage</UTableHead>
+              <UTableHead>Utilization</UTableHead>
+              <UTableHead>Last Reset</UTableHead>
+              <UTableHead class="text-right">Actions</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="limit in filteredLimits" :key="limit.id">
+              <UTableCell class="font-medium">{{ limit.domain }}</UTableCell>
+              <UTableCell>
+                <UBadge variant="outline">{{ limit.provider }}</UBadge>
+              </UTableCell>
+              <UTableCell>{{ limit.daily_limit.toLocaleString() }}</UTableCell>
+              <UTableCell>{{ limit.current_usage.toLocaleString() }}</UTableCell>
+              <UTableCell class="w-48">
                 <div class="space-y-1">
-                  <Progress
+                  <UProgress
                     :value="limit.utilization_percentage"
                     :class="getUtilizationClass(limit.utilization_percentage)"
                   />
@@ -96,59 +96,59 @@
                     </span>
                   </div>
                 </div>
-              </TableCell>
-              <TableCell>
+              </UTableCell>
+              <UTableCell>
                 <div class="text-sm">
                   {{ formatDate(limit.last_reset) }}
                 </div>
-              </TableCell>
-              <TableCell class="text-right">
+              </UTableCell>
+              <UTableCell class="text-right">
                 <div class="flex justify-end gap-2">
-                  <Button
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="openEditDialog(limit)"
                     title="Edit limit"
                   >
                     <Edit2 class="h-4 w-4" />
-                  </Button>
-                  <Button
+                  </UButton>
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="resetUsage(limit.id)"
                     title="Reset usage"
                   >
                     <RotateCcw class="h-4 w-4" />
-                  </Button>
+                  </UButton>
                 </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              </UTableCell>
+            </UTableRow>
+          </UTableBody>
+        </UTable>
+      </UCardContent>
+    </UCard>
 
     <!-- Edit Dialog -->
-    <Dialog v-model:open="isEditDialogOpen">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Provider Limit</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isEditDialogOpen">
+      <UIDialogContent class="sm:max-w-md">
+        <UIDialogHeader>
+          <UIDialogTitle>Edit Provider Limit</UIDialogTitle>
+          <UIDialogDescription>
             Update the daily sending limit for this provider.
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <label class="text-sm font-medium">Domain</label>
-            <Input v-model="editForm.domain" disabled />
+            <UInput v-model="editForm.domain" disabled />
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium">Provider</label>
-            <Input v-model="editForm.provider" disabled />
+            <UInput v-model="editForm.provider" disabled />
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium">Daily Limit</label>
-            <Input
+            <UInput
               v-model.number="editForm.daily_limit"
               type="number"
               min="1"
@@ -159,106 +159,103 @@
             </p>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" @click="isEditDialogOpen = false">
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isEditDialogOpen = false">
             Cancel
-          </Button>
-          <Button @click="saveEdit" :disabled="isSubmitting">
+          </UButton>
+          <UButton @click="saveEdit" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             Save Changes
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Initialize Dialog -->
-    <Dialog v-model:open="isInitializeDialogOpen">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Initialize Provider Limits</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isInitializeDialogOpen">
+      <UIDialogContent class="sm:max-w-md">
+        <UIDialogHeader>
+          <UIDialogTitle>Initialize Provider Limits</UIDialogTitle>
+          <UIDialogDescription>
             Set default rate limits for all providers on selected domain.
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <label class="text-sm font-medium">Domain</label>
-            <Select v-model="initializeForm.domain">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
+            <USelect v-model="initializeForm.domain">
+              <USelectTrigger>
+                <USelectValue placeholder="Select a domain" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
-          <Alert>
+          <UAlert>
             <Info class="h-4 w-4" />
-            <AlertTitle>Default Limits</AlertTitle>
-            <AlertDescription>
+            <UAlertTitle>Default Limits</UAlertTitle>
+            <UAlertDescription>
               <div class="space-y-1 text-sm">
                 <p><strong>Gmail:</strong> 2,000 emails/day</p>
                 <p><strong>Outlook:</strong> 10,000 emails/day</p>
                 <p><strong>Yahoo:</strong> 500 emails/day</p>
                 <p><strong>Others:</strong> 5,000 emails/day</p>
               </div>
-            </AlertDescription>
-          </Alert>
+            </UAlertDescription>
+          </UAlert>
         </div>
-        <DialogFooter>
-          <Button variant="outline" @click="isInitializeDialogOpen = false">
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isInitializeDialogOpen = false">
             Cancel
-          </Button>
-          <Button @click="initializeDefaults" :disabled="isSubmitting || !initializeForm.domain">
+          </UButton>
+          <UButton @click="initializeDefaults" :disabled="isSubmitting || !initializeForm.domain">
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             Initialize
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Reset Confirmation Dialog -->
-    <Dialog v-model:open="isResetDialogOpen">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Reset Usage</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isResetDialogOpen">
+      <UIDialogContent class="sm:max-w-md">
+        <UIDialogHeader>
+          <UIDialogTitle>Reset Usage</UIDialogTitle>
+          <UIDialogDescription>
             Are you sure you want to reset the usage counter for this provider?
             The daily limit will remain unchanged, but the current usage will be set to 0.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="isResetDialogOpen = false">
+          </UIDialogDescription>
+        </UIDialogHeader>
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isResetDialogOpen = false">
             Cancel
-          </Button>
-          <Button
+          </UButton>
+          <UButton
             variant="destructive"
             @click="confirmReset"
             :disabled="isSubmitting"
           >
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             Reset Usage
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Error Alert -->
-    <Alert v-if="error" variant="destructive">
+    <UAlert v-if="error" variant="destructive">
       <AlertCircle class="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+      <UAlertTitle>Error</UAlertTitle>
+      <UAlertDescription>{{ error }}</UAlertDescription>
+    </UAlert>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Card, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -274,9 +271,6 @@ import {
   TableBody,
   TableCell
 } from '~/components/ui/table'
-import { Badge } from '~/components/ui/badge'
-import { Progress } from '~/components/ui/progress'
-import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
 import {
   Dialog,
   DialogContent,

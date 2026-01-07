@@ -5,11 +5,11 @@
       <p class="text-gray-600 mt-2">Review your configuration before completing setup</p>
     </div>
 
-    <Card>
-      <CardHeader>
-        <CardTitle>Configuration Summary</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-6">
+    <UCard>
+      <UCardHeader>
+        <UCardTitle>Configuration Summary</UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-6">
         <!-- System Configuration -->
         <div>
           <h3 class="text-lg font-semibold text-gray-800 mb-3">System Settings</h3>
@@ -32,9 +32,9 @@
             </div>
             <div class="flex justify-between py-2">
               <span class="text-gray-600">TLS Enabled:</span>
-              <Badge :variant="config?.system?.tls_enabled ? 'default' : 'secondary'">
+              <UBadge :variant="config?.system?.tls_enabled ? 'default' : 'secondary'">
                 {{ config?.system?.tls_enabled ? 'Yes' : 'No' }}
-              </Badge>
+              </UBadge>
             </div>
           </div>
         </div>
@@ -52,27 +52,27 @@
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <span class="text-gray-600">Overall Score:</span>
-                  <Badge :variant="getScoreVariant(config.domain.audit_results.overall_score)">
+                  <UBadge :variant="getScoreVariant(config.domain.audit_results.overall_score)">
                     {{ config.domain.audit_results.overall_score }}/100 }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <div>
                   <span class="text-gray-600">SPF:</span>
-                  <Badge :variant="config.domain.audit_results.spf.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="config.domain.audit_results.spf.passed ? 'default' : 'destructive'">
                     {{ config.domain.audit_results.spf.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <div>
                   <span class="text-gray-600">DKIM:</span>
-                  <Badge :variant="config.domain.audit_results.dkim.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="config.domain.audit_results.dkim.passed ? 'default' : 'destructive'">
                     {{ config.domain.audit_results.dkim.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <div>
                   <span class="text-gray-600">DMARC:</span>
-                  <Badge :variant="config.domain.audit_results.dmarc.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="config.domain.audit_results.dmarc.passed ? 'default' : 'destructive'">
                     {{ config.domain.audit_results.dmarc.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
               </div>
             </div>
@@ -93,36 +93,36 @@
             </div>
             <div class="flex justify-between py-2 border-b">
               <span class="text-gray-600">2FA Enabled:</span>
-              <Badge :variant="config?.admin?.enable_totp ? 'default' : 'secondary'">
+              <UBadge :variant="config?.admin?.enable_totp ? 'default' : 'secondary'">
                 {{ config?.admin?.enable_totp ? 'Yes' : 'No' }}
-              </Badge>
+              </UBadge>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
-    <Alert v-if="error" variant="destructive" class="mt-4">
+    <UAlert v-if="error" variant="destructive" class="mt-4">
       {{ error }}
-    </Alert>
+    </UAlert>
 
-    <Alert class="mt-4">
-      <AlertDescription>
+    <UAlert class="mt-4">
+      <UAlertDescription>
         After completing setup, you will be redirected to the admin dashboard.
         Make sure all configuration is correct before proceeding.
-      </AlertDescription>
-    </Alert>
+      </UAlertDescription>
+    </UAlert>
 
     <div class="flex justify-between mt-6">
-      <Button variant="outline" :disabled="isSubmitting" @click="handlePrevious">
+      <UButton variant="outline" :disabled="isSubmitting" @click="handlePrevious">
         Previous
-      </Button>
-      <Button @click="handleComplete" :disabled="isSubmitting">
+      </UButton>
+      <UButton @click="handleComplete" :disabled="isSubmitting">
         Complete Setup
         <template v-if="isSubmitting">
           <span class="ml-2">Completing...</span>
         </template>
-      </Button>
+      </UButton>
     </div>
   </div>
 </template>

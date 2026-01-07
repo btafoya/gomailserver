@@ -1,33 +1,33 @@
 <template>
-  <Card>
-    <CardHeader>
+  <UCard>
+    <UCardHeader>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <CardTitle class="text-lg">Operational Mail</CardTitle>
-          <Badge v-if="unreadCount > 0" variant="default">
+          <UCardTitle class="text-lg">Operational Mail</UCardTitle>
+          <UBadge v-if="unreadCount > 0" variant="default">
             {{ unreadCount }} unread
-          </Badge>
+          </UBadge>
         </div>
         <div class="flex items-center gap-2">
-          <Select v-model="domainFilter">
-            <SelectTrigger class="w-40">
-              <SelectValue placeholder="All domains" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All domains</SelectItem>
-              <SelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
+          <USelect v-model="domainFilter">
+            <USelectTrigger class="w-40">
+              <USelectValue placeholder="All domains" />
+            </USelectTrigger>
+            <USelectContent>
+              <USelectItem value="">All domains</USelectItem>
+              <USelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
                 {{ domain }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" @click="refreshMessages" :disabled="isLoading">
+              </USelectItem>
+            </USelectContent>
+          </USelect>
+          <UButton variant="outline" size="sm" @click="refreshMessages" :disabled="isLoading">
             <RefreshCw v-if="isLoading" class="h-4 w-4 animate-spin" />
             <RefreshCw v-else class="h-4 w-4" />
-          </Button>
+          </UButton>
         </div>
       </div>
-    </CardHeader>
-    <CardContent>
+    </UCardHeader>
+    <UCardContent>
       <!-- Empty State -->
       <div v-if="filteredMessages.length === 0" class="text-center py-8">
         <Mail class="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -60,9 +60,9 @@
             <div class="flex items-start justify-between gap-2">
               <div class="font-semibold truncate">{{ message.subject }}</div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" class="text-xs">
+                <UBadge variant="outline" class="text-xs">
                   {{ message.type }}
-                </Badge>
+                </UBadge>
                 <span class="text-xs text-gray-500">
                   {{ formatRelativeTime(message.received_at) }}
                 </span>
@@ -72,9 +72,9 @@
               <span class="text-gray-600 truncate">
                 From: {{ message.from_address }}
               </span>
-              <Badge v-if="message.sender_domain" variant="secondary" class="text-xs">
+              <UBadge v-if="message.sender_domain" variant="secondary" class="text-xs">
                 {{ message.sender_domain }}
-              </Badge>
+              </UBadge>
             </div>
             <p class="text-sm text-gray-600 line-clamp-2">
               {{ message.body }}
@@ -83,42 +83,42 @@
 
           <!-- Quick Actions -->
           <div class="flex flex-col gap-1 flex-shrink-0">
-            <Button
+            <UButton
               variant="ghost"
               size="sm"
               @click.stop="markAsRead(message)"
               title="Mark as read"
             >
               <Check class="h-4 w-4" />
-            </Button>
-            <Button
+            </UButton>
+            <UButton
               variant="ghost"
               size="sm"
               @click.stop="markAsSpam(message)"
               title="Mark as spam"
             >
               <AlertTriangle class="h-4 w-4" />
-            </Button>
-            <Button
+            </UButton>
+            <UButton
               variant="ghost"
               size="sm"
               @click.stop="deleteMessage(message)"
               title="Delete"
             >
               <Trash2 class="h-4 w-4" />
-            </Button>
+            </UButton>
           </div>
         </div>
       </div>
 
       <!-- Message Preview Dialog -->
-      <Dialog v-model:open="isPreviewDialogOpen">
-        <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <UIDialog v-model:open="isPreviewDialogOpen">
+        <UIDialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <UIDialogHeader>
             <div class="flex items-center justify-between">
-              <DialogTitle>Message Details</DialogTitle>
+              <UIDialogTitle>Message Details</UIDialogTitle>
               <div class="flex gap-2">
-                <Button
+                <UButton
                   variant="ghost"
                   size="sm"
                   @click="markAsRead(selectedMessage!)"
@@ -126,18 +126,18 @@
                 >
                   <Check class="h-4 w-4 mr-1" />
                   Mark Read
-                </Button>
-                <Button
+                </UButton>
+                <UButton
                   variant="outline"
                   size="sm"
                   @click="openForwardDialog"
                 >
                   <Forward class="h-4 w-4 mr-1" />
                   Forward
-                </Button>
+                </UButton>
               </div>
             </div>
-          </DialogHeader>
+          </UIDialogHeader>
           <div v-if="selectedMessage" class="space-y-4 py-4">
             <!-- Message Headers -->
             <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
@@ -167,56 +167,52 @@
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </UIDialogContent>
+      </UIDialog>
 
       <!-- Forward Dialog -->
-      <Dialog v-model:open="isForwardDialogOpen">
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Forward Message</DialogTitle>
-            <DialogDescription>
+      <UIDialog v-model:open="isForwardDialogOpen">
+        <UIDialogContent class="sm:max-w-md">
+          <UIDialogHeader>
+            <UIDialogTitle>Forward Message</UIDialogTitle>
+            <UIDialogDescription>
               Forward this message to another recipient.
-            </DialogDescription>
-          </DialogHeader>
+            </UIDialogDescription>
+          </UIDialogHeader>
           <div class="space-y-4 py-4">
             <div class="space-y-2">
               <label class="text-sm font-medium">To</label>
-              <Input v-model="forwardForm.to" placeholder="recipient@example.com" />
+              <UInput v-model="forwardForm.to" placeholder="recipient@example.com" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Message</label>
-              <Textarea
+              <UTextarea
                 v-model="forwardForm.message"
                 placeholder="Add optional message..."
                 class="min-h-24"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" @click="isForwardDialogOpen = false">
+          <UIDialogFooter>
+            <UButton variant="outline" @click="isForwardDialogOpen = false">
               Cancel
-            </Button>
-            <Button
+            </UButton>
+            <UButton
               @click="forwardMessage"
               :disabled="isSubmitting || !forwardForm.to"
             >
               <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
               Forward
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </CardContent>
-  </Card>
+            </UButton>
+          </UIDialogFooter>
+        </UIDialogContent>
+      </UIDialog>
+    </UCardContent>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import { Textarea } from '~/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -224,7 +220,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '~/components/ui/select'
-import { Badge } from '~/components/ui/badge'
 import {
   Dialog,
   DialogContent,

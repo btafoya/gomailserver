@@ -6,86 +6,86 @@
     </div>
 
     <!-- Filter Bar -->
-    <Card class="mb-6">
-      <CardContent class="space-y-4">
+    <UCard class="mb-6">
+      <UCardContent class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Filter by Domain</label>
-            <Input v-model="filters.domain" placeholder="example.com" @keyup.enter="fetchCircuitBreakers" />
+            <UInput v-model="filters.domain" placeholder="example.com" @keyup.enter="fetchCircuitBreakers" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">Filter by Status</label>
-            <Select v-model="filters.status">
+            <USelect v-model="filters.status">
               <option value="">All</option>
               <option value="active">Active</option>
               <option value="paused">Paused</option>
               <option value="resumed">Resumed</option>
-            </Select>
+            </USelect>
           </div>
         </div>
-        <Button @click="resetFilters" variant="outline">Reset Filters</Button>
-      </CardContent>
-    </Card>
+        <UButton @click="resetFilters" variant="outline">Reset Filters</UButton>
+      </UCardContent>
+    </UCard>
 
     <!-- Active Circuit Breakers -->
-    <Card v-if="activeBreakers.length > 0" class="mb-6">
-      <CardHeader>
-        <CardTitle>Active Circuit Breakers</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Domain</TableHead>
-              <TableHead>Trigger Type</TableHead>
-              <TableHead>Trigger Value</TableHead>
-              <TableHead>Threshold</TableHead>
-              <TableHead>Paused At</TableHead>
-              <TableHead>Auto-Resume In</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="breaker in activeBreakers" :key="breaker.id">
-              <TableCell>{{ breaker.domain }}</TableCell>
-              <TableCell>
-                <Badge :variant="getSeverityVariant(breaker.trigger_type)">
+    <UCard v-if="activeBreakers.length > 0" class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Active Circuit Breakers</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
+        <UTable>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Trigger Type</UTableHead>
+              <UTableHead>Trigger Value</UTableHead>
+              <UTableHead>Threshold</UTableHead>
+              <UTableHead>Paused At</UTableHead>
+              <UTableHead>Auto-Resume In</UTableHead>
+              <UTableHead>Actions</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="breaker in activeBreakers" :key="breaker.id">
+              <UTableCell>{{ breaker.domain }}</UTableCell>
+              <UTableCell>
+                <UBadge :variant="getSeverityVariant(breaker.trigger_type)">
                   {{ breaker.trigger_type }}
-                </Badge>
-              </TableCell>
-              <TableCell>{{ breaker.trigger_value }}</TableCell>
-              <TableCell>{{ breaker.threshold }}</TableCell>
-              <TableCell>{{ formatTimestamp(breaker.paused_at) }}</TableCell>
-              <TableCell>
-                <Badge variant="outline">
+                </UBadge>
+              </UTableCell>
+              <UTableCell>{{ breaker.trigger_value }}</UTableCell>
+              <UTableCell>{{ breaker.threshold }}</UTableCell>
+              <UTableCell>{{ formatTimestamp(breaker.paused_at) }}</UTableCell>
+              <UTableCell>
+                <UBadge variant="outline">
                   {{ formatAutoResumeIn(breaker.paused_at) }}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button size="sm" @click="manualResume(breaker)" variant="outline">
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
+                <UButton size="sm" @click="manualResume(breaker)" variant="outline">
                   Resume
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                </UButton>
+              </UTableCell>
+            </UTableRow>
+          </UTableBody>
+        </UTable>
+      </UCardContent>
+    </UCard>
 
     <!-- Circuit Breaker History -->
-    <Card class="mb-6">
-      <CardHeader>
-        <CardTitle>Circuit Breaker History</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <UCard class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Circuit Breaker History</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Select Domain</label>
-            <Select v-model="historyDomain" @change="fetchHistory" placeholder="Select a domain">
+            <USelect v-model="historyDomain" @change="fetchHistory" placeholder="Select a domain">
               <option v-for="domain in availableDomains" :key="domain" :value="domain">
                 {{ domain }}
               </option>
-            </Select>
+            </USelect>
           </div>
         </div>
 
@@ -94,37 +94,37 @@
         </div>
 
         <div v-else>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Trigger Type</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead>Threshold</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="event in history" :key="event.id">
-                <TableCell>{{ formatDate(event.created_at) }}</TableCell>
-                <TableCell>
-                  <Badge :variant="getSeverityVariant(event.trigger_type)">
+          <UTable>
+            <UTableHeader>
+              <UTableRow>
+                <UTableHead>Date</UTableHead>
+                <UTableHead>Trigger Type</UTableHead>
+                <UTableHead>Value</UTableHead>
+                <UTableHead>Threshold</UTableHead>
+                <UTableHead>Status</UTableHead>
+              </UTableRow>
+            </UTableHeader>
+            <UTableBody>
+              <UTableRow v-for="event in history" :key="event.id">
+                <UTableCell>{{ formatDate(event.created_at) }}</UTableCell>
+                <UTableCell>
+                  <UBadge :variant="getSeverityVariant(event.trigger_type)">
                     {{ event.trigger_type }}
-                  </Badge>
-                </TableCell>
-                <TableCell>{{ event.trigger_value }}</TableCell>
-                <TableCell>{{ event.threshold }}</TableCell>
-                <TableCell>
-                  <Badge :variant="event.auto_resumed ? 'default' : 'secondary'">
+                  </UBadge>
+                </UTableCell>
+                <UTableCell>{{ event.trigger_value }}</UTableCell>
+                <UTableCell>{{ event.threshold }}</UTableCell>
+                <UTableCell>
+                  <UBadge :variant="event.auto_resumed ? 'default' : 'secondary'">
                     {{ event.auto_resumed ? 'Auto-Resumed' : 'Manual' }}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                  </UBadge>
+                </UTableCell>
+              </UTableRow>
+            </UTableBody>
+          </UTable>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
   </div>
 </template>
 

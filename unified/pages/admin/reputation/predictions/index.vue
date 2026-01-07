@@ -9,15 +9,15 @@
         </p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" @click="refreshData" :disabled="isLoading">
+        <UButton variant="outline" @click="refreshData" :disabled="isLoading">
           <RefreshCw v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
           <RefreshCw v-else class="h-4 w-4 mr-2" />
           Refresh
-        </Button>
-        <Button @click="openGenerateDialog" :disabled="isLoading">
+        </UButton>
+        <UButton @click="openGenerateDialog" :disabled="isLoading">
           <Brain class="h-4 w-4 mr-2" />
           Generate Predictions
-        </Button>
+        </UButton>
       </div>
     </div>
 
@@ -25,21 +25,21 @@
     <div v-if="latestPredictions.length > 0">
       <h3 class="text-lg font-semibold mb-4">Latest Predictions</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card
+        <UCard
           v-for="prediction in latestPredictions"
           :key="prediction.id"
           class="cursor-pointer hover:bg-gray-50 transition-colors"
           @click="viewPredictionDetails(prediction)"
         >
-          <CardHeader class="pb-3">
+          <UCardHeader class="pb-3">
             <div class="flex items-center justify-between">
-              <CardTitle class="text-base">{{ prediction.domain }}</CardTitle>
-              <Badge :variant="getConfidenceBadgeVariant(prediction.confidence)">
+              <UCardTitle class="text-base">{{ prediction.domain }}</UCardTitle>
+              <UBadge :variant="getConfidenceBadgeVariant(prediction.confidence)">
                 {{ capitalize(prediction.confidence) }} Confidence
-              </Badge>
+              </UBadge>
             </div>
-          </CardHeader>
-          <CardContent class="space-y-4">
+          </UCardHeader>
+          <UCardContent class="space-y-4">
             <!-- Score Prediction -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
@@ -71,7 +71,7 @@
                 <span class="text-gray-500">Current</span>
                 <span class="font-medium">{{ prediction.current_score }}</span>
               </div>
-              <Progress :value="prediction.predicted_score" class="h-2" />
+              <UProgress :value="prediction.predicted_score" class="h-2" />
               <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-500">Predicted</span>
                 <span :class="getScoreChangeClass(prediction.predicted_score, prediction.current_score)">
@@ -85,72 +85,72 @@
             <div v-if="prediction.factors && prediction.factors.length > 0">
               <div class="text-sm text-gray-500 mb-1">Key Factors</div>
               <div class="flex flex-wrap gap-1">
-                <Badge
+                <UBadge
                   v-for="(factor, idx) in prediction.factors.slice(0, 3)"
                   :key="idx"
                   variant="outline"
                   class="text-xs"
                 >
                   {{ factor }}
-                </Badge>
-                <Badge v-if="prediction.factors.length > 3" variant="outline" class="text-xs">
+                </UBadge>
+                <UBadge v-if="prediction.factors.length > 3" variant="outline" class="text-xs">
                   +{{ prediction.factors.length - 3 }}
-                </Badge>
+                </UBadge>
               </div>
             </div>
 
             <!-- View Details -->
-            <Button variant="outline" size="sm" class="w-full">
+            <UButton variant="outline" size="sm" class="w-full">
               View Details
               <ArrowRight class="h-4 w-4 ml-2" />
-            </Button>
-          </CardContent>
-        </Card>
+            </UButton>
+          </UCardContent>
+        </UCard>
       </div>
     </div>
 
     <!-- Empty State -->
-    <Card v-else-if="!isLoading">
-      <CardContent class="text-center py-12">
+    <UCard v-else-if="!isLoading">
+      <UCardContent class="text-center py-12">
         <Brain class="h-12 w-12 mx-auto text-gray-400 mb-4" />
         <p class="text-gray-500">No predictions available</p>
         <p class="text-sm text-gray-400 mt-1">
           Generate predictions for your domains to see reputation forecasts
         </p>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Historical Predictions -->
-    <Card v-if="history.length > 0">
-      <CardHeader>
-        <CardTitle>Historical Predictions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Domain</TableHead>
-              <TableHead>Predicted</TableHead>
-              <TableHead>Actual</TableHead>
-              <TableHead>Accuracy</TableHead>
-              <TableHead>Horizon</TableHead>
-              <TableHead>Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="record in history" :key="record.id">
-              <TableCell class="font-medium">{{ record.domain }}</TableCell>
-              <TableCell>
-                <Badge :variant="getScoreBadgeVariant(record.prediction_score)">
+    <UCard v-if="history.length > 0">
+      <UCardHeader>
+        <UCardTitle>Historical Predictions</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
+        <UTable>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Predicted</UTableHead>
+              <UTableHead>Actual</UTableHead>
+              <UTableHead>Accuracy</UTableHead>
+              <UTableHead>Horizon</UTableHead>
+              <UTableHead>Date</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="record in history" :key="record.id">
+              <UTableCell class="font-medium">{{ record.domain }}</UTableCell>
+              <UTableCell>
+                <UBadge :variant="getScoreBadgeVariant(record.prediction_score)">
                   {{ record.prediction_score.toFixed(1) }}
-                </Badge>
-              </TableCell>
-              <TableCell>
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
                 {{ record.actual_score.toFixed(1) }}
-              </TableCell>
-              <TableCell>
+              </UTableCell>
+              <UTableCell>
                 <div class="flex items-center gap-2">
-                  <Progress
+                  <UProgress
                     :value="record.accuracy"
                     :class="getAccuracyColor(record.accuracy)"
                     class="w-16"
@@ -159,142 +159,142 @@
                     {{ record.accuracy.toFixed(1) }}%
                   </span>
                 </div>
-              </TableCell>
-              <TableCell>
+              </UTableCell>
+              <UTableCell>
                 {{ record.horizon_days }} days
-              </TableCell>
-              <TableCell>
+              </UTableCell>
+              <UTableCell>
                 {{ formatDateTime(record.created_at) }}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              </UTableCell>
+            </UTableRow>
+          </UTableBody>
+        </UTable>
+      </UCardContent>
+    </UCard>
 
     <!-- Generate Predictions Dialog -->
-    <Dialog v-model:open="isGenerateDialogOpen">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Generate Predictions</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isGenerateDialogOpen">
+      <UIDialogContent class="sm:max-w-md">
+        <UIDialogHeader>
+          <UIDialogTitle>Generate Predictions</UIDialogTitle>
+          <UIDialogDescription>
             Generate AI-powered reputation predictions for your domains.
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <label class="text-sm font-medium">Domain</label>
-            <Select v-model="generateForm.domain">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="domain in availableDomains" :key="domain" :value="domain">
+            <USelect v-model="generateForm.domain">
+              <USelectTrigger>
+                <USelectValue placeholder="Select a domain" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem v-for="domain in availableDomains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
 
-          <Alert>
+          <UAlert>
             <Info class="h-4 w-4" />
-            <AlertTitle>How It Works</AlertTitle>
-            <AlertDescription>
+            <UAlertTitle>How It Works</UAlertTitle>
+            <UAlertDescription>
               <p class="text-sm">
                 The system analyzes historical reputation data, recent sending patterns,
                 DMARC/SPF/DKIM alignment, and external feedback to predict
                 your domain's reputation score in the future.
               </p>
-            </AlertDescription>
-          </Alert>
+            </UAlertDescription>
+          </UAlert>
         </div>
-        <DialogFooter>
-          <Button variant="outline" @click="isGenerateDialogOpen = false">
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isGenerateDialogOpen = false">
             Cancel
-          </Button>
-          <Button
+          </UButton>
+          <UButton
             @click="generatePrediction"
             :disabled="isSubmitting || !generateForm.domain"
           >
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             Generate
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Prediction Details Dialog -->
-    <Dialog v-model:open="isDetailsDialogOpen">
-      <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Prediction Details - {{ detailsPrediction?.domain }}</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isDetailsDialogOpen">
+      <UIDialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <UIDialogHeader>
+          <UIDialogTitle>Prediction Details - {{ detailsPrediction?.domain }}</UIDialogTitle>
+          <UIDialogDescription>
             Comprehensive breakdown of AI-powered reputation forecast
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div v-if="detailsPrediction" class="space-y-6 py-4">
           <!-- Score Comparison -->
           <div class="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Current Score</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Current Score</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-4xl font-bold">
                   {{ detailsPrediction.current_score }}
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Predicted Score</CardTitle>
-              </CardHeader>
-              <CardContent>
+              </UCardContent>
+            </UCard>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Predicted Score</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="flex items-center gap-2">
                   <div class="text-4xl font-bold">
                     {{ detailsPrediction.predicted_score }}
                   </div>
-                  <Badge :variant="getTrendBadgeVariant(detailsPrediction.trend)">
+                  <UBadge :variant="getTrendBadgeVariant(detailsPrediction.trend)">
                     <TrendingUp v-if="detailsPrediction.trend === 'improving'" class="h-4 w-4" />
                     <Minus v-else-if="detailsPrediction.trend === 'stable'" class="h-4 w-4" />
                     <TrendingDown v-else class="h-4 w-4" />
-                  </Badge>
+                  </UBadge>
                 </div>
                 <div class="text-sm text-gray-500 mt-1">
                   in {{ detailsPrediction.horizon_days }} days
                 </div>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
           </div>
 
           <!-- Trend and Confidence -->
           <div class="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Trend</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
+                <UBadge
                   :variant="getTrendBadgeVariant(detailsPrediction.trend)"
                   class="text-base"
                 >
                   {{ capitalize(detailsPrediction.trend) }}
-                </Badge>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Confidence</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge
+                </UBadge>
+              </UCardContent>
+            </UCard>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Confidence</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
+                <UBadge
                   :variant="getConfidenceBadgeVariant(detailsPrediction.confidence)"
                   class="text-base"
                 >
                   {{ capitalize(detailsPrediction.confidence) }}
-                </Badge>
-              </CardContent>
-            </Card>
+                </UBadge>
+              </UCardContent>
+            </UCard>
           </div>
 
           <!-- Factors -->
@@ -306,17 +306,17 @@
                 :key="idx"
                 class="flex items-center gap-3 p-3 bg-gray-50 rounded"
               >
-                <Badge variant="outline">{{ factor }}</Badge>
+                <UBadge variant="outline">{{ factor }}</UBadge>
               </div>
             </div>
           </div>
 
           <!-- Score Change -->
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium">Projected Change</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <UCard>
+            <UCardHeader class="pb-2">
+              <UCardTitle class="text-sm font-medium">Projected Change</UCardTitle>
+            </UCardHeader>
+            <UCardContent>
               <div class="flex items-center gap-4">
                 <div :class="[
                   'text-3xl font-bold',
@@ -332,14 +332,14 @@
                   points over {{ detailsPrediction.horizon_days }} days
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </UCardContent>
+          </UCard>
         </div>
-        <DialogFooter>
-          <Button @click="isDetailsDialogOpen = false">Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <UIDialogFooter>
+          <UButton @click="isDetailsDialogOpen = false">Close</UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Loading State -->
     <div v-if="isLoading && latestPredictions.length === 0" class="flex items-center justify-center py-12">
@@ -347,18 +347,16 @@
     </div>
 
     <!-- Error Alert -->
-    <Alert v-if="error" variant="destructive">
+    <UAlert v-if="error" variant="destructive">
       <AlertCircle class="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+      <UAlertTitle>Error</UAlertTitle>
+      <UAlertDescription>{{ error }}</UAlertDescription>
+    </UAlert>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -374,9 +372,6 @@ import {
   TableBody,
   TableCell
 } from '~/components/ui/table'
-import { Badge } from '~/components/ui/badge'
-import { Progress } from '~/components/ui/progress'
-import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
 import {
   Dialog,
   DialogContent,

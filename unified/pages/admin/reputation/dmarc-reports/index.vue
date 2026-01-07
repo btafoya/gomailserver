@@ -8,35 +8,35 @@
           View and analyze DMARC RUA reports for your domains
         </p>
       </div>
-      <Button variant="outline" size="sm" @click="refreshData" :disabled="isLoading">
+      <UButton variant="outline" size="sm" @click="refreshData" :disabled="isLoading">
         <RefreshCw v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
         <RefreshCw v-else class="h-4 w-4 mr-2" />
         Refresh
-      </Button>
+      </UButton>
     </div>
 
     <!-- Filters -->
-    <Card>
-      <CardContent class="pt-6">
+    <UCard>
+      <UCardContent class="pt-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="space-y-2">
             <label class="text-sm font-medium">Domain</label>
-            <Select v-model="filters.domain" @update:model-value="applyFilters">
-              <SelectTrigger>
-                <SelectValue placeholder="All domains" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All domains</SelectItem>
-                <SelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
+            <USelect v-model="filters.domain" @update:model-value="applyFilters">
+              <USelectTrigger>
+                <USelectValue placeholder="All domains" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem value="">All domains</USelectItem>
+                <USelectItem v-for="domain in uniqueDomains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
 
           <div class="space-y-2">
             <label class="text-sm font-medium">Organization</label>
-            <Input
+            <UInput
               v-model="filters.org_name"
               placeholder="Filter by org name"
               @input="applyFilters"
@@ -45,7 +45,7 @@
 
           <div class="space-y-2">
             <label class="text-sm font-medium">Date From</label>
-            <Input
+            <UInput
               v-model="filters.date_from"
               type="date"
               @input="applyFilters"
@@ -54,81 +54,81 @@
 
           <div class="space-y-2">
             <label class="text-sm font-medium">Date To</label>
-            <Input
+            <UInput
               v-model="filters.date_to"
               type="date"
               @input="applyFilters"
             />
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-sm font-medium">Total Reports</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <UCard>
+        <UCardHeader class="pb-2">
+          <UCardTitle class="text-sm font-medium">Total Reports</UCardTitle>
+        </UCardHeader>
+        <UCardContent>
           <div class="text-2xl font-bold">{{ statistics.total_reports || 0 }}</div>
           <p class="text-xs text-gray-500 mt-1">Across {{ uniqueDomains.length }} domain(s)</p>
-        </CardContent>
-      </Card>
+        </UCardContent>
+      </UCard>
 
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-sm font-medium">Total Records</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <UCard>
+        <UCardHeader class="pb-2">
+          <UCardTitle class="text-sm font-medium">Total Records</UCardTitle>
+        </UCardHeader>
+        <UCardContent>
           <div class="text-2xl font-bold">{{ statistics.total_records || 0 }}</div>
           <p class="text-xs text-gray-500 mt-1">Email messages analyzed</p>
-        </CardContent>
-      </Card>
+        </UCardContent>
+      </UCard>
 
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-sm font-medium">Pass Rate</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <UCard>
+        <UCardHeader class="pb-2">
+          <UCardTitle class="text-sm font-medium">Pass Rate</UCardTitle>
+        </UCardHeader>
+        <UCardContent>
           <div class="text-2xl font-bold">{{ (statistics.overall_alignment_rate * 100).toFixed(1) }}%</div>
           <p class="text-xs text-gray-500 mt-1">
             SPF + DKIM alignment
           </p>
-        </CardContent>
-      </Card>
+        </UCardContent>
+      </UCard>
 
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-sm font-medium">Failed</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <UCard>
+        <UCardHeader class="pb-2">
+          <UCardTitle class="text-sm font-medium">Failed</UCardTitle>
+        </UCardHeader>
+        <UCardContent>
           <div class="text-2xl font-bold text-red-600">{{ statistics.failed_count || 0 }}</div>
           <p class="text-xs text-gray-500 mt-1">
             {{ ((statistics.failed_count / statistics.total_records) * 100 || 0).toFixed(2) }}% of records
           </p>
-        </CardContent>
-      </Card>
+        </UCardContent>
+      </UCard>
     </div>
 
     <!-- Reports Table -->
-    <Card>
-      <CardHeader>
+    <UCard>
+      <UCardHeader>
         <div class="flex items-center justify-between">
-          <CardTitle>Reports</CardTitle>
+          <UCardTitle>Reports</UCardTitle>
           <div class="flex gap-2">
-            <Button variant="outline" size="sm" @click="exportAllCSV" :disabled="isLoading || reports.length === 0">
+            <UButton variant="outline" size="sm" @click="exportAllCSV" :disabled="isLoading || reports.length === 0">
               <Download class="h-4 w-4 mr-2" />
               Export CSV
-            </Button>
-            <Button variant="outline" size="sm" @click="exportAllXML" :disabled="isLoading || reports.length === 0">
+            </UButton>
+            <UButton variant="outline" size="sm" @click="exportAllXML" :disabled="isLoading || reports.length === 0">
               <Download class="h-4 w-4 mr-2" />
               Export XML
-            </Button>
+            </UButton>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </UCardHeader>
+      <UCardContent>
         <!-- Loading State -->
         <div v-if="isLoading && reports.length === 0" class="flex items-center justify-center py-12">
           <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
@@ -144,25 +144,25 @@
         </div>
 
         <!-- Table -->
-        <Table v-else>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="w-[30px]"></TableHead>
-              <TableHead>Domain</TableHead>
-              <TableHead>Organization</TableHead>
-              <TableHead>Report ID</TableHead>
-              <TableHead>Date Range</TableHead>
-              <TableHead>Records</TableHead>
-              <TableHead>SPF Pass</TableHead>
-              <TableHead>DKIM Pass</TableHead>
-              <TableHead>Failed</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="report in paginatedReports" :key="report.id">
-              <TableCell>
-                <Button
+        <UTable v-else>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead class="w-[30px]"></UTableHead>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Organization</UTableHead>
+              <UTableHead>Report ID</UTableHead>
+              <UTableHead>Date Range</UTableHead>
+              <UTableHead>Records</UTableHead>
+              <UTableHead>SPF Pass</UTableHead>
+              <UTableHead>DKIM Pass</UTableHead>
+              <UTableHead>Failed</UTableHead>
+              <UTableHead>Actions</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="report in paginatedReports" :key="report.id">
+              <UTableCell>
+                <UButton
                   variant="ghost"
                   size="sm"
                   @click="toggleExpand(report.id)"
@@ -172,56 +172,56 @@
                     class="h-4 w-4"
                   />
                   <ChevronDown v-else class="h-4 w-4" />
-                </Button>
-              </TableCell>
-              <TableCell class="font-medium">{{ report.domain }}</TableCell>
-              <TableCell>{{ report.org_name }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ report.report_id }}</TableCell>
-              <TableCell>
+                </UButton>
+              </UTableCell>
+              <UTableCell class="font-medium">{{ report.domain }}</UTableCell>
+              <UTableCell>{{ report.org_name }}</UTableCell>
+              <UTableCell class="font-mono text-xs">{{ report.report_id }}</UTableCell>
+              <UTableCell>
                 <div class="text-xs">
                   {{ formatDate(report.begin_time) }} -<br />
                   {{ formatDate(report.end_time) }}
                 </div>
-              </TableCell>
-              <TableCell>{{ report.record_count }}</TableCell>
-              <TableCell>
-                <Badge :variant="getPassBadgeVariant(report.spf_aligned_count, report.record_count)">
+              </UTableCell>
+              <UTableCell>{{ report.record_count }}</UTableCell>
+              <UTableCell>
+                <UBadge :variant="getPassBadgeVariant(report.spf_aligned_count, report.record_count)">
                   {{ report.spf_aligned_count }}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge :variant="getPassBadgeVariant(report.dkim_aligned_count, report.record_count)">
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
+                <UBadge :variant="getPassBadgeVariant(report.dkim_aligned_count, report.record_count)">
                   {{ report.dkim_aligned_count }}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant="destructive">{{ report.failed_count }}</Badge>
-              </TableCell>
-              <TableCell>
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
+                <UBadge variant="destructive">{{ report.failed_count }}</UBadge>
+              </UTableCell>
+              <UTableCell>
                 <div class="flex gap-2">
-                  <Button
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="exportReport(report.id, 'csv')"
                     title="Export CSV"
                   >
                     <Download class="h-4 w-4" />
-                  </Button>
-                  <Button
+                  </UButton>
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="exportReport(report.id, 'xml')"
                     title="Export XML"
                   >
                     <Download class="h-4 w-4" />
-                  </Button>
+                  </UButton>
                 </div>
-              </TableCell>
-            </TableRow>
+              </UTableCell>
+            </UTableRow>
 
             <!-- Expanded Details -->
-            <TableRow v-if="expandedRows.includes(report.id)" :key="`${report.id}-expanded`">
-              <TableCell :colspan="10" class="p-4 bg-gray-50">
+            <UTableRow v-if="expandedRows.includes(report.id)" :key="`${report.id}-expanded`">
+              <UTableCell :colspan="10" class="p-4 bg-gray-50">
                 <div class="space-y-4">
                   <!-- Detailed Breakdown -->
                   <div>
@@ -250,8 +250,8 @@
                   <div>
                     <h4 class="font-semibold mb-2">Authentication Breakdown</h4>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Card>
-                        <CardContent class="pt-4">
+                      <UCard>
+                        <UCardContent class="pt-4">
                           <div class="text-xs text-gray-500">SPF Pass Rate</div>
                           <div class="text-xl font-bold">
                             {{ ((report.spf_aligned_count / report.record_count) * 100).toFixed(1) }}%
@@ -259,10 +259,10 @@
                           <div class="text-xs text-gray-400">
                             {{ report.spf_aligned_count }} / {{ report.record_count }}
                           </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent class="pt-4">
+                        </UCardContent>
+                      </UCard>
+                      <UCard>
+                        <UCardContent class="pt-4">
                           <div class="text-xs text-gray-500">DKIM Pass Rate</div>
                           <div class="text-xl font-bold">
                             {{ ((report.dkim_aligned_count / report.record_count) * 100).toFixed(1) }}%
@@ -270,10 +270,10 @@
                           <div class="text-xs text-gray-400">
                             {{ report.dkim_aligned_count }} / {{ report.record_count }}
                           </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent class="pt-4">
+                        </UCardContent>
+                      </UCard>
+                      <UCard>
+                        <UCardContent class="pt-4">
                           <div class="text-xs text-gray-500">Both Aligned</div>
                           <div class="text-xl font-bold">
                             {{ ((report.both_aligned_count / report.record_count) * 100 || 0).toFixed(1) }}%
@@ -281,10 +281,10 @@
                           <div class="text-xs text-gray-400">
                             {{ report.both_aligned_count }} / {{ report.record_count }}
                           </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent class="pt-4">
+                        </UCardContent>
+                      </UCard>
+                      <UCard>
+                        <UCardContent class="pt-4">
                           <div class="text-xs text-gray-500">Failed</div>
                           <div class="text-xl font-bold text-red-600">
                             {{ ((report.failed_count / report.record_count) * 100).toFixed(1) }}%
@@ -292,15 +292,15 @@
                           <div class="text-xs text-gray-400">
                             {{ report.failed_count }} / {{ report.record_count }}
                           </div>
-                        </CardContent>
-                      </Card>
+                        </UCardContent>
+                      </UCard>
                     </div>
                   </div>
                 </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+              </UTableCell>
+            </UTableRow>
+          </UTableBody>
+        </UTable>
 
         <!-- Pagination -->
         <div v-if="totalPages > 1" class="flex items-center justify-between mt-4">
@@ -309,41 +309,38 @@
             {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} reports
           </div>
           <div class="flex gap-2">
-            <Button
+            <UButton
               variant="outline"
               size="sm"
               @click="currentPage--"
               :disabled="currentPage === 1"
             >
               Previous
-            </Button>
-            <Button
+            </UButton>
+            <UButton
               variant="outline"
               size="sm"
               @click="currentPage++"
               :disabled="currentPage === totalPages"
             >
               Next
-            </Button>
+            </UButton>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Error Alert -->
-    <Alert v-if="error" variant="destructive">
+    <UAlert v-if="error" variant="destructive">
       <AlertCircle class="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+      <UAlertTitle>Error</UAlertTitle>
+      <UAlertDescription>{{ error }}</UAlertDescription>
+    </UAlert>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -359,8 +356,6 @@ import {
   TableBody,
   TableCell
 } from '~/components/ui/table'
-import { Badge } from '~/components/ui/badge'
-import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
 import {
   RefreshCw,
   ChevronRight,

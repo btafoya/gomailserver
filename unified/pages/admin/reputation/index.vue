@@ -13,26 +13,26 @@
 
     <!-- Quick Actions -->
     <div class="flex gap-3 mb-6">
-      <Button @click="handleAudit" size="lg">
+      <UButton @click="handleAudit" size="lg">
         <Shield class="mr-2 h-5 w-5" />
         Run Domain Audit
-      </Button>
-      <Button @click="navigateToBreakers" variant="outline">
+      </UButton>
+      <UButton @click="navigateToBreakers" variant="outline">
         <AlertTriangle class="mr-2 h-5 w-5" />
         Circuit Breakers
-      </Button>
-      <Button @click="navigateToWarmup" variant="outline">
+      </UButton>
+      <UButton @click="navigateToWarmup" variant="outline">
         <TrendingUp class="mr-2 h-5 w-5" />
         Warm-up
-      </Button>
+      </UButton>
     </div>
 
     <!-- Reputation Scores Table -->
-    <Card class="mb-6">
-      <CardHeader>
-        <CardTitle>Domain Reputation Scores</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <UCard class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Domain Reputation Scores</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
         <div v-if="pending" class="flex justify-center py-8">
           <Loader2 class="h-8 w-8 text-blue-600 animate-spin" />
         </div>
@@ -41,45 +41,45 @@
           <p class="text-lg">No reputation scores available</p>
         </div>
         <div v-else class="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Domain</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Trend</TableHead>
-                <TableHead>Circuit Breaker</TableHead>
-                <TableHead>Warm-up</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="item in scores" :key="item.domain">
-                <TableCell>{{ item.domain }}</TableCell>
-                <TableCell>
-                  <Badge :variant="getScoreVariant(item.reputation_score)">
+          <UTable>
+            <UTableHeader>
+              <UTableRow>
+                <UTableHead>Domain</UTableHead>
+                <UTableHead>Score</UTableHead>
+                <UTableHead>Trend</UTableHead>
+                <UTableHead>Circuit Breaker</UTableHead>
+                <UTableHead>Warm-up</UTableHead>
+              </UTableRow>
+            </UTableHeader>
+            <UTableBody>
+              <UTableRow v-for="item in scores" :key="item.domain">
+                <UTableCell>{{ item.domain }}</UTableCell>
+                <UTableCell>
+                  <UBadge :variant="getScoreVariant(item.reputation_score)">
                     {{ item.reputation_score }}
-                  </Badge>
-                </TableCell>
-                <TableCell>
+                  </UBadge>
+                </UTableCell>
+                <UTableCell>
                   <span :class="getTrendClass(item.trend)">
                     {{ item.trend > 0 ? '+' : '' }}{{ item.trend }}%
                   </span>
-                </TableCell>
-                <TableCell>
-                  <Badge :variant="item.circuit_breaker_active ? 'destructive' : 'secondary'">
+                </UTableCell>
+                <UTableCell>
+                  <UBadge :variant="item.circuit_breaker_active ? 'destructive' : 'secondary'">
                     {{ item.circuit_breaker_active ? 'Active' : 'Inactive' }}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge :variant="item.warm_up_active ? 'default' : 'secondary'">
+                  </UBadge>
+                </UTableCell>
+                <UTableCell>
+                  <UBadge :variant="item.warm_up_active ? 'default' : 'secondary'">
                     {{ item.warm_up_active ? `Day ${item.warm_up_day}` : 'None' }}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                  </UBadge>
+                </UTableCell>
+              </UTableRow>
+            </UTableBody>
+          </UTable>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Recent Alerts -->
     <div class="mt-6">

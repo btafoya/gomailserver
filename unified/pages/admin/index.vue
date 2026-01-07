@@ -13,7 +13,7 @@
     <!-- Reputation Overview Cards -->
     <div class="grid gap-4 lg:grid-cols-3 mb-6">
       <!-- Deliverability Card (Left, takes 2 cols) -->
-      <Card class="lg:col-span-2">
+      <UCard class="lg:col-span-2">
         <DeliverabilityCard
           :score="reputationScore"
           :show-trend="true"
@@ -25,10 +25,10 @@
           :quick-stats="quickStats"
           @audit="handleAudit"
         />
-      </Card>
+      </UCard>
 
       <!-- Circuit Breakers Card (Right, takes 1 col) -->
-      <Card>
+      <UCard>
         <CircuitBreakersCard
           :breakers="circuitBreakers"
           :is-loading="isLoading"
@@ -36,49 +36,49 @@
           @view-details="handleViewCircuitBreaker"
           @view-all="handleViewAllCircuitBreakers"
         />
-      </Card>
+      </UCard>
     </div>
 
     <!-- Recent Alerts Timeline (Full width) -->
-    <Card>
+    <UCard>
       <RecentAlertsTimeline
         :alerts="recentAlerts"
         :max-alerts="10"
         @view-details="handleViewAlert"
         @view-all="handleViewAllAlerts"
       />
-    </Card>
+    </UCard>
 
     <!-- Quick Actions -->
     <div class="grid gap-4 md:grid-cols-3 mb-6">
       <NuxtLink to="/admin/domains">
-        <Button variant="outline" class="w-full justify-start hover-effect focus-ring">
+        <UButton variant="outline" class="w-full justify-start hover-effect focus-ring">
           <Globe class="mr-2 h-4 w-4" />
           Manage Domains
-        </Button>
+        </UButton>
       </NuxtLink>
       <NuxtLink to="/admin/users">
-        <Button variant="outline" class="w-full justify-start hover-effect focus-ring">
+        <UButton variant="outline" class="w-full justify-start hover-effect focus-ring">
           <Users class="mr-2 h-4 w-4" />
           Manage Users
-        </Button>
+        </UButton>
       </NuxtLink>
       <NuxtLink to="/admin/queue">
-        <Button variant="outline" class="w-full justify-start hover-effect focus-ring">
+        <UButton variant="outline" class="w-full justify-start hover-effect focus-ring">
           <Mail class="mr-2 h-4 w-4" />
           View Queue
-        </Button>
+        </UButton>
       </NuxtLink>
     </div>
 
     <!-- System Status -->
-    <Card>
-      <CardHeader>
-        <CardTitle class="text-lg font-semibold" style="font-family: var(--font-heading)">
+    <UCard>
+      <UCardHeader>
+        <UCardTitle class="text-lg font-semibold" style="font-family: var(--font-heading)">
           System Status
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-3">
+        </UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-3">
         <div class="flex items-center justify-between">
           <span class="text-sm font-medium">SMTP</span>
           <span class="text-sm font-semibold text-green-600">Running</span>
@@ -95,20 +95,16 @@
           <span class="text-sm font-medium">SpamAssassin</span>
           <span class="text-sm font-semibold text-green-600">Connected</span>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import {
-  DeliverabilityCard,
-  CircuitBreakersCard,
-  RecentAlertsTimeline
-} from '~/components/admin/reputation'
+ import DeliverabilityCard from '~/components/admin/reputation/DeliverabilityCard.vue'
+ import CircuitBreakersCard from '~/components/admin/reputation/CircuitBreakersCard.vue'
+ import RecentAlertsTimeline from '~/components/admin/reputation/RecentAlertsTimeline.vue'
 import { Globe, Users, Mail } from 'lucide-vue-next'
 import { useReputationApi } from '~/composables/api/reputation'
 

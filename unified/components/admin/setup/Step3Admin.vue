@@ -5,14 +5,14 @@
       <p class="text-gray-600 mt-2">Create your first administrator account</p>
     </div>
 
-    <Card>
-      <CardHeader>
-        <CardTitle>Admin User Information</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-4">
+    <UCard>
+      <UCardHeader>
+        <UCardTitle>Admin User Information</UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-4">
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Email Address</label>
-          <Input
+          <UInput
             v-model="form.email"
             type="email"
             placeholder="admin@example.com"
@@ -26,7 +26,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Full Name</label>
-          <Input
+          <UInput
             v-model="form.full_name"
             type="text"
             placeholder="Admin User"
@@ -39,7 +39,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Password</label>
-          <Input
+          <UInput
             v-model="form.password"
             type="password"
             placeholder="•••••••••••"
@@ -53,7 +53,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Confirm Password</label>
-          <Input
+          <UInput
             v-model="form.confirm_password"
             type="password"
             placeholder="•••••••••••"
@@ -100,22 +100,22 @@
         </div>
 
         <!-- Error Messages -->
-        <Alert v-if="error" variant="destructive" class="mt-4">
+        <UAlert v-if="error" variant="destructive" class="mt-4">
           {{ error }}
-        </Alert>
-      </CardContent>
-    </Card>
+        </UAlert>
+      </UCardContent>
+    </UCard>
 
     <div class="flex justify-between">
-      <Button variant="outline" :disabled="isSubmitting" @click="handlePrevious">
+      <UButton variant="outline" :disabled="isSubmitting" @click="handlePrevious">
         Previous
-      </Button>
-      <Button @click="handleNext" :disabled="!isFormValid || isSubmitting">
+      </UButton>
+      <UButton @click="handleNext" :disabled="!isFormValid || isSubmitting">
         Next: Review Configuration
         <template v-if="isSubmitting">
           <span class="ml-2">Creating user...</span>
         </template>
-      </Button>
+      </UButton>
     </div>
   </div>
 </template>

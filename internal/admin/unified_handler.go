@@ -1,17 +1,14 @@
 package admin
 
 import (
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"path"
 	"strings"
 
 	"github.com/btafoya/gomailserver/internal/config"
-	"github.com/btafoya/gomailserver/unified-go"
+	unified "github.com/btafoya/gomailserver/unified-go"
 	"go.uber.org/zap"
 )
 
@@ -19,7 +16,7 @@ import (
 // In development mode (with -tags dev), it returns 404 for UI routes
 // In production mode, it serves embedded static files with SPA fallback
 func UnifiedHandler(logger *zap.Logger, webUIConfig *config.WebUIConfig) http.Handler {
-	if webunified.DevMode {
+	if unified.DevMode {
 		// Development mode: Nuxt dev server handles all UI routes
 		// Return 404 for UI routes since they're handled by Nuxt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +73,7 @@ func serveFile(fsys fs.FS, w http.ResponseWriter, r *http.Request, name string) 
 // unifiedProdModeHandler serves embedded static files with SPA fallback
 func unifiedProdModeHandler(logger *zap.Logger) http.Handler {
 	// Get the embedded filesystem
-	distFS, err := fs.Sub(webunified.UI, ".output/public")
+	distFS, err := fs.Sub(unified.UI, ".output/public")
 	if err != nil {
 		logger.Error("Failed to create unified dist filesystem", zap.Error(err))
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

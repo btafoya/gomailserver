@@ -6,32 +6,32 @@
     </div>
 
     <!-- Active Warm-up Domains -->
-    <Card v-if="activeWarmups.length > 0" class="mb-6">
-      <CardHeader>
-        <CardTitle>Active Warm-ups</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Domain</TableHead>
-              <TableHead>Day</TableHead>
-              <TableHead>Daily Limit</TableHead>
-              <TableHead>Volume Sent</TableHead>
-              <TableHead>Utilization</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="warmup in activeWarmups" :key="`${warmup.domain}-${warmup.day}`">
-              <TableCell>{{ warmup.domain }}</TableCell>
-              <TableCell>Day {{ warmup.day }}/14</TableCell>
-              <TableCell>{{ warmup.daily_limit || '-' }}</TableCell>
-              <TableCell>{{ warmup.volume_sent || 0 }}</TableCell>
-              <TableCell>
+    <UCard v-if="activeWarmups.length > 0" class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Active Warm-ups</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
+        <UTable>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Day</UTableHead>
+              <UTableHead>Daily Limit</UTableHead>
+              <UTableHead>Volume Sent</UTableHead>
+              <UTableHead>Utilization</UTableHead>
+              <UTableHead>Progress</UTableHead>
+              <UTableHead>Status</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="warmup in activeWarmups" :key="`${warmup.domain}-${warmup.day}`">
+              <UTableCell>{{ warmup.domain }}</UTableCell>
+              <UTableCell>Day {{ warmup.day }}/14</UTableCell>
+              <UTableCell>{{ warmup.daily_limit || '-' }}</UTableCell>
+              <UTableCell>{{ warmup.volume_sent || 0 }}</UTableCell>
+              <UTableCell>
                 <div class="flex items-center">
-                  <Progress 
+                  <UProgress 
                     :value="warmup.volume_sent / warmup.daily_limit * 100" 
                     class="h-2 w-full bg-blue-600"
                   />
@@ -39,111 +39,111 @@
                     {{ Math.round((warmup.volume_sent / warmup.daily_limit) * 100) }}%
                   </span>
                 </div>
-              </TableCell>
-              <TableCell>
-                <Badge :variant="warmup.status === 'completed' ? 'default' : 'secondary'">
+              </UTableCell>
+              <UTableCell>
+                <UBadge :variant="warmup.status === 'completed' ? 'default' : 'secondary'">
                   {{ warmup.status || 'In Progress' }}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button size="sm" @click="viewDetails(warmup)" variant="outline">
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
+                <UButton size="sm" @click="viewDetails(warmup)" variant="outline">
                   View
-                </Button>
-              </TableCell>
-              </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                </UButton>
+              </UTableCell>
+              </UTableRow>
+          </UTableBody>
+        </UTable>
+      </UCardContent>
+    </UCard>
 
     <!-- Create Schedule Button -->
     <div class="flex justify-end mb-6">
-      <Button @click="showCreateDialog = true" variant="default" size="lg">
+      <UButton @click="showCreateDialog = true" variant="default" size="lg">
         <Plus class="mr-2 h-4 w-4" />
         <span class="ml-2">Create Custom Schedule</span>
-      </Button>
+      </UButton>
     </div>
 
     <!-- Custom Schedules -->
-    <Card class="mb-6">
-      <CardHeader>
-        <CardTitle>Custom Warm-up Schedules</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <UCard class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Custom Warm-up Schedules</UCardTitle>
+      </UCardHeader>
+      <UCardContent>
         <div v-if="customSchedules.length === 0" class="text-center py-8 text-gray-500">
           No custom schedules configured
         </div>
         <div v-else>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Domain</TableHead>
-                <TableHead>Template</TableHead>
-                <TableHead>Current Day</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="schedule in customSchedules" :key="schedule.id">
-                <TableCell>{{ schedule.domain }}</TableCell>
-                <TableCell>{{ schedule.template_type }}</TableCell>
-                <TableCell>Day {{ schedule.current_day }}/{{ schedule.days }}</TableCell>
-                <TableCell>
-                  <Progress 
+          <UTable>
+            <UTableHeader>
+              <UTableRow>
+                <UTableHead>Domain</UTableHead>
+                <UTableHead>Template</UTableHead>
+                <UTableHead>Current Day</UTableHead>
+                <UTableHead>Progress</UTableHead>
+                <UTableHead>Status</UTableHead>
+                <UTableHead>Actions</UTableHead>
+              </UTableRow>
+            </UTableHeader>
+            <UTableBody>
+              <UTableRow v-for="schedule in customSchedules" :key="schedule.id">
+                <UTableCell>{{ schedule.domain }}</UTableCell>
+                <UTableCell>{{ schedule.template_type }}</UTableCell>
+                <UTableCell>Day {{ schedule.current_day }}/{{ schedule.days }}</UTableCell>
+                <UTableCell>
+                  <UProgress 
                     :value="schedule.current_day / schedule.days * 100" 
                     class="h-2 w-full bg-blue-600"
                   />
                   <span class="ml-2 text-sm text-gray-700">
                     {{ Math.round((schedule.current_day / schedule.days) * 100) }}%
                   </span>
-                </TableCell>
-                <TableCell>
-                  <Badge :variant="schedule.completed ? 'default' : 'secondary'">
+                </UTableCell>
+                <UTableCell>
+                  <UBadge :variant="schedule.completed ? 'default' : 'secondary'">
                     {{ schedule.completed ? 'Completed' : 'In Progress' }}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button size="sm" @click="viewDetails(schedule)" variant="outline">
+                  </UBadge>
+                </UTableCell>
+                <UTableCell>
+                  <UButton size="sm" @click="viewDetails(schedule)" variant="outline">
                     View
-                  </Button>
-                  <Button size="sm" @click="editSchedule(schedule)" variant="outline">
+                  </UButton>
+                  <UButton size="sm" @click="editSchedule(schedule)" variant="outline">
                     Edit
-                  </Button>
-                  <Button size="sm" @click="deleteSchedule(schedule)" variant="destructive">
+                  </UButton>
+                  <UButton size="sm" @click="deleteSchedule(schedule)" variant="destructive">
                     Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                  </UButton>
+                </UTableCell>
+              </UTableRow>
+            </UTableBody>
+          </UTable>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Dialog for Create/Edit Schedule -->
-    <Dialog v-if="showCreateDialog || showEditDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ showCreateDialog ? 'Create' : 'Edit' }} Custom Warm-up Schedule</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+    <UIDialog v-if="showCreateDialog || showEditDialog">
+      <UIDialogContent>
+        <UIDialogHeader>
+          <UIDialogTitle>{{ showCreateDialog ? 'Create' : 'Edit' }} Custom Warm-up Schedule</UIDialogTitle>
+        </UIDialogHeader>
+        <UIDialogDescription>
           Configure domain warm-up parameters
-        </DialogDescription>
-        <DialogFooter>
-          <Button variant="outline" @click="showCreateDialog = false; showEditDialog = false">
+        </UIDialogDescription>
+        <UIDialogFooter>
+          <UButton variant="outline" @click="showCreateDialog = false; showEditDialog = false">
             Cancel
-          </Button>
-          <Button v-if="showCreateDialog" @click="handleCreateSchedule">
+          </UButton>
+          <UButton v-if="showCreateDialog" @click="handleCreateSchedule">
             Create
-          </Button>
-          <Button v-else @click="handleUpdateSchedule">
+          </UButton>
+          <UButton v-else @click="handleUpdateSchedule">
             Save Changes
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
   </div>
 </template>
 

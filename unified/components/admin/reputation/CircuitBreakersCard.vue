@@ -1,14 +1,14 @@
 <template>
-  <Card>
-    <CardHeader>
+  <UCard>
+    <UCardHeader>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <CardTitle class="text-lg">Circuit Breakers</CardTitle>
-          <Badge v-if="activeCount > 0" variant="destructive">
+          <UCardTitle class="text-lg">Circuit Breakers</UCardTitle>
+          <UBadge v-if="activeCount > 0" variant="destructive">
             {{ activeCount }} Active
-          </Badge>
+          </UBadge>
         </div>
-        <Button
+        <UButton
           v-if="activeCount > 0"
           variant="outline"
           size="sm"
@@ -18,10 +18,10 @@
           <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
           <RefreshCw v-else class="h-4 w-4 mr-2" />
           Resume All
-        </Button>
+        </UButton>
       </div>
-    </CardHeader>
-    <CardContent>
+    </UCardHeader>
+    <UCardContent>
       <!-- Empty State -->
       <div v-if="breakers.length === 0" class="text-center py-8">
         <AlertTriangle class="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -54,21 +54,21 @@
           <div class="flex-1 space-y-1">
             <div class="flex items-center justify-between">
               <div class="font-semibold">{{ breaker.domain }}</div>
-              <Badge
+              <UBadge
                 :variant="getSeverityBadgeVariant(breaker.severity)"
                 class="text-xs"
               >
                 {{ capitalize(breaker.severity) }}
-              </Badge>
+              </UBadge>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="text-gray-600">
                 <span class="font-medium">Trigger:</span>
                 {{ breaker.trigger_type }}
               </span>
-              <Badge variant="outline" class="text-xs">
+              <UBadge variant="outline" class="text-xs">
                 {{ breaker.trigger_value }}
-              </Badge>
+              </UBadge>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500">
               <span>
@@ -84,20 +84,17 @@
 
       <!-- View All Link -->
       <div v-if="breakers.length > 0" class="pt-2 border-t">
-        <Button variant="ghost" size="sm" class="w-full" @click="$emit('viewAll')">
+        <UButton variant="ghost" size="sm" class="w-full" @click="$emit('viewAll')">
           View All Circuit Breakers
           <ArrowRight class="h-4 w-4 ml-2" />
-        </Button>
+        </UButton>
       </div>
-    </CardContent>
-  </Card>
+    </UCardContent>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Badge } from '~/components/ui/badge'
 import { AlertTriangle, Loader2, RefreshCw, ArrowRight } from 'lucide-vue-next'
 
 interface CircuitBreaker {

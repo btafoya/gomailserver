@@ -120,7 +120,7 @@ export const useReputationApi = () => {
    * Get reputation scores for all domains
    */
   const getScores = async (): Promise<ScoreResponse[]> => {
-    const response = await fetch(\`\${API_BASE}/reputation/scores\`, {
+    const response = await fetch(`${API_BASE}/reputation/scores`, {
       method: 'GET',
       headers: getAuthHeaders()
     })
@@ -137,7 +137,7 @@ export const useReputationApi = () => {
    * Get reputation score for a specific domain
    */
   const getScore = async (domain: string): Promise<ScoreResponse> => {
-    const response = await fetch(\`\${API_BASE}/reputation/scores/\${domain}\`, {
+    const response = await fetch(`${API_BASE}/reputation/scores/${domain}`, {
       method: 'GET',
       headers: getAuthHeaders()
     })
@@ -158,7 +158,7 @@ export const useReputationApi = () => {
    * List all circuit breaker events
    */
   const listCircuitBreakers = async (): Promise<CircuitBreakerResponse[]> => {
-    const response = await fetch(\`\${API_BASE}/reputation/circuit-breakers\`, {
+    const response = await fetch(`${API_BASE}/reputation/circuit-breakers`, {
       method: 'GET',
       headers: getAuthHeaders()
     })
@@ -175,7 +175,7 @@ export const useReputationApi = () => {
    * Get circuit breaker history for a specific domain
    */
   const getCircuitBreakerHistory = async (domain: string): Promise<CircuitBreakerResponse[]> => {
-    const response = await fetch(\`\${API_BASE}/reputation/circuit-breakers/\${domain}/history\`, {
+    const response = await fetch(`${API_BASE}/reputation/circuit-breakers/${domain}/history`, {
       method: 'GET',
       headers: getAuthHeaders()
     })
@@ -196,7 +196,7 @@ export const useReputationApi = () => {
    * List recent alerts
    */
   const listAlerts = async (): Promise<AlertResponse[]> => {
-    const response = await fetch(\`\${API_BASE}/reputation/alerts\`, {
+    const response = await fetch(`${API_BASE}/reputation/alerts`, {
       method: 'GET',
       headers: getAuthHeaders()
     })

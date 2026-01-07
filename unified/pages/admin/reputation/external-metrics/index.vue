@@ -8,46 +8,46 @@
           Monitor reputation metrics from Gmail Postmaster Tools and Microsoft SNDS
         </p>
       </div>
-      <Button variant="outline" size="sm" @click="refreshData" :disabled="isLoading">
+      <UButton variant="outline" size="sm" @click="refreshData" :disabled="isLoading">
         <RefreshCw v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
         <RefreshCw v-else class="h-4 w-4 mr-2" />
         Refresh
-      </Button>
+      </UButton>
     </div>
 
     <!-- Domain Selector -->
-    <Card>
-      <CardContent class="pt-6">
+    <UCard>
+      <UCardContent class="pt-6">
         <div class="flex items-end gap-4">
           <div class="flex-1 space-y-2">
             <label class="text-sm font-medium">Select Domain</label>
-            <Select v-model="selectedDomain" @update:model-value="loadDomainData">
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a domain to view metrics" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="domain in domains" :key="domain" :value="domain">
+            <USelect v-model="selectedDomain" @update:model-value="loadDomainData">
+              <USelectTrigger>
+                <USelectValue placeholder="Choose a domain to view metrics" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem v-for="domain in domains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
-          <Button @click="loadDomainData" :disabled="!selectedDomain || isLoading">
+          <UButton @click="loadDomainData" :disabled="!selectedDomain || isLoading">
             Load Metrics
-          </Button>
+          </UButton>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Gmail Postmaster Tools Section -->
-    <Card>
-      <CardHeader>
+    <UCard>
+      <UCardHeader>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <Mail class="h-5 w-5" />
-            <CardTitle>Gmail Postmaster Tools</CardTitle>
+            <UCardTitle>Gmail Postmaster Tools</UCardTitle>
           </div>
-          <Button
+          <UButton
             variant="outline"
             size="sm"
             @click="syncPostmaster"
@@ -56,10 +56,10 @@
             <Loader2 v-if="isSyncingPostmaster" class="h-4 w-4 animate-spin mr-2" />
             <RefreshCw v-else class="h-4 w-4 mr-2" />
             Sync
-          </Button>
+          </UButton>
         </div>
-      </CardHeader>
-      <CardContent>
+      </UCardHeader>
+      <UCardContent>
         <!-- Loading State -->
         <div v-if="!selectedDomain" class="text-center py-12 text-gray-500">
           <Mail class="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -75,11 +75,11 @@
         <div v-else-if="postmasterMetrics" class="space-y-6">
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Reputation</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Reputation</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div :class="[
                   'text-2xl font-bold',
                   getReputationColor(postmasterMetrics.reputation)
@@ -87,64 +87,64 @@
                   {{ postmasterMetrics.reputation }}
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Gmail rating</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Spam Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Spam Rate</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ (postmasterMetrics.spam_rate * 100).toFixed(2) }}%
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Email marked as spam</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">SPF Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">SPF Rate</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ (postmasterMetrics.spf_rate * 100).toFixed(1) }}%
                 </div>
                 <p class="text-xs text-gray-500 mt-1">SPF pass rate</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">DKIM Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">DKIM Rate</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ (postmasterMetrics.dkim_rate * 100).toFixed(1) }}%
                 </div>
                 <p class="text-xs text-gray-500 mt-1">DKIM pass rate</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Encryption</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Encryption</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ (postmasterMetrics.encryption_rate * 100).toFixed(1) }}%
                 </div>
                 <p class="text-xs text-gray-500 mt-1">TLS encrypted</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
           </div>
 
           <!-- 7-Day Trend Chart -->
           <div v-if="trendsData">
             <h3 class="text-lg font-semibold mb-4">7-Day Reputation Trend</h3>
             <div class="h-64">
-              <Card class="h-full">
-                <CardContent class="pt-6 h-full flex items-center justify-center">
+              <UCard class="h-full">
+                <UCardContent class="pt-6 h-full flex items-center justify-center">
                   <p class="text-sm text-gray-500">
                     <TrendingUp class="h-4 w-4 inline mr-2" />
                     Trend chart visualization requires chart library
@@ -152,8 +152,8 @@
                   <p class="text-xs text-gray-400 mt-2">
                     Trend data: {{ trendsData.dates.length }} days available
                   </p>
-                </CardContent>
-              </Card>
+                </UCardContent>
+              </UCard>
             </div>
           </div>
 
@@ -167,11 +167,11 @@
         </div>
 
         <!-- Error State -->
-        <Alert v-else-if="postmasterError" variant="destructive">
+        <UAlert v-else-if="postmasterError" variant="destructive">
           <AlertCircle class="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{{ postmasterError }}</AlertDescription>
-        </Alert>
+          <UAlertTitle>Error</UAlertTitle>
+          <UAlertDescription>{{ postmasterError }}</UAlertDescription>
+        </UAlert>
 
         <!-- No Data State -->
         <div v-else class="text-center py-12 text-gray-500">
@@ -181,18 +181,18 @@
             Configure Gmail Postmaster Tools integration for this domain
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Microsoft SNDS Section -->
-    <Card>
-      <CardHeader>
+    <UCard>
+      <UCardHeader>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <Server class="h-5 w-5" />
-            <CardTitle>Microsoft SNDS</CardTitle>
+            <UCardTitle>Microsoft SNDS</UCardTitle>
           </div>
-          <Button
+          <UButton
             variant="outline"
             size="sm"
             @click="syncSNDS"
@@ -201,10 +201,10 @@
             <Loader2 v-if="isSyncingSNDS" class="h-4 w-4 animate-spin mr-2" />
             <RefreshCw v-else class="h-4 w-4 mr-2" />
             Sync
-          </Button>
+          </UButton>
         </div>
-      </CardHeader>
-      <CardContent>
+      </UCardHeader>
+      <UCardContent>
         <!-- No Domain Selected -->
         <div v-if="!selectedDomain" class="text-center py-12 text-gray-500">
           <Server class="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -217,17 +217,17 @@
             Select an IP address to view SNDS metrics for <strong>{{ selectedDomain }}</strong>
           </p>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card
+            <UCard
               v-for="ip in domainIPs"
               :key="ip"
               class="cursor-pointer hover:bg-gray-50 transition-colors"
               @click="selectedIP = ip; loadSNDMetrics(ip)"
             >
-              <CardContent class="pt-6">
+              <UCardContent class="pt-6">
                 <div class="text-lg font-mono font-bold">{{ ip }}</div>
                 <p class="text-xs text-gray-500 mt-1">Click to view metrics</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
           </div>
         </div>
 
@@ -241,22 +241,22 @@
           <!-- IP Display -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <Badge variant="outline" class="text-sm font-mono">
+              <UBadge variant="outline" class="text-sm font-mono">
                 {{ selectedIP }}
-              </Badge>
+              </UBadge>
             </div>
-            <Button variant="ghost" size="sm" @click="selectedIP = null">
+            <UButton variant="ghost" size="sm" @click="selectedIP = null">
               Change IP
-            </Button>
+            </UButton>
           </div>
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Reputation</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Reputation</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div :class="[
                   'text-2xl font-bold',
                   getSNDSColor(sndsMetrics.filter_level)
@@ -264,58 +264,58 @@
                   {{ sndsMetrics.reputation_score }}
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Out of 10</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Spam Traps</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Spam Traps</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ sndsMetrics.spam_trap_hits }}
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Trap hits detected</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Complaint Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Complaint Rate</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ (sndsMetrics.complaint_rate * 100).toFixed(2) }}%
                 </div>
                 <p class="text-xs text-gray-500 mt-1">User complaints</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
 
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Filter Level</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge :variant="getSNDSBadgeVariant(sndsMetrics.filter_level)" class="text-lg">
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Filter Level</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
+                <UBadge :variant="getSNDSBadgeVariant(sndsMetrics.filter_level)" class="text-lg">
                   {{ sndsMetrics.filter_level }}
-                </Badge>
+                </UBadge>
                 <p class="text-xs text-gray-500 mt-1">Microsoft filter</p>
-              </CardContent>
-            </Card>
+              </UCardContent>
+            </UCard>
           </div>
 
           <!-- Filter Level Explanation -->
-          <Alert>
+          <UAlert>
             <Info class="h-4 w-4" />
-            <AlertTitle>Filter Level</AlertTitle>
-            <AlertDescription>
+            <UAlertTitle>Filter Level</UAlertTitle>
+            <UAlertDescription>
               <div class="space-y-2">
-                <p><Badge>GREEN</Badge> - Good reputation, minimal filtering</p>
-                <p><Badge variant="secondary">YELLOW</Badge> - Moderate reputation, some filtering applied</p>
-                <p><Badge variant="destructive">RED</Badge> - Poor reputation, heavy filtering applied</p>
+                <p><UBadge>GREEN</UBadge> - Good reputation, minimal filtering</p>
+                <p><UBadge variant="secondary">YELLOW</UBadge> - Moderate reputation, some filtering applied</p>
+                <p><UBadge variant="destructive">RED</UBadge> - Poor reputation, heavy filtering applied</p>
               </div>
-            </AlertDescription>
-          </Alert>
+            </UAlertDescription>
+          </UAlert>
 
           <!-- Sample Info -->
           <div class="text-sm text-gray-500">
@@ -327,20 +327,20 @@
         </div>
 
         <!-- Error State -->
-        <Alert v-else-if="sndsError" variant="destructive">
+        <UAlert v-else-if="sndsError" variant="destructive">
           <AlertCircle class="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{{ sndsError }}</AlertDescription>
-        </Alert>
-      </CardContent>
-    </Card>
+          <UAlertTitle>Error</UAlertTitle>
+          <UAlertDescription>{{ sndsError }}</UAlertDescription>
+        </UAlert>
+      </UCardContent>
+    </UCard>
 
     <!-- Setup Instructions -->
-    <Card>
-      <CardHeader>
-        <CardTitle class="text-lg">Setup Instructions</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-4">
+    <UCard>
+      <UCardHeader>
+        <UCardTitle class="text-lg">Setup Instructions</UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-4">
         <div>
           <h4 class="font-semibold mb-2">Gmail Postmaster Tools</h4>
           <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
@@ -350,7 +350,7 @@
             <li>Data will be automatically synced to this interface</li>
           </ol>
         </div>
-        <Separator />
+        <USeparator />
         <div>
           <h4 class="font-semibold mb-2">Microsoft SNDS</h4>
           <ol class="list-decimal list-inside space-y-1 text-sm text-gray-600">
@@ -360,15 +360,13 @@
             <li>Data will be automatically synced to this interface</li>
           </ol>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -376,9 +374,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '~/components/ui/select'
-import { Badge } from '~/components/ui/badge'
-import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
-import { Separator } from '~/components/ui/separator'
 import {
   RefreshCw,
   Loader2,

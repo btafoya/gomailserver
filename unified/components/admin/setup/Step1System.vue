@@ -5,14 +5,14 @@
       <p class="text-gray-600 mt-2">Configure your mail server settings</p>
     </div>
 
-    <Card>
-      <CardHeader>
-        <CardTitle>Server Settings</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-4">
+    <UCard>
+      <UCardHeader>
+        <UCardTitle>Server Settings</UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-4">
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Server Hostname</label>
-          <Input
+          <UInput
             v-model="form.hostname"
             type="text"
             placeholder="mail.example.com"
@@ -25,7 +25,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">API Port</label>
-          <Input
+          <UInput
             v-model="form.port"
             type="number"
             placeholder="8980"
@@ -38,7 +38,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">SMTP Port</label>
-          <Input
+          <UInput
             v-model="form.smtp_port"
             type="number"
             placeholder="25"
@@ -51,7 +51,7 @@
 
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">IMAP Port</label>
-          <Input
+          <UInput
             v-model="form.imap_port"
             type="number"
             placeholder="143"
@@ -77,19 +77,19 @@
             Enable automatic SSL certificate management
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <div class="flex justify-between">
-      <Button variant="outline" :disabled="isSubmitting">
+      <UButton variant="outline" :disabled="isSubmitting">
         Previous
-      </Button>
-      <Button @click="handleNext" :disabled="!isFormValid || isSubmitting">
+      </UButton>
+      <UButton @click="handleNext" :disabled="!isFormValid || isSubmitting">
         Next: Domain Setup
         <template v-if="isSubmitting">
           <span class="ml-2">Configuring...</span>
         </template>
-      </Button>
+      </UButton>
     </div>
   </div>
 </template>

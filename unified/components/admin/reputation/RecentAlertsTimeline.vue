@@ -1,23 +1,23 @@
 <template>
-  <Card>
-    <CardHeader>
+  <UCard>
+    <UCardHeader>
       <div class="flex items-center justify-between">
-        <CardTitle class="text-lg">Recent Alerts</CardTitle>
-        <Select v-model="severityFilter">
-          <SelectTrigger class="w-32">
-            <SelectValue placeholder="All severities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All severities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
+        <UCardTitle class="text-lg">Recent Alerts</UCardTitle>
+        <USelect v-model="severityFilter">
+          <USelectTrigger class="w-32">
+            <USelectValue placeholder="All severities" />
+          </USelectTrigger>
+          <USelectContent>
+            <USelectItem value="">All severities</USelectItem>
+            <USelectItem value="critical">Critical</USelectItem>
+            <USelectItem value="high">High</USelectItem>
+            <USelectItem value="medium">Medium</USelectItem>
+            <USelectItem value="low">Low</USelectItem>
+          </USelectContent>
+        </USelect>
       </div>
-    </CardHeader>
-    <CardContent>
+    </UCardHeader>
+    <UCardContent>
       <!-- Empty State -->
       <div v-if="filteredAlerts.length === 0" class="text-center py-8">
         <AlertTriangle class="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -63,12 +63,12 @@
             <!-- Alert Header -->
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-center gap-2">
-                <Badge
+                <UBadge
                   :variant="getSeverityBadgeVariant(alert.severity)"
                   class="text-xs"
                 >
                   {{ capitalize(alert.severity) }}
-                </Badge>
+                </UBadge>
                 <span class="text-xs text-gray-500">
                   {{ formatRelativeTime(alert.created_at) }}
                 </span>
@@ -94,35 +94,26 @@
 
       <!-- View All Link -->
       <div v-if="filteredAlerts.length > maxAlerts" class="pt-4 border-t">
-        <Button variant="ghost" size="sm" class="w-full" @click="$emit('viewAll')">
+        <UButton variant="ghost" size="sm" class="w-full" @click="$emit('viewAll')">
           View All Alerts ({{ filteredAlerts.length }})
           <ArrowRight class="h-4 w-4 ml-2" />
-        </Button>
+        </UButton>
       </div>
-    </CardContent>
-  </Card>
+    </UCardContent>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '~/components/ui/select'
-import { Badge } from '~/components/ui/badge'
-import {
-  AlertTriangle,
-  ShieldAlert,
-  TrendingDown,
-  MailWarning,
-  ServerAlert,
-  ArrowRight
-} from 'lucide-vue-next'
+ import {
+   AlertTriangle,
+   ShieldAlert,
+   TrendingDown,
+   MailWarning,
+   Server,
+   AlertCircle,
+   ArrowRight
+ } from 'lucide-vue-next'
 
 interface Alert {
   id: number

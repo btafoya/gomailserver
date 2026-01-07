@@ -8,15 +8,15 @@
           Create custom warm-up schedules for new domains and IPs
         </p>
       </div>
-      <Button @click="openCreateDialog" :disabled="isLoading">
+      <UButton @click="openCreateDialog" :disabled="isLoading">
         <Plus class="h-4 w-4 mr-2" />
         Create Schedule
-      </Button>
+      </UButton>
     </div>
 
     <!-- Schedules Table -->
-    <Card>
-      <CardContent class="pt-6">
+    <UCard>
+      <UCardContent class="pt-6">
         <!-- Loading State -->
         <div v-if="isLoading && schedules.length === 0" class="flex items-center justify-center py-12">
           <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
@@ -32,58 +32,58 @@
         </div>
 
         <!-- Table -->
-        <Table v-else>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Domain</TableHead>
-              <TableHead>Template</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>Current Day</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="schedule in schedules" :key="schedule.id">
-              <TableCell class="font-medium">{{ schedule.domain }}</TableCell>
-              <TableCell>
-                <Badge :variant="getTemplateBadgeVariant(schedule.template_type)">
+        <UTable v-else>
+          <UTableHeader>
+            <UTableRow>
+              <UTableHead>Domain</UTableHead>
+              <UTableHead>Template</UTableHead>
+              <UTableHead>Start Date</UTableHead>
+              <UTableHead>Current Day</UTableHead>
+              <UTableHead>Progress</UTableHead>
+              <UTableHead>Status</UTableHead>
+              <UTableHead class="text-right">Actions</UTableHead>
+            </UTableRow>
+          </UTableHeader>
+          <UTableBody>
+            <UTableRow v-for="schedule in schedules" :key="schedule.id">
+              <UTableCell class="font-medium">{{ schedule.domain }}</UTableCell>
+              <UTableCell>
+                <UBadge :variant="getTemplateBadgeVariant(schedule.template_type)">
                   {{ capitalize(schedule.template_type) }}
-                </Badge>
-              </TableCell>
-              <TableCell>
+                </UBadge>
+              </UTableCell>
+              <UTableCell>
                 {{ formatDate(schedule.start_date) }}
-              </TableCell>
-              <TableCell>
+              </UTableCell>
+              <UTableCell>
                 Day {{ schedule.current_day }} of
                 {{ Object.keys(schedule.daily_volumes).length }}
-              </TableCell>
-              <TableCell class="w-48">
+              </UTableCell>
+              <UTableCell class="w-48">
                 <div class="space-y-1">
-                  <Progress :value="schedule.progress_percentage" />
+                  <UProgress :value="schedule.progress_percentage" />
                   <div class="flex justify-between text-xs">
                     <span>{{ schedule.progress_percentage.toFixed(0) }}%</span>
                     <span v-if="schedule.completed" class="text-green-600">Complete</span>
                   </div>
                 </div>
-              </TableCell>
-              <TableCell>
-                <Badge :variant="schedule.completed ? 'default' : 'secondary'">
+              </UTableCell>
+              <UTableCell>
+                <UBadge :variant="schedule.completed ? 'default' : 'secondary'">
                   {{ schedule.completed ? 'Completed' : 'In Progress' }}
-                </Badge>
-              </TableCell>
-              <TableCell class="text-right">
+                </UBadge>
+              </UTableCell>
+              <UTableCell class="text-right">
                 <div class="flex justify-end gap-2">
-                  <Button
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="viewScheduleDetails(schedule)"
                     title="View details"
                   >
                     <Eye class="h-4 w-4" />
-                  </Button>
-                  <Button
+                  </UButton>
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="openEditDialog(schedule)"
@@ -91,70 +91,70 @@
                     :disabled="schedule.completed"
                   >
                     <Edit2 class="h-4 w-4" />
-                  </Button>
-                  <Button
+                  </UButton>
+                  <UButton
                     variant="ghost"
                     size="sm"
                     @click="deleteSchedule(schedule.id)"
                     title="Delete schedule"
                   >
                     <Trash2 class="h-4 w-4" />
-                  </Button>
+                  </UButton>
                 </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              </UTableCell>
+            </UTableRow>
+          </UTableBody>
+        </UTable>
+      </UCardContent>
+    </UCard>
 
     <!-- Create/Edit Dialog -->
-    <Dialog v-model:open="isScheduleDialogOpen">
-      <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{{ isEditing ? 'Edit' : 'Create' }} Warm-up Schedule</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isScheduleDialogOpen">
+      <UIDialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <UIDialogHeader>
+          <UIDialogTitle>{{ isEditing ? 'Edit' : 'Create' }} Warm-up Schedule</UIDialogTitle>
+          <UIDialogDescription>
             Configure day-by-day volume limits for domain warm-up.
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div class="space-y-4 py-4">
           <!-- Domain -->
           <div class="space-y-2">
             <label class="text-sm font-medium">Domain</label>
-            <Select v-model="scheduleForm.domain" :disabled="isEditing">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="domain in availableDomains" :key="domain" :value="domain">
+            <USelect v-model="scheduleForm.domain" :disabled="isEditing">
+              <USelectTrigger>
+                <USelectValue placeholder="Select a domain" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem v-for="domain in availableDomains" :key="domain" :value="domain">
                   {{ domain }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
           </div>
 
           <!-- Template -->
           <div class="space-y-2">
             <label class="text-sm font-medium">Template</label>
-            <Select v-model="scheduleForm.template_type" @update:model-value="applyTemplate">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="conservative">
+            <USelect v-model="scheduleForm.template_type" @update:model-value="applyTemplate">
+              <USelectTrigger>
+                <USelectValue placeholder="Select a template" />
+              </USelectTrigger>
+              <USelectContent>
+                <USelectItem value="conservative">
                   Conservative - 21 days, 100 → 80,000
-                </SelectItem>
-                <SelectItem value="moderate">
+                </USelectItem>
+                <USelectItem value="moderate">
                   Moderate - 14 days, 100 → 80,000
-                </SelectItem>
-                <SelectItem value="aggressive">
+                </USelectItem>
+                <USelectItem value="aggressive">
                   Aggressive - 10 days, 100 → 80,000
-                </SelectItem>
-                <SelectItem value="custom">
+                </USelectItem>
+                <USelectItem value="custom">
                   Custom - Define your own schedule
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </USelectItem>
+              </USelectContent>
+            </USelect>
             <p class="text-xs text-gray-500">
               Choose a template to auto-populate day-by-day volumes
             </p>
@@ -163,12 +163,12 @@
           <!-- Start Date -->
           <div class="space-y-2">
             <label class="text-sm font-medium">Start Date</label>
-            <Input v-model="scheduleForm.start_date" type="date" />
+            <UInput v-model="scheduleForm.start_date" type="date" />
           </div>
 
           <!-- Custom Schedule (only visible for custom template) -->
           <div v-if="scheduleForm.template_type === 'custom'" class="space-y-4">
-            <Separator />
+            <USeparator />
             <div class="space-y-2">
               <label class="text-sm font-medium">Custom Daily Volumes</label>
               <p class="text-xs text-gray-500 mb-2">
@@ -177,7 +177,7 @@
               <div class="grid grid-cols-5 gap-2">
                 <div v-for="(volume, day) in scheduleForm.daily_volumes" :key="day" class="space-y-1">
                   <label class="text-xs font-medium">Day {{ day }}</label>
-                  <Input
+                  <UInput
                     v-model.number="scheduleForm.daily_volumes[day]"
                     type="number"
                     min="1"
@@ -185,14 +185,14 @@
                   />
                 </div>
                 <div class="flex items-center justify-center">
-                  <Button
+                  <UButton
                     variant="outline"
                     size="sm"
                     @click="addDay"
                     :disabled="Object.keys(scheduleForm.daily_volumes).length >= 30"
                   >
                     <Plus class="h-4 w-4" />
-                  </Button>
+                  </UButton>
                 </div>
               </div>
             </div>
@@ -200,7 +200,7 @@
 
           <!-- Summary for non-custom templates -->
           <div v-if="scheduleForm.template_type !== 'custom'" class="space-y-2">
-            <Separator />
+            <USeparator />
             <div>
               <label class="text-sm font-medium">Schedule Preview</label>
               <div class="grid grid-cols-5 gap-2 mt-2">
@@ -212,70 +212,70 @@
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" @click="isScheduleDialogOpen = false">
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isScheduleDialogOpen = false">
             Cancel
-          </Button>
-          <Button @click="saveSchedule" :disabled="isSubmitting">
+          </UButton>
+          <UButton @click="saveSchedule" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             {{ isEditing ? 'Save Changes' : 'Create Schedule' }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- View Details Dialog -->
-    <Dialog v-model:open="isViewDialogOpen">
-      <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Warm-up Schedule Details</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isViewDialogOpen">
+      <UIDialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <UIDialogHeader>
+          <UIDialogTitle>Warm-up Schedule Details</UIDialogTitle>
+          <UIDialogDescription>
             View detailed day-by-day progress for {{ viewSchedule?.domain }}
-          </DialogDescription>
-        </DialogHeader>
+          </UIDialogDescription>
+        </UIDialogHeader>
         <div v-if="viewSchedule" class="space-y-6 py-4">
           <!-- Summary -->
           <div class="grid grid-cols-4 gap-4">
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Domain</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Domain</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-lg font-bold">{{ viewSchedule.domain }}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Template</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge>{{ capitalize(viewSchedule.template_type) }}</Badge>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Current Day</CardTitle>
-              </CardHeader>
-              <CardContent>
+              </UCardContent>
+            </UCard>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Template</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
+                <UBadge>{{ capitalize(viewSchedule.template_type) }}</UBadge>
+              </UCardContent>
+            </UCard>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Current Day</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ viewSchedule.current_day }} /
                   {{ Object.keys(viewSchedule.daily_volumes).length }}
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="pb-2">
-                <CardTitle class="text-sm font-medium">Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
+              </UCardContent>
+            </UCard>
+            <UCard>
+              <UCardHeader class="pb-2">
+                <UCardTitle class="text-sm font-medium">Progress</UCardTitle>
+              </UCardHeader>
+              <UCardContent>
                 <div class="text-2xl font-bold">
                   {{ viewSchedule.progress_percentage.toFixed(0) }}%
                 </div>
-                <Badge v-if="viewSchedule.completed" class="mt-1">
+                <UBadge v-if="viewSchedule.completed" class="mt-1">
                   Completed
-                </Badge>
-              </CardContent>
-            </Card>
+                </UBadge>
+              </UCardContent>
+            </UCard>
           </div>
 
           <!-- Day-by-Day Progress -->
@@ -292,14 +292,14 @@
                   'bg-gray-50'
                 ]"
               >
-                <Badge
+                <UBadge
                   :variant="Number(day) < viewSchedule.current_day ? 'default' :
                             Number(day) === viewSchedule.current_day ? 'secondary' : 'outline'"
                   class="min-w-20"
                 >
                   {{ Number(day) < viewSchedule.current_day ? 'Complete' :
                       Number(day) === viewSchedule.current_day ? 'Current' : 'Pending' }}
-                </Badge>
+                </UBadge>
                 <div class="flex-1">
                   <div class="text-sm font-medium">Day {{ day }}</div>
                   <div class="text-xs text-gray-500">
@@ -319,52 +319,49 @@
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button @click="isViewDialogOpen = false">Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <UIDialogFooter>
+          <UButton @click="isViewDialogOpen = false">Close</UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Delete Confirmation Dialog -->
-    <Dialog v-model:open="isDeleteDialogOpen">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete Warm-up Schedule</DialogTitle>
-          <DialogDescription>
+    <UIDialog v-model:open="isDeleteDialogOpen">
+      <UIDialogContent class="sm:max-w-md">
+        <UIDialogHeader>
+          <UIDialogTitle>Delete Warm-up Schedule</UIDialogTitle>
+          <UIDialogDescription>
             Are you sure you want to delete this warm-up schedule?
             This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="isDeleteDialogOpen = false">
+          </UIDialogDescription>
+        </UIDialogHeader>
+        <UIDialogFooter>
+          <UButton variant="outline" @click="isDeleteDialogOpen = false">
             Cancel
-          </Button>
-          <Button
+          </UButton>
+          <UButton
             variant="destructive"
             @click="confirmDelete"
             :disabled="isSubmitting"
           >
             <Loader2 v-if="isSubmitting" class="h-4 w-4 animate-spin mr-2" />
             Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </UButton>
+        </UIDialogFooter>
+      </UIDialogContent>
+    </UIDialog>
 
     <!-- Error Alert -->
-    <Alert v-if="error" variant="destructive">
+    <UAlert v-if="error" variant="destructive">
       <AlertCircle class="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+      <UAlertTitle>Error</UAlertTitle>
+      <UAlertDescription>{{ error }}</UAlertDescription>
+    </UAlert>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -380,10 +377,6 @@ import {
   TableBody,
   TableCell
 } from '~/components/ui/table'
-import { Badge } from '~/components/ui/badge'
-import { Progress } from '~/components/ui/progress'
-import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert'
-import { Separator } from '~/components/ui/separator'
 import {
   Dialog,
   DialogContent,

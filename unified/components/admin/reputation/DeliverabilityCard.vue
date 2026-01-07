@@ -1,15 +1,15 @@
 <template>
-  <Card>
-    <CardHeader>
+  <UCard>
+    <UCardHeader>
       <div class="flex items-center justify-between">
-        <CardTitle class="text-lg">Deliverability</CardTitle>
-        <Button variant="outline" size="sm" @click="$emit('audit')">
+        <UCardTitle class="text-lg">Deliverability</UCardTitle>
+        <UButton variant="outline" size="sm" @click="$emit('audit')">
           <ShieldCheck class="h-4 w-4 mr-2" />
           Run Full Audit
-        </Button>
+        </UButton>
       </div>
-    </CardHeader>
-    <CardContent class="space-y-6">
+    </UCardHeader>
+    <UCardContent class="space-y-6">
       <!-- Score Gauge -->
       <div class="flex items-center justify-center py-4">
         <div class="relative">
@@ -75,36 +75,36 @@
         <div>
           <div class="text-sm font-medium mb-2">Authentication</div>
           <div class="flex flex-wrap gap-2">
-            <Badge :variant="spfStatus.pass ? 'default' : 'destructive'">
+            <UBadge :variant="spfStatus.pass ? 'default' : 'destructive'">
               <Check v-if="spfStatus.pass" class="h-3 w-3 mr-1" />
               <X v-else class="h-3 w-3 mr-1" />
               SPF
-            </Badge>
-            <Badge :variant="dkimStatus.pass ? 'default' : 'destructive'">
+            </UBadge>
+            <UBadge :variant="dkimStatus.pass ? 'default' : 'destructive'">
               <Check v-if="dkimStatus.pass" class="h-3 w-3 mr-1" />
               <X v-else class="h-3 w-3 mr-1" />
               DKIM
-            </Badge>
-            <Badge :variant="dmarcStatus.pass ? 'default' : 'destructive'">
+            </UBadge>
+            <UBadge :variant="dmarcStatus.pass ? 'default' : 'destructive'">
               <Check v-if="dmarcStatus.pass" class="h-3 w-3 mr-1" />
               <X v-else class="h-3 w-3 mr-1" />
               DMARC
-            </Badge>
+            </UBadge>
           </div>
         </div>
 
         <div>
           <div class="text-sm font-medium mb-2">Infrastructure</div>
           <div class="flex flex-wrap gap-2">
-            <Badge :variant="rdnsStatus.pass ? 'default' : 'destructive'">
+            <UBadge :variant="rdnsStatus.pass ? 'default' : 'destructive'">
               <Check v-if="rdnsStatus.pass" class="h-3 w-3 mr-1" />
               <X v-else class="h-3 w-3 mr-1" />
               rDNS
-            </Badge>
-            <Badge variant="outline">
+            </UBadge>
+            <UBadge variant="outline">
               <Info class="h-3 w-3 mr-1" />
               IP Reputation
-            </Badge>
+            </UBadge>
           </div>
         </div>
       </div>
@@ -124,15 +124,12 @@
           </div>
         </div>
       </div>
-    </CardContent>
-  </Card>
+    </UCardContent>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card'
-import { Button } from '~/components/ui/button'
-import { Badge } from '~/components/ui/badge'
 import { ShieldCheck, TrendingUp, TrendingDown, Check, X, Minus, Info } from 'lucide-vue-next'
 
 interface Props {

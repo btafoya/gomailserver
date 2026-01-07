@@ -8,14 +8,14 @@
     </div>
 
     <!-- Audit Input -->
-    <Card class="mb-6">
-      <CardHeader>
-        <CardTitle>Run Audit</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-4">
+    <UCard class="mb-6">
+      <UCardHeader>
+        <UCardTitle>Run Audit</UCardTitle>
+      </UCardHeader>
+      <UCardContent class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700">Domain to Audit</label>
-          <Input
+          <UInput
             v-model="domainInput"
             type="text"
             placeholder="example.com"
@@ -27,7 +27,7 @@
         </div>
 
         <div>
-          <Button
+          <UButton
             @click="runAudit"
             :disabled="!auditDomain || isAuditing || isSubmitting"
             :loading="isAuditing && !isSubmitting"
@@ -41,25 +41,25 @@
               <Loader2 class="mr-2 h-5 w-5 animate-spin" />
               Auditing...
             </template>
-          </Button>
+          </UButton>
         </div>
-      </CardContent>
-    </Card>
+      </UCardContent>
+    </UCard>
 
     <!-- Audit Results -->
     <div v-if="auditResults" class="mt-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit Results for {{ auditResults.domain }}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <UCard>
+        <UCardHeader>
+          <UCardTitle>Audit Results for {{ auditResults.domain }}</UCardTitle>
+        </UCardHeader>
+        <UCardContent>
           <!-- Overall Score Card -->
           <div class="mb-4">
             <div class="flex items-center justify-between">
               <span class="text-2xl font-bold">Overall Deliverability Score</span>
-              <Badge :variant="getScoreVariant(auditResults.overall_score)">
+              <UBadge :variant="getScoreVariant(auditResults.overall_score)">
                 {{ auditResults.overall_score }}/100
-              </Badge>
+              </UBadge>
             </div>
           </div>
 
@@ -71,9 +71,9 @@
               <div class="space-y-3">
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">SPF</span>
-                  <Badge :variant="auditResults.spf.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.spf.passed ? 'default' : 'destructive'">
                     {{ auditResults.spf.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.spf.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.spf.message }}
@@ -81,9 +81,9 @@
 
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">DKIM</span>
-                  <Badge :variant="auditResults.dkim.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.dkim.passed ? 'default' : 'destructive'">
                     {{ auditResults.dkim.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.dkim.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.dkim.message }}
@@ -91,9 +91,9 @@
 
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">DMARC</span>
-                  <Badge :variant="auditResults.dmarc.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.dmarc.passed ? 'default' : 'destructive'">
                     {{ auditResults.dmarc.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.dmarc.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.dmarc.message }}
@@ -101,9 +101,9 @@
 
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">rDNS</span>
-                  <Badge :variant="auditResults.rdns.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.rdns.passed ? 'default' : 'destructive'">
                     {{ auditResults.rdns.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.rdns.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.rdns.message }}
@@ -111,9 +111,9 @@
 
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">FCrDNS</span>
-                  <Badge :variant="auditResults.fcrdns.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.fcrdns.passed ? 'default' : 'destructive'">
                     {{ auditResults.fcrdns.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.fcrdns.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.fcrdns.message }}
@@ -128,9 +128,9 @@
               <div class="space-y-3">
                 <div class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">TLS Certificate</span>
-                  <Badge :variant="auditResults.tls.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.tls.passed ? 'default' : 'destructive'">
                     {{ auditResults.tls.passed ? 'Valid' : 'Invalid/Expired' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.tls.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.tls.message }}
@@ -138,23 +138,23 @@
 
                 <div class="flex items-center justify-between p-2 bg-green-50 rounded border">
                   <span class="text-sm font-medium text-gray-700">postmaster@</span>
-                  <Badge :variant="auditResults.postmaster_ok ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.postmaster_ok ? 'default' : 'destructive'">
                     {{ auditResults.postmaster_ok ? 'OK' : 'MISSING' }}
-                  </Badge>
+                  </UBadge>
                 </div>
 
                 <div class="flex items-center justify-between p-2 bg-red-50 rounded border">
                   <span class="text-sm font-medium text-gray-700">abuse@</span>
-                  <Badge :variant="auditResults.abuse_ok ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.abuse_ok ? 'default' : 'destructive'">
                     {{ auditResults.abuse_ok ? 'OK' : 'MISSING' }}
-                  </Badge>
+                  </UBadge>
                 </div>
 
                 <div v-if="auditResults.mta_sts" class="flex items-center justify-between p-2 bg-white rounded border">
                   <span class="text-sm font-medium">MTA-STS</span>
-                  <Badge :variant="auditResults.mta_sts.passed ? 'default' : 'destructive'">
+                  <UBadge :variant="auditResults.mta_sts.passed ? 'default' : 'destructive'">
                     {{ auditResults.mta_sts.passed ? 'PASS' : 'FAIL' }}
-                  </Badge>
+                  </UBadge>
                 </div>
                 <p v-if="auditResults.mta_sts.message" class="text-xs text-gray-600 mt-1">
                   {{ auditResults.mta_sts.message }}
@@ -166,9 +166,9 @@
           <!-- Issues Summary -->
           <div class="mt-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-3">Issues Summary</h3>
-            <Alert v-if="auditResults.issues && auditResults.issues.length > 0" variant="destructive">
+            <UAlert v-if="auditResults.issues && auditResults.issues.length > 0" variant="destructive">
               Found {{ auditResults.issues.length }} issue(s) that need attention
-            </Alert>
+            </UAlert>
             <div v-else class="text-green-600">
               All checks passed! Your domain is properly configured.
             </div>
@@ -182,13 +182,13 @@
 
           <!-- Export Button -->
           <div class="mt-6">
-            <Button @click="exportResults" variant="outline" :disabled="isSubmitting">
+            <UButton @click="exportResults" variant="outline" :disabled="isSubmitting">
               <Download class="mr-2 h-4 w-4" />
               Export Results
-            </Button>
+            </UButton>
           </div>
-        </CardContent>
-      </Card>
+        </UCardContent>
+      </UCard>
     </div>
   </div>
 </template>
