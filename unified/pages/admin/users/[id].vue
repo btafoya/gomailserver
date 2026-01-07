@@ -163,6 +163,11 @@
 import { ref, onMounted } from 'vue'
 import { Save } from 'lucide-vue-next'
 
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
+
 const route = useRoute()
 const router = useRouter()
 
@@ -184,12 +189,6 @@ const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref(null)
 
-const authStore = useAuthStore()
-
-const logout = () => {
-  authStore.logout()
-}
-
 // TODO: Replace with actual API call
 onMounted(() => {
   const userId = route.params.id
@@ -206,11 +205,4 @@ onMounted(() => {
     emails_sent: 1234
   }
 })
-</script>
-
-<script>
-export default {
-  middleware: 'auth',
-  layout: 'admin'
-}
 </script>

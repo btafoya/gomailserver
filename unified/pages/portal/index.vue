@@ -120,18 +120,16 @@
 
 <script setup>
 import { Mail, HardDrive, AtSign, TrendingUp, User, Lock } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'portal'
+})
 
 const authStore = useAuthStore()
 
 const logout = () => {
   authStore.logout()
-}
-</script>
-
-<script>
-// Page metadata
-export default {
-  middleware: 'auth',
-  layout: 'portal'
 }
 </script>

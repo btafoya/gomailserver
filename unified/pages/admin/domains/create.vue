@@ -135,11 +135,10 @@
 import { ref } from 'vue'
 import { Plus } from 'lucide-vue-next'
 
-const authStore = useAuthStore()
-
-const logout = () => {
-  authStore.logout()
-}
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
 
 const domain = ref({
   name: '',
@@ -148,11 +147,4 @@ const domain = ref({
   max_messages_per_day: 1000,
   dkim_enabled: true
 })
-</script>
-
-<script>
-export default {
-  middleware: 'auth',
-  layout: 'admin'
-}
 </script>

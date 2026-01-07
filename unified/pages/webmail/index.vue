@@ -37,18 +37,16 @@
 
 <script setup>
 import { Mail } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'webmail'
+})
 
 const authStore = useAuthStore()
 
 const logout = () => {
   authStore.logout()
-}
-</script>
-
-<script>
-// Page metadata
-export default {
-  middleware: 'auth',
-  layout: 'webmail'
 }
 </script>

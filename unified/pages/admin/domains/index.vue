@@ -74,6 +74,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Plus } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
 
 const authStore = useAuthStore()
 
@@ -93,11 +99,4 @@ const domains = ref([
 const loading = ref(false)
 const error = ref(null)
 const domainCount = computed(() => domains.value.length)
-</script>
-
-<script>
-export default {
-  middleware: 'auth',
-  layout: 'admin'
-}
 </script>

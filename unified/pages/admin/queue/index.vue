@@ -115,10 +115,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RefreshCw, Mail, Clock, XCircle } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
 
 // TODO: Replace with actual API call once backend is configured
 const queue = ref([
-  { id: 'MQ-001', from: 'admin@example.com', to: 'user1@example.com', subject: 'Welcome to the system', size: 2456, attempts: 1, status: 'pending', created_at: new Date() },
+  { id: 'MQ-001', from: 'admin@example.com', to: 'user1@example.com', subject: 'Welcome to system', size: 2456, attempts: 1, status: 'pending', created_at: new Date() },
   { id: 'MQ-002', from: 'user2@example.com', to: 'support@example.com', subject: 'Help needed', size: 1024, attempts: 3, status: 'failed', created_at: new Date(Date.now() - 3600000) },
   { id: 'MQ-003', from: 'newsletter@example.com', to: 'user1@example.com', subject: 'Weekly Newsletter', size: 8192, attempts: 1, status: 'processing', created_at: new Date(Date.now() - 7200000) },
   { id: 'MQ-004', from: 'admin@example.com', to: 'all@example.com', subject: 'System maintenance notice', size: 5120, attempts: 2, status: 'retrying', created_at: new Date(Date.now() - 14400000) },
@@ -153,7 +159,7 @@ const formatSize = (bytes) => {
 const formatTime = (date) => {
   const now = new Date()
   const diff = Math.floor((now - date) / 1000)
-  
+
   if (diff < 60) return `${diff}s ago`
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
@@ -173,12 +179,5 @@ const getStatusClass = (status) => {
     default:
       return 'bg-gray-100 text-gray-800'
   }
-}
-</script>
-
-<script>
-export default {
-  middleware: 'auth',
-  layout: 'admin'
 }
 </script>

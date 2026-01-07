@@ -110,18 +110,17 @@
 
 <script setup>
 import { RefreshCw, Power } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
+
+// Page metadata
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
 
 const authStore = useAuthStore()
 
 const logout = () => {
   authStore.logout()
-}
-</script>
-
-<script>
-// Page metadata
-export default {
-  middleware: 'auth',
-  layout: 'admin'
 }
 </script>

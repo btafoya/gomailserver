@@ -160,6 +160,11 @@
 import { ref, onMounted } from 'vue'
 import { Save } from 'lucide-vue-next'
 
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
+
 const route = useRoute()
 const router = useRouter()
 
@@ -179,12 +184,6 @@ const domain = ref({
 
 const loading = ref(false)
 const error = ref(null)
-
-const authStore = useAuthStore()
-
-const logout = () => {
-  authStore.logout()
-}
 
 // TODO: Replace with actual API call
 onMounted(() => {
@@ -208,12 +207,5 @@ const formatSize = (bytes) => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1048576).toFixed(1)} MB`
-}
-</script>
-
-<script>
-export default {
-  middleware: 'auth',
-  layout: 'admin'
 }
 </script>
