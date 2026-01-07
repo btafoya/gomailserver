@@ -70,7 +70,6 @@ import { ref, computed } from 'vue'
 import { Plus } from 'lucide-vue-next'
 
 // TODO: Replace with actual API call once backend is configured
-// For now, displaying user count without loading data
 const users = ref([
   { id: 1, email: 'admin@example.com', full_name: 'Admin User', domain: 'example.com', created_at: new Date().toISOString() },
   { id: 2, email: 'user1@example.com', full_name: 'User One', domain: 'example.com', created_at: new Date().toISOString() },
@@ -80,23 +79,16 @@ const users = ref([
 const loading = ref(false)
 const error = ref(null)
 
-onMounted(() => {
-  loading.value = false
-})
+const authStore = useAuthStore()
+
+const logout = () => {
+  authStore.logout()
+}
 </script>
 
 <script>
-import { useAuthStore } from '~/stores/auth'
-
-const authStore = useAuthStore()
-
 export default {
   middleware: 'auth',
-  layout: 'admin',
-  methods: {
-    logout() {
-      authStore.logout()
-    }
-  }
+  layout: 'admin'
 }
 </script>

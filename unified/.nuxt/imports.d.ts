@@ -45,3 +45,4 @@ export { useUI } from '../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magica
 export { useAuthStore } from '../stores/auth';
 export { useColorMode } from '../node_modules/.pnpm/@nuxtjs+color-mode@3.5.2_magicast@0.5.1/node_modules/@nuxtjs/color-mode/dist/runtime/composables';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/.pnpm/@pinia+nuxt@0.11.3_magicast@0.5.1_pinia@2.3.1_vue@3.5.26_/node_modules/@pinia/nuxt/dist/runtime/composables';
+export { useNuxtDevTools } from '../node_modules/.pnpm/@nuxt+devtools@3.1.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26/node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';

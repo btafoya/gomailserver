@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
 function createRemoteCollection(fetchEndpoint) {
   let _cache
   return async () => {
