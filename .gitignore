@@ -62,6 +62,8 @@ web/*/dist/
 web/*/node_modules/
 web/*/.nuxt/
 web/*/.output/
+unified/.nuxt/
+unified/.output/
 
 # TLS certificates (local development)
 *.pem
