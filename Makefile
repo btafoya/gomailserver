@@ -1,4 +1,4 @@
-.PHONY: build test lint clean install run docker-build docker-run
+.PHONY: build test lint clean install run docker-build docker-run gomailtest
 
 # Build variables
 BINARY_NAME=gomailserver
@@ -94,3 +94,10 @@ docker-run:
 		$(BINARY_NAME):latest
 
 .DEFAULT_GOAL := build
+
+# gomailtest build target
+gomailtest:
+	@echo "Building gomailtest..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/gomailtest ./cmd/gomailtest
+	@echo "gomailtest build complete: $(BUILD_DIR)/gomailtest"
