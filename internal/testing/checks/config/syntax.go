@@ -84,7 +84,7 @@ func (c *ConfigSyntaxCheck) Run(ctx context.Context, cfg *types.ServerConfig) (*
 	result.Details["config_file"] = configPath
 	result.Details["hostname"] = loadedCfg.Server.Hostname
 	result.Details["domain"] = loadedCfg.Server.Domain
-	result.Details["database_path"] = loadedCfg.Database.Path
+	result.Details["database_path"] = loadedCfg.Database.SQLite.Path
 
 	domainCount := 1
 	if loadedCfg.Server.Hostname != "" && loadedCfg.Server.Domain != "" {

@@ -10,10 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// DB wraps the SQL database connection
+// DB wraps SQL database connection
 type DB struct {
 	*sql.DB
 	logger *zap.Logger
+	driver Driver
 }
 
 // Config holds database configuration
@@ -48,6 +49,7 @@ func New(cfg Config, logger *zap.Logger) (*DB, error) {
 	wrapper := &DB{
 		DB:     db,
 		logger: logger,
+		driver: DriverSQLite,
 	}
 
 	// Apply PRAGMA settings

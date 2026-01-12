@@ -414,12 +414,7 @@ func run(cmd *cobra.Command, args []string) error {
 }
 
 func initDatabase(cfg *config.Config, logger *zap.Logger) (*database.DB, error) {
-	dbConfig := database.Config{
-		Path:       cfg.Database.Path,
-		WALEnabled: cfg.Database.WALEnabled,
-	}
-
-	db, err := database.New(dbConfig, logger)
+	db, err := database.Factory(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}

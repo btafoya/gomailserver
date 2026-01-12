@@ -5,8 +5,25 @@ server:
   domain: example.com
 
 database:
-  path: ./data/mailserver.db
-  wal_enabled: true
+  driver: sqlite3  # "sqlite3" or "postgres"
+
+  # SQLite configuration
+  sqlite:
+    path: ./data/mailserver.db
+    wal_enabled: true
+
+  # PostgreSQL configuration
+  postgres:
+    host: localhost
+    port: 5432
+    database: gomailserver
+    user: gomailserver
+    password: ${DB_PASSWORD}
+    ssl_mode: disable  # "disable", "require", "verify-full"
+    max_open_conns: 25
+    max_idle_conns: 5
+    conn_max_lifetime: 1h
+    conn_max_idle_time: 30m
 
 logger:
   level: info

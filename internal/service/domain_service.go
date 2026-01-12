@@ -16,8 +16,11 @@ type DomainService struct {
 }
 
 // NewDomainService creates a new domain service
-func NewDomainService(repo repository.DomainRepository) *DomainService {
-	return &DomainService{repo: repo}
+func NewDomainService(repos *repository.Repositories, logger *zap.Logger) *DomainService {
+	return &DomainService{
+		repo:   repos.Domain,
+		logger: logger,
+	}
 }
 
 // EnsureDefaultTemplate creates the default domain template if it doesn't exist
@@ -34,8 +37,8 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 	defaultTemplate := &domain.Domain{
 		Name:           DefaultTemplateDomainName,
 		Status:         "active",
-		MaxUsers:       0, // unlimited
-		MaxMailboxSize: 0, // unlimited
+		MaxUsers:       0,          // unlimited
+		MaxMailboxSize: 0,          // unlimited
 		DefaultQuota:   1073741824, // 1GB
 
 		// DKIM defaults

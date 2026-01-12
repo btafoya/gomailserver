@@ -28,8 +28,29 @@ type ServerConfig struct {
 
 // DatabaseConfig holds database configuration
 type DatabaseConfig struct {
-	Path       string `mapstructure:"path" yaml:"path" env:"DB_PATH" default:"./data/mailserver.db"`
-	WALEnabled bool   `mapstructure:"wal_enabled" yaml:"wal_enabled" env:"DB_WAL_ENABLED" default:"true"`
+	Driver   string         `mapstructure:"driver" yaml:"driver" env:"DB_DRIVER" default:"sqlite3"`
+	SQLite   SQLiteConfig   `mapstructure:"sqlite" yaml:"sqlite"`
+	Postgres PostgresConfig `mapstructure:"postgres" yaml:"postgres"`
+}
+
+// SQLiteConfig holds SQLite-specific configuration
+type SQLiteConfig struct {
+	Path       string `mapstructure:"path" yaml:"path" env:"DB_SQLITE_PATH" default:"./data/mailserver.db"`
+	WALEnabled bool   `mapstructure:"wal_enabled" yaml:"wal_enabled" env:"DB_SQLITE_WAL_ENABLED" default:"true"`
+}
+
+// PostgresConfig holds PostgreSQL-specific configuration
+type PostgresConfig struct {
+	Host            string `mapstructure:"host" yaml:"host" env:"DB_POSTGRES_HOST" default:"localhost"`
+	Port            int    `mapstructure:"port" yaml:"port" env:"DB_POSTGRES_PORT" default:"5432"`
+	Database        string `mapstructure:"database" yaml:"database" env:"DB_POSTGRES_DATABASE" default:"gomailserver"`
+	User            string `mapstructure:"user" yaml:"user" env:"DB_POSTGRES_USER" default:"gomailserver"`
+	Password        string `mapstructure:"password" yaml:"password" env:"DB_POSTGRES_PASSWORD"`
+	SSLMode         string `mapstructure:"ssl_mode" yaml:"ssl_mode" env:"DB_POSTGRES_SSL_MODE" default:"disable"`
+	MaxOpenConns    int    `mapstructure:"max_open_conns" yaml:"max_open_conns" env:"DB_POSTGRES_MAX_OPEN_CONNS" default:"25"`
+	MaxIdleConns    int    `mapstructure:"max_idle_conns" yaml:"max_idle_conns" env:"DB_POSTGRES_MAX_IDLE_CONNS" default:"5"`
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime" yaml:"conn_max_lifetime" env:"DB_POSTGRES_CONN_MAX_LIFETIME" default:"1h"`
+	ConnMaxIdleTime string `mapstructure:"conn_max_idle_time" yaml:"conn_max_idle_time" env:"DB_POSTGRES_CONN_MAX_IDLE_TIME" default:"30m"`
 }
 
 // TLSConfig holds TLS/certificate configuration
@@ -158,8 +179,18 @@ func Load(configPath string) (*Config, error) {
 //nolint:mnd // Default configuration values
 func setDefaults(v *viper.Viper) {
 	// Database
-	v.SetDefault("database.path", "./data/mailserver.db")
-	v.SetDefault("database.wal_enabled", true)
+	v.SetDefault("database.driver", "sqlite3")
+	v.SetDefault("database.sqlite.path", "./data/mailserver.db")
+	v.SetDefault("database.sqlite.wal_enabled", true)
+	v.SetDefault("database.postgres.host", "localhost")
+	v.SetDefault("database.postgres.port", "5432")
+	v.SetDefault("database.postgres.database", "gomailserver")
+	v.SetDefault("database.postgres.user", "gomailserver")
+	v.SetDefault("database.postgres.ssl_mode", "disable")
+	v.SetDefault("database.postgres.max_open_conns", "25")
+	v.SetDefault("database.postgres.max_idle_conns", "5")
+	v.SetDefault("database.postgres.conn_max_lifetime", "1h")
+	v.SetDefault("database.postgres.conn_max_idle_time", "30m")
 
 	// Logger
 	v.SetDefault("logger.level", "info")

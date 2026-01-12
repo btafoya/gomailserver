@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
@@ -22,18 +22,17 @@ var (
 
 // UserService handles user operations
 type UserService struct {
-	repo       repository.UserRepository
-	domainRepo repository.DomainRepository
-	logger     *zap.Logger
+	repos  *repository.Repositories
+	logger *zap.Logger
 }
 
 // NewUserService creates a new user service
-func NewUserService(repo repository.UserRepository, domainRepo repository.DomainRepository, logger *zap.Logger) *UserService {
+func NewUserService(repos *repository.Repositories, logger *zap.Logger) *UserService {
 	return &UserService{
-		repo:       repo,
-		domainRepo: domainRepo,
+		repos:      repos,
 		logger:     logger,
 	}
+}
 }
 
 // Authenticate verifies user credentials
