@@ -2,16 +2,11 @@ package security
 
 import (
 	"context"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/miekg/dns"
 
 	"github.com/btafoya/gomailserver/internal/testing/types"
 )
@@ -82,7 +77,7 @@ func (c *DKIMConfigAudit) Run(ctx context.Context, cfg *types.ServerConfig) (*ty
 		return result, nil
 	}
 
-	rsaKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	rsaKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		rsaKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {

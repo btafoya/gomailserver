@@ -95,9 +95,63 @@ docker-run:
 
 .DEFAULT_GOAL := build
 
+# Benchmark tools
+bench-smtp:
+	@echo "Building SMTP benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-smtp ./cmd/bench-smtp
+	@echo "SMTP benchmark tool built: $(BUILD_DIR)/bench-smtp"
+
+bench-imap:
+	@echo "Building IMAP benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-imap ./cmd/bench-imap
+	@echo "IMAP benchmark tool built: $(BUILD_DIR)/bench-imap"
+
+bench-queue:
+	@echo "Building Queue benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-queue ./cmd/bench-queue
+	@echo "Queue benchmark tool built: $(BUILD_DIR)/bench-queue"
+
+# Run benchmarks
+bench-all: bench-smtp bench-imap bench-queue
+	@echo "All benchmark tools built"
+	@echo "Run individually:"
+	@echo "  make bench-smtp && ./build/bench-smtp -host localhost -count 100"
+	@echo "  make bench-imap && ./build/bench-imap -host localhost -count 50"
+	@echo "  make bench-queue && ./build/bench-queue -host localhost -count 100"
+
 # gomailtest build target
 gomailtest:
 	@echo "Building gomailtest..."
 	@mkdir -p $(BUILD_DIR)
 	$(GOBUILD) -o $(BUILD_DIR)/gomailtest ./cmd/gomailtest
 	@echo "gomailtest build complete: $(BUILD_DIR)/gomailtest"
+
+# Benchmark tools
+bench-smtp:
+	@echo "Building SMTP benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-smtp ./cmd/bench-smtp
+	@echo "SMTP benchmark tool built: $(BUILD_DIR)/bench-smtp"
+
+bench-imap:
+	@echo "Building IMAP benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-imap ./cmd/bench-imap
+	@echo "IMAP benchmark tool built: $(BUILD_DIR)/bench-imap"
+
+bench-queue:
+	@echo "Building Queue benchmark tool..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/bench-queue ./cmd/bench-queue
+	@echo "Queue benchmark tool built: $(BUILD_DIR)/bench-queue"
+
+# Run benchmarks
+bench-all: bench-smtp bench-imap bench-queue
+	@echo "All benchmark tools built"
+	@echo "Run individually:"
+	@echo "  make bench-smtp && ./build/bench-smtp -host localhost -count 100"
+	@echo "  make bench-imap && ./build/bench-imap -host localhost -count 100"
+	@echo "  make bench-queue && ./build/bench-queue -host localhost -count 100"

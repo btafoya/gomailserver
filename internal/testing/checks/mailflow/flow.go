@@ -57,7 +57,7 @@ func (c *SMTPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	n, err := conn.Read(data)
+	_, err := conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read SMTP response: %v", err)
 		result.Details["error"] = err.Error()
@@ -67,14 +67,6 @@ func (c *SMTPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 
 	response := string(data)
 	if !strings.HasPrefix(response, "2") && !strings.HasPrefix(response, "3") {
-		result.Message = fmt.Sprintf("Unexpected SMTP response: %s", response)
-		result.Details["response"] = response
-		result.Duration = int64(time.Since(startTime).Milliseconds())
-		return result, nil
-	}
-
-	response := string(data)
-	if len(response) < 4 || response[0] != '2' && response[0] != '3' {
 		result.Message = fmt.Sprintf("Unexpected SMTP response: %s", response)
 		result.Details["response"] = response
 		result.Duration = int64(time.Since(startTime).Milliseconds())
@@ -155,7 +147,7 @@ func (c *SMTPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	}
 
 	data := make([]byte, 1024)
-	n, err := conn.Read(data)
+	_, err := conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read HELO response: %v", err)
 		result.Details["error"] = err.Error()
@@ -180,7 +172,7 @@ func (c *SMTPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	}
 
 	data = make([]byte, 1024)
-	n, err = conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read AUTH response: %v", err)
 		result.Details["error"] = err.Error()
@@ -262,7 +254,7 @@ func (c *IMAPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	n, err := conn.Read(data)
+	_, err := conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read IMAP greeting: %v", err)
 		result.Details["error"] = err.Error()
@@ -343,7 +335,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	n, err := conn.Read(data)
+	_, err := conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read IMAP greeting: %v", err)
 		result.Details["error"] = err.Error()
@@ -369,7 +361,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	}
 
 	data = make([]byte, 1024)
-	n, err = conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read LOGIN response: %v", err)
 		result.Details["error"] = err.Error()
@@ -377,7 +369,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 		return result, nil
 	}
 
-	response := string(data)
+	response = string(data)
 	if !strings.Contains(response, "OK") {
 		result.Message = fmt.Sprintf("IMAP authentication failed: %s", response)
 		result.Details["response"] = response
@@ -488,7 +480,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data := make([]byte, 1024)
-	n, err := smtpConn.Read(data)
+	_, err := smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read HELO response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -513,7 +505,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = smtpConn.Read(data)
+	_, err = smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read MAIL FROM response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -538,7 +530,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = smtpConn.Read(data)
+	_, err = smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read RCPT TO response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -563,7 +555,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = smtpConn.Read(data)
+	_, err = smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read DATA response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -595,7 +587,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = smtpConn.Read(data)
+	_, err = smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read message send response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -632,7 +624,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	defer imapConn.Close()
 
 	data = make([]byte, 1024)
-	n, err = imapConn.Read(data)
+	_, err = imapConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read IMAP greeting: %v", err)
 		result.Details["imap_error"] = err.Error()
@@ -658,7 +650,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = imapConn.Read(data)
+	_, err = imapConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read LOGIN response: %v", err)
 		result.Details["imap_error"] = err.Error()
@@ -686,7 +678,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 1024)
-	n, err = imapConn.Read(data)
+	_, err = imapConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read SELECT response: %v", err)
 		result.Details["imap_error"] = err.Error()
@@ -711,7 +703,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data = make([]byte, 8192)
-	n, err := imapConn.Read(data)
+	_, err = imapConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read SEARCH response: %v", err)
 		result.Details["imap_error"] = err.Error()
