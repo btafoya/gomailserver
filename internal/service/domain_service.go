@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
+	dkimPkg "github.com/btafoya/gomailserver/internal/dkim"
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
 )
@@ -26,8 +25,7 @@ func NewDomainService(repos *repository.Repositories, logger *zap.Logger) *Domai
 	}
 }
 
-// EnsureDefaultTemplate creates the default domain template if it doesn't exist
-// This should be called during server initialization
+// EnsureDefaultTemplate creates default domain template if it doesn't exist
 func (s *DomainService) EnsureDefaultTemplate() error {
 	// Check if default template exists
 	_, err := s.repo.GetByName(DefaultTemplateDomainName)
@@ -45,6 +43,9 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 		DefaultQuota:   1073741824, // 1GB
 
 		// DKIM defaults
+		DKIMSelector:       "default",
+		DKIMPrivateKey:     "",
+		DKIMPublicKey:      "",
 		DKIMSigningEnabled: true,
 		DKIMVerifyEnabled:  true,
 		DKIMKeySize:        2048,
@@ -52,6 +53,7 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 		DKIMHeadersToSign:  `["From","To","Subject","Date","Message-ID","MIME-Version","Content-Type"]`,
 
 		// SPF defaults
+		SPFRecord:         "v=spf1 mx ~all",
 		SPFEnabled:        true,
 		SPFDNSServer:      "8.8.8.8:53",
 		SPFDNSTimeout:     5,
@@ -60,10 +62,12 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 		SPFSoftFailAction: "accept",
 
 		// DMARC defaults
+		DMARCPolicy:        "none",
 		DMARCEnabled:       true,
 		DMARCDNSServer:     "8.8.8.8:53",
 		DMARCDNSTimeout:    5,
 		DMARCReportEnabled: false,
+		DMARCReportEmail:   "",
 
 		// ClamAV defaults
 		ClamAVEnabled:     true,
@@ -100,161 +104,53 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 		AuthBruteForceWindowMinutes: 15,
 		AuthBruteForceBlockMinutes:  60,
 		AuthIPBlacklistEnabled:      true,
-		AuthCleanupInterval:         3600,
+		AuthCleanupInterval:         0,
 	}
 
+	// Create default template
 	if err := s.repo.Create(defaultTemplate); err != nil {
-		return fmt.Errorf("failed to create default template: %w", err)
+		return fmt.Errorf("failed to create default domain template: %w", err)
 	}
 
 	return nil
 }
 
-// GetDefaultTemplate retrieves the default domain template
-func (s *DomainService) GetDefaultTemplate() (*domain.Domain, error) {
-	template, err := s.repo.GetByName(DefaultTemplateDomainName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get default template: %w", err)
-	}
-	return template, nil
-}
-
-// CreateDomainFromTemplate creates a new domain using the default template for security settings
-func (s *DomainService) CreateDomainFromTemplate(name string) (*domain.Domain, error) {
-	// Get default template
-	template, err := s.GetDefaultTemplate()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get default template: %w", err)
-	}
-
-	// Create new domain with template's security settings
-	newDomain := &domain.Domain{
-		Name:           name,
-		Status:         "active",
-		MaxUsers:       template.MaxUsers,
-		MaxMailboxSize: template.MaxMailboxSize,
-		DefaultQuota:   template.DefaultQuota,
-
-		// Copy all security settings from template
-		DKIMSigningEnabled: template.DKIMSigningEnabled,
-		DKIMVerifyEnabled:  template.DKIMVerifyEnabled,
-		DKIMKeySize:        template.DKIMKeySize,
-		DKIMKeyType:        template.DKIMKeyType,
-		DKIMHeadersToSign:  template.DKIMHeadersToSign,
-
-		SPFEnabled:        template.SPFEnabled,
-		SPFDNSServer:      template.SPFDNSServer,
-		SPFDNSTimeout:     template.SPFDNSTimeout,
-		SPFMaxLookups:     template.SPFMaxLookups,
-		SPFFailAction:     template.SPFFailAction,
-		SPFSoftFailAction: template.SPFSoftFailAction,
-
-		DMARCEnabled:       template.DMARCEnabled,
-		DMARCDNSServer:     template.DMARCDNSServer,
-		DMARCDNSTimeout:    template.DMARCDNSTimeout,
-		DMARCReportEnabled: template.DMARCReportEnabled,
-
-		ClamAVEnabled:     template.ClamAVEnabled,
-		ClamAVMaxScanSize: template.ClamAVMaxScanSize,
-		ClamAVVirusAction: template.ClamAVVirusAction,
-		ClamAVFailAction:  template.ClamAVFailAction,
-
-		SpamEnabled:         template.SpamEnabled,
-		SpamRejectScore:     template.SpamRejectScore,
-		SpamQuarantineScore: template.SpamQuarantineScore,
-		SpamLearningEnabled: template.SpamLearningEnabled,
-
-		GreylistEnabled:         template.GreylistEnabled,
-		GreylistDelayMinutes:    template.GreylistDelayMinutes,
-		GreylistExpiryDays:      template.GreylistExpiryDays,
-		GreylistCleanupInterval: template.GreylistCleanupInterval,
-		GreylistWhitelistAfter:  template.GreylistWhitelistAfter,
-
-		RateLimitEnabled:         template.RateLimitEnabled,
-		RateLimitSMTPPerIP:       template.RateLimitSMTPPerIP,
-		RateLimitSMTPPerUser:     template.RateLimitSMTPPerUser,
-		RateLimitSMTPPerDomain:   template.RateLimitSMTPPerDomain,
-		RateLimitAuthPerIP:       template.RateLimitAuthPerIP,
-		RateLimitIMAPPerUser:     template.RateLimitIMAPPerUser,
-		RateLimitCleanupInterval: template.RateLimitCleanupInterval,
-
-		AuthTOTPEnforced:            template.AuthTOTPEnforced,
-		AuthBruteForceEnabled:       template.AuthBruteForceEnabled,
-		AuthBruteForceThreshold:     template.AuthBruteForceThreshold,
-		AuthBruteForceWindowMinutes: template.AuthBruteForceWindowMinutes,
-		AuthBruteForceBlockMinutes:  template.AuthBruteForceBlockMinutes,
-		AuthIPBlacklistEnabled:      template.AuthIPBlacklistEnabled,
-		AuthCleanupInterval:         template.AuthCleanupInterval,
-	}
-
-	if err := s.repo.Create(newDomain); err != nil {
-		return nil, fmt.Errorf("failed to create domain: %w", err)
-	}
-
-	return newDomain, nil
-}
-
-// UpdateDefaultTemplate updates the default template settings
-// This allows administrators to change defaults for new domains
-func (s *DomainService) UpdateDefaultTemplate(updates *domain.Domain) error {
-	template, err := s.GetDefaultTemplate()
-	if err != nil {
-		return err
-	}
-
-	// Update template with provided values
-	// Copy all security settings (keeping ID and timestamps)
-	updates.ID = template.ID
-	updates.Name = DefaultTemplateDomainName // Ensure name doesn't change
-	updates.CreatedAt = template.CreatedAt
-
-	if err := s.repo.Update(updates); err != nil {
-		return fmt.Errorf("failed to update default template: %w", err)
-	}
-
-	return nil
-}
-
-// List retrieves all domains with pagination
+// List retrieves all domains
 func (s *DomainService) List(ctx context.Context) ([]*domain.Domain, error) {
-	// For now, return all domains without pagination
-	// TODO: Add pagination support with offset/limit
-	domains, err := s.repo.List(0, 1000)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list domains: %w", err)
-	}
-	return domains, nil
+	return s.repo.List(offset, limit)
 }
 
 // Create creates a new domain
-func (s *DomainService) Create(ctx context.Context, newDomain *domain.Domain) error {
-	if err := s.repo.Create(newDomain); err != nil {
-		return fmt.Errorf("failed to create domain: %w", err)
-	}
-	return nil
+func (s *DomainService) Create(ctx context.Context, domain *domain.Domain) error {
+	return s.repo.Create(domain)
 }
 
 // GetByID retrieves a domain by ID
 func (s *DomainService) GetByID(ctx context.Context, id int64) (*domain.Domain, error) {
-	domain, err := s.repo.GetByID(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get domain: %w", err)
-	}
-	return domain, nil
+	return s.repo.GetByID(id)
 }
 
 // Update updates an existing domain
 func (s *DomainService) Update(ctx context.Context, domain *domain.Domain) error {
-	if err := s.repo.Update(domain); err != nil {
-		return fmt.Errorf("failed to update domain: %w", err)
-	}
-	return nil
+	return s.repo.Update(domain)
 }
 
 // Delete deletes a domain
 func (s *DomainService) Delete(ctx context.Context, id int64) error {
-	if err := s.repo.Delete(id); err != nil {
-		return fmt.Errorf("failed to delete domain: %w", err)
+	return s.repo.Delete(id)
+}
+
+// GetDKIMConfig retrieves DKIM configuration for a domain
+func (s *DomainService) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
+	domain, err := s.repo.GetByName(domainName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get domain: %w", err)
 	}
-	return nil
+
+	return &domain.DKIMConfig{
+		Domain:     domain.Name,
+		Selector:   domain.DKIMSelector,
+		PrivateKey: []byte(domain.DKIMPrivateKey),
+		PublicKey:  domain.DKIMPublicKey,
+	}, nil
 }

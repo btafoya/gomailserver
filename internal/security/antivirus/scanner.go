@@ -1,25 +1,28 @@
 package antivirus
 
 import (
+	clamavPkg "github.com/btafoya/gomailserver/internal/clamav"
 	"github.com/btafoya/gomailserver/internal/domain"
 	"go.uber.org/zap"
 )
 
-// This is a placeholder for the actual service
-type placeholderDomainService struct{}
-
-func (s *placeholderDomainService) GetAntivirusConfig(domainName string) (*domain.AntivirusConfig, error) {
-	// In a real implementation, this would fetch the antivirus configuration
-	// for the given domain from the database.
-	return &domain.AntivirusConfig{
-		VirusAction: string(ActionQuarantine),
-	}, nil
+// AntivirusServiceInterface defines methods needed by antivirus components
+type AntivirusServiceInterface interface {
+	GetAntivirusConfig(domainName string) (*domain.AntivirusConfig, error)
 }
 
 type Scanner struct {
 	clamav        *ClamAV
-	domainService *placeholderDomainService
+	domainService AntivirusServiceInterface
 	logger        *zap.Logger
+}
+
+func NewAntivirusScanner(clamav *ClamAV, domainService AntivirusServiceInterface, logger *zap.Logger) *Scanner {
+	return &Scanner{
+		clamav:        clamav,
+		domainService: domainService,
+		logger:        logger,
+	}
 }
 
 type ScanAction string
@@ -30,18 +33,21 @@ const (
 	ActionTag        ScanAction = "tag"
 )
 
-func NewScanner(clamav *ClamAV, logger *zap.Logger) *Scanner {
-	return &Scanner{
-		clamav:        clamav,
-		domainService: &placeholderDomainService{},
-		logger:        logger,
+func (s *AntivirusScanner) ScanMessage(domainName string, message []byte) (*ScanResult, ScanAction, error) {
+	// Get antivirus configuration for the domain
+	config, err := s.domainService.GetAntivirusConfig(domainName)
+	if err != nil {
+		s.logger.Error("Failed to get antivirus config",
+			zap.String("domain", domainName),
+			zap.Error(err))
+		return nil, ActionTag, err // Fail open with tag
 	}
-}
 
-func (s *Scanner) ScanMessage(domainName string, message []byte) (*ScanResult, ScanAction, error) {
 	result, err := s.clamav.Scan(message)
 	if err != nil {
-		s.logger.Error("ClamAV scan failed", zap.Error(err))
+		s.logger.Error("ClamAV scan failed",
+			zap.String("domain", domainName),
+			zap.Error(err))
 		return nil, ActionTag, err // Fail open with tag
 	}
 
@@ -49,17 +55,6 @@ func (s *Scanner) ScanMessage(domainName string, message []byte) (*ScanResult, S
 		return result, "", nil
 	}
 
-	// Get domain configuration
-	cfg, _ := s.domainService.GetAntivirusConfig(domainName)
-	action := ScanAction(cfg.VirusAction)
-	if action == "" {
-		action = ActionQuarantine // Default
-	}
-
-	s.logger.Warn("Virus detected",
-		zap.String("virus", result.Virus),
-		zap.String("domain", domainName),
-		zap.String("action", string(action)))
-
-	return result, action, nil
+	// Apply action based on domain policy
+	return result, config.VirusAction, nil
 }

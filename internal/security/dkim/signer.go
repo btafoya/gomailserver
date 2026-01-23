@@ -12,11 +12,16 @@ import (
 	"github.com/btafoya/gomailserver/internal/domain"
 )
 
-// This is a placeholder for the actual service
-type placeholderDomainService struct{}
+// DKIMServiceInterface defines methods needed by DKIM components
+type DKIMServiceInterface interface {
+	GetDKIMConfig(domainName string) (*domain.DKIMConfig, error)
+}
 
-func (s *placeholderDomainService) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
-	// In a real implementation, this would fetch the DKIM configuration
+// This is a placeholder for the actual service
+type DKIMService struct{}
+
+func (s *DKIMService) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
+	// In a real implementation, this would fetch DKIM configuration
 	// for the given domain from the database.
 	// For now, we'll return a dummy config.
 	kp, err := GenerateRSAKeyPair(2048)
@@ -32,11 +37,15 @@ func (s *placeholderDomainService) GetDKIMConfig(domainName string) (*domain.DKI
 }
 
 type Signer struct {
-	domainService *placeholderDomainService
+	domainService DKIMServiceInterface
 }
 
 func NewSigner() *Signer {
-	return &Signer{domainService: &placeholderDomainService{}}
+	return &Signer{domainService: &DKIMService{}}
+}
+
+func NewSignerWithService(domainService DKIMServiceInterface) *Signer {
+	return &Signer{domainService: domainService}
 }
 
 func (s *Signer) Sign(domainName string, message []byte) ([]byte, error) {

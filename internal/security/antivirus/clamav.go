@@ -10,10 +10,15 @@ import (
 
 type ClamAV struct {
 	socketPath string
+	service    AntivirusServiceInterface
 }
 
 func NewClamAV(socketPath string) *ClamAV {
 	return &ClamAV{socketPath: socketPath}
+}
+
+func NewClamAVWithService(socketPath string, service AntivirusServiceInterface) *ClamAV {
+	return &ClamAV{socketPath: socketPath, service: service}
 }
 
 func (c *ClamAV) Scan(data []byte) (*ScanResult, error) {

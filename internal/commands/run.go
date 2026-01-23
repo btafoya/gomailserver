@@ -176,7 +176,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Create security services
 	// DKIM
-	dkimSigner := dkim.NewSigner()
+	dkimSigner := dkim.NewSignerWithService(domainSvc)
 	dkimVerifier := dkim.NewVerifier()
 
 	// SPF/DMARC
@@ -195,7 +195,8 @@ func run(cmd *cobra.Command, args []string) error {
 	bruteForce := bruteforce.NewProtection(loginAttemptRepo, ipBlacklistRepo)
 
 	// Antivirus (ClamAV)
-	clamav := antivirus.NewClamAV(cfg.Security.ClamAV.SocketPath)
+	antivirusSvc := domainSvc
+	clamav := antivirus.NewClamAVWithService(cfg.Security.ClamAV.SocketPath, antivirusSvc)
 
 	// Antispam (SpamAssassin)
 	spamAssassin := antispam.NewSpamAssassin(

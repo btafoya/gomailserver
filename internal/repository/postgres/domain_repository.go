@@ -170,23 +170,45 @@ func (r *domainRepository) Update(dom *domain.Domain) error {
 		WHERE id = $57
 	`
 
-	_, err := r.db.Exec(query,
-		dom.Name, dom.Status, dom.MaxUsers, dom.MaxMailboxSize, dom.DefaultQuota,
-		dom.CatchallEmail, dom.BackupMX,
-		dom.DKIMSelector, dom.DKIMPrivateKey, dom.DKIMPublicKey,
-		dom.DKIMSigningEnabled, dom.DKIMVerifyEnabled, dom.DKIMKeySize, dom.DKIMKeyType, dom.DKIMHeadersToSign,
-		dom.SPFRecord, dom.SPFEnabled, &dom.SPFDNSServer, &dom.SPFDNSTimeout, &dom.SPFMaxLookups, &dom.SPFFailAction, &dom.SPFSoftFailAction,
-		dom.DMARCPolicy, &dom.DMARCEnabled, &dom.DMARCDNSServer, &dom.DMARCDNSTimeout, &dom.DMARCReportEnabled, &dom.DMARCReportEmail,
-		&dom.ClamAVEnabled, &dom.ClamAVMaxScanSize, &dom.ClamAVVirusAction, &dom.ClamAVFailAction,
-		&dom.SpamEnabled, &dom.SpamRejectScore, &dom.SpamQuarantineScore, &dom.SpamLearningEnabled,
-		&dom.GreylistEnabled, &dom.GreylistDelayMinutes, &dom.GreylistExpiryDays, &dom.GreylistCleanupInterval, &dom.GreylistWhitelistAfter,
-		&dom.RateLimitEnabled, &dom.RateLimitSMTPPerIP, &dom.RateLimitSMTPPerUser, &dom.RateLimitSMTPPerDomain, &dom.RateLimitAuthPerIP, &dom.RateLimitIMAPPerUser, &dom.RateLimitCleanupInterval,
-		&dom.AuthTOTPEnforced, &dom.AuthBruteForceEnabled, &dom.AuthBruteForceThreshold, &dom.AuthBruteForceWindowMinutes, &dom.AuthBruteForceBlockMinutes, &dom.AuthIPBlacklistEnabled, &dom.AuthCleanupInterval,
-		time.Now(), dom.ID,
-	)
-
+// GetDKIMConfig retrieves DKIM configuration for a domain
+func (r *domainRepository) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
+	dom, err := r.GetByName(domainName)
 	if err != nil {
-		return fmt.Errorf("failed to update domain: %w", err)
+		return nil, fmt.Errorf("domain not found: %w", err)
+	}
+
+	return &domain.DKIMConfig{
+		Domain:     dom.Name,
+		Selector:   dom.DKIMSelector,
+		PrivateKey: []byte(dom.DKIMPrivateKey),
+		PublicKey:  dom.DKIMPublicKey,
+	}, nil
+}
+
+// Update updates an existing domain
+func (r *domainRepository) Update(dom *domain.Domain) error {
+	query := `
+		UPDATE domains SET
+			name = $1, status = $2, max_users = $3, max_mailbox_size = $4, default_quota = $5,
+			catchall_email = $6, backup_mx = $7,
+			dkim_selector = $8, dkim_private_key = $9, dkim_public_key = $10,
+			dkim_signing_enabled = $11, dkim_verify_enabled = $12, dkim_key_size = $13, dkim_key_type = $14, dkim_headers_to_sign = $15,
+			spf_record = $16, spf_enabled = $17, spf_dns_server = $18, spf_dns_timeout = $19, spf_max_lookups = $20, spf_fail_action = $21, spf_softfail_action = $22,
+			dmarc_policy = $23, dmarc_enabled = $24, dmarc_dns_server = $25, dmarc_dns_timeout = $26, dmarc_report_enabled = $27, dmarc_report_email = $28,
+			clamav_enabled = $29, clamav_max_scan_size = $30, clamav_virus_action = $31, clamav_fail_action = $32,
+			spam_enabled = $33, spam_reject_score = $34, spam_quarantine_score = $35, spam_learning_enabled = $36,
+			greylist_enabled = $37, greylist_delay_minutes = $38, greylist_expiry_days = $39, greylist_cleanup_interval = $40, greylist_whitelist_after = $41,
+			rate_limit_enabled = $42, rate_limit_smtp_per_ip = $43, rate_limit_smtp_per_user = $44, rate_limit_smtp_per_domain = $45, rate_limit_auth_per_ip = $46, rate_limit_imap_per_user = $47, rate_limit_cleanup_interval = $48,
+			auth_totp_enforced = $49, auth_brute_force_enabled = $50, auth_brute_force_threshold = $51, auth_brute_force_window_minutes = $52, auth_brute_force_block_minutes = $53, auth_ip_blacklist_enabled = $54, auth_cleanup_interval = $55,
+			created_at = $56, updated_at = $57
+		WHERE id = $1
+	`
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET %d", offset)
 	}
 
 	dom.UpdatedAt = time.Now()

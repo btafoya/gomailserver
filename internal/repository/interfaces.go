@@ -48,6 +48,11 @@ type DomainRepository interface {
 	List(offset, limit int) ([]*domain.Domain, error)
 }
 
+// DKIMRepository defines DKIM configuration access interface
+type DKIMRepository interface {
+	GetDKIMConfig(domainName string) (*domain.DKIMConfig, error)
+}
+
 // AliasRepository defines alias data access interface
 type AliasRepository interface {
 	Create(alias *domain.Alias) error
