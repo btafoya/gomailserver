@@ -10,6 +10,7 @@ import (
 	"github.com/btafoya/gomailserver/internal/config"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/spf13/cobra"
@@ -62,8 +63,12 @@ func createAdmin(cmd *cobra.Command, args []string) error {
 	domainRepo := sqlite.NewDomainRepository(db)
 
 	// Create services
-	userSvc := service.NewUserService(userRepo, domainRepo, logger)
-	domainSvc := service.NewDomainService(domainRepo)
+	repos := &repository.Repositories{
+		User:   userRepo,
+		Domain: domainRepo,
+	}
+	userSvc := service.NewUserService(repos, logger)
+	domainSvc := service.NewDomainService(repos, logger)
 
 	// Initialize default domain template
 	if err := domainSvc.EnsureDefaultTemplate(); err != nil {

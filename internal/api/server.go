@@ -57,8 +57,12 @@ func NewServer(
 	logger *zap.Logger,
 ) *Server {
 	// Create services
-	domainService := service.NewDomainService(domainRepo)
-	userService := service.NewUserService(userRepo, domainRepo, logger)
+	repos := &repository.Repositories{
+		Domain: domainRepo,
+		User:   userRepo,
+	}
+	domainService := service.NewDomainService(repos, logger)
+	userService := service.NewUserService(repos, logger)
 	aliasService := service.NewAliasService(aliasRepo)
 	mailboxService := service.NewMailboxService(mailboxRepo, logger)
 	messageService := service.NewMessageService(messageRepo, "./data/mail", logger)

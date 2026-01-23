@@ -77,9 +77,9 @@ func (c *DKIMConfigAudit) Run(ctx context.Context, cfg *types.ServerConfig) (*ty
 		return result, nil
 	}
 
-	rsaKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	_, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		rsaKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		_, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
 			result.Status = types.StatusFail
 			result.Message = "DKIM key is not valid RSA or Ed25519 private key"

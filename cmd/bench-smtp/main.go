@@ -4,9 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"net/smtp"
-	"net/textproto"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -80,7 +78,7 @@ func main() {
 				}
 			} else {
 				atomic.AddInt64(&successCount, 1)
-				atomic.AddInt64(&totalSize, int64(len(*body)))
+				atomic.AddInt64(&totalBytes, int64(len(*body)))
 			}
 
 			progress := atomic.LoadInt64(&successCount)
@@ -99,7 +97,7 @@ func main() {
 	duration := time.Since(startTime)
 
 	throughput := float64(atomic.LoadInt64(&successCount)) / duration.Seconds()
-	avgSize := float64(atomic.LoadInt64(&totalSize)) / float64(atomic.LoadInt64(&successCount))
+	avgSize := float64(atomic.LoadInt64(&totalBytes)) / float64(atomic.LoadInt64(&successCount))
 
 	logger.Info("SMTP benchmark completed",
 		zap.Duration("duration", duration),

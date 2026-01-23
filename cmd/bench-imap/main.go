@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
-	"net/mail"
+	"net"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -22,6 +23,14 @@ var (
 	concurrency = flag.Int("concurrency", 5, "Number of concurrent connections")
 	mailbox     = flag.String("mailbox", "INBOX", "Mailbox to test")
 	verbose     = flag.Bool("verbose", false, "Verbose output")
+)
+
+// Package-level counters for atomic operations across goroutines
+var (
+	successCount int64
+	failCount    int64
+	totalBytes   int64
+	opCount      int64
 )
 
 func main() {
@@ -50,11 +59,6 @@ func main() {
 	defer cancel()
 
 	startTime := time.Now()
-
-	var successCount int64
-	var failCount int64
-	var totalBytes int64
-	var opCount int64
 
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, *concurrency)
@@ -130,7 +134,7 @@ func processMessage(ctx context.Context, logger *zap.Logger, number int) error {
 	}
 	defer client.Close()
 
-	reader := client.Text()
+	reader := bufio.NewReader(client)
 
 	// Read greeting
 	_, err = reader.ReadString('\n')
@@ -177,7 +181,7 @@ func processMessage(ctx context.Context, logger *zap.Logger, number int) error {
 		return fmt.Errorf("failed to read search response: %w", err)
 	}
 
-	atomic.AddInt64(&totalSize, int64(len(searchResponse)))
+	atomic.AddInt64(&totalBytes, int64(len(searchResponse)))
 
 	// Fetch message (UID of first result)
 	lines := strings.Split(searchResponse, "\n")

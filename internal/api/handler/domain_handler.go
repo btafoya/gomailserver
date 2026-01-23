@@ -20,9 +20,10 @@ type DomainHandler struct {
 
 // NewDomainHandler creates a new domain handler
 func NewDomainHandler(domainRepo repository.DomainRepository, logger *zap.Logger) *DomainHandler {
+	repos := &repository.Repositories{Domain: domainRepo}
 	return &DomainHandler{
 		domainRepo:    domainRepo,
-		domainService: service.NewDomainService(domainRepo),
+		domainService: service.NewDomainService(repos, logger),
 		logger:        logger,
 	}
 }
@@ -70,9 +71,9 @@ func (h *DomainHandler) GetDomain(w http.ResponseWriter, r *http.Request) {
 // POST /api/domains
 func (h *DomainHandler) CreateDomain(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name              string `json:"name"`
-		UseDefaultTemplate bool   `json:"use_default_template"`
-		Domain            *domain.Domain `json:"domain,omitempty"`
+		Name               string         `json:"name"`
+		UseDefaultTemplate bool           `json:"use_default_template"`
+		Domain             *domain.Domain `json:"domain,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -235,58 +236,58 @@ func (h *DomainHandler) GetDomainSecurity(w http.ResponseWriter, r *http.Request
 	security := map[string]interface{}{
 		"domain": name,
 		"dkim": map[string]interface{}{
-			"signing_enabled":   dom.DKIMSigningEnabled,
-			"verify_enabled":    dom.DKIMVerifyEnabled,
-			"key_size":          dom.DKIMKeySize,
-			"key_type":          dom.DKIMKeyType,
-			"headers_to_sign":   dom.DKIMHeadersToSign,
-			"selector":          dom.DKIMSelector,
-			"public_key":        dom.DKIMPublicKey,
+			"signing_enabled": dom.DKIMSigningEnabled,
+			"verify_enabled":  dom.DKIMVerifyEnabled,
+			"key_size":        dom.DKIMKeySize,
+			"key_type":        dom.DKIMKeyType,
+			"headers_to_sign": dom.DKIMHeadersToSign,
+			"selector":        dom.DKIMSelector,
+			"public_key":      dom.DKIMPublicKey,
 		},
 		"spf": map[string]interface{}{
-			"enabled":           dom.SPFEnabled,
-			"dns_server":        dom.SPFDNSServer,
-			"dns_timeout":       dom.SPFDNSTimeout,
-			"max_lookups":       dom.SPFMaxLookups,
-			"fail_action":       dom.SPFFailAction,
-			"softfail_action":   dom.SPFSoftFailAction,
-			"record":            dom.SPFRecord,
+			"enabled":         dom.SPFEnabled,
+			"dns_server":      dom.SPFDNSServer,
+			"dns_timeout":     dom.SPFDNSTimeout,
+			"max_lookups":     dom.SPFMaxLookups,
+			"fail_action":     dom.SPFFailAction,
+			"softfail_action": dom.SPFSoftFailAction,
+			"record":          dom.SPFRecord,
 		},
 		"dmarc": map[string]interface{}{
-			"enabled":           dom.DMARCEnabled,
-			"dns_server":        dom.DMARCDNSServer,
-			"dns_timeout":       dom.DMARCDNSTimeout,
-			"report_enabled":    dom.DMARCReportEnabled,
-			"report_email":      dom.DMARCReportEmail,
-			"policy":            dom.DMARCPolicy,
+			"enabled":        dom.DMARCEnabled,
+			"dns_server":     dom.DMARCDNSServer,
+			"dns_timeout":    dom.DMARCDNSTimeout,
+			"report_enabled": dom.DMARCReportEnabled,
+			"report_email":   dom.DMARCReportEmail,
+			"policy":         dom.DMARCPolicy,
 		},
 		"clamav": map[string]interface{}{
-			"enabled":           dom.ClamAVEnabled,
-			"max_scan_size":     dom.ClamAVMaxScanSize,
-			"virus_action":      dom.ClamAVVirusAction,
-			"fail_action":       dom.ClamAVFailAction,
+			"enabled":       dom.ClamAVEnabled,
+			"max_scan_size": dom.ClamAVMaxScanSize,
+			"virus_action":  dom.ClamAVVirusAction,
+			"fail_action":   dom.ClamAVFailAction,
 		},
 		"spam": map[string]interface{}{
-			"enabled":           dom.SpamEnabled,
-			"reject_score":      dom.SpamRejectScore,
-			"quarantine_score":  dom.SpamQuarantineScore,
-			"learning_enabled":  dom.SpamLearningEnabled,
+			"enabled":          dom.SpamEnabled,
+			"reject_score":     dom.SpamRejectScore,
+			"quarantine_score": dom.SpamQuarantineScore,
+			"learning_enabled": dom.SpamLearningEnabled,
 		},
 		"greylist": map[string]interface{}{
-			"enabled":           dom.GreylistEnabled,
-			"delay_minutes":     dom.GreylistDelayMinutes,
-			"expiry_days":       dom.GreylistExpiryDays,
-			"cleanup_interval":  dom.GreylistCleanupInterval,
-			"whitelist_after":   dom.GreylistWhitelistAfter,
+			"enabled":          dom.GreylistEnabled,
+			"delay_minutes":    dom.GreylistDelayMinutes,
+			"expiry_days":      dom.GreylistExpiryDays,
+			"cleanup_interval": dom.GreylistCleanupInterval,
+			"whitelist_after":  dom.GreylistWhitelistAfter,
 		},
 		"rate_limit": map[string]interface{}{
-			"enabled":           dom.RateLimitEnabled,
-			"smtp_per_ip":       dom.RateLimitSMTPPerIP,
-			"smtp_per_user":     dom.RateLimitSMTPPerUser,
-			"smtp_per_domain":   dom.RateLimitSMTPPerDomain,
-			"auth_per_ip":       dom.RateLimitAuthPerIP,
-			"imap_per_user":     dom.RateLimitIMAPPerUser,
-			"cleanup_interval":  dom.RateLimitCleanupInterval,
+			"enabled":          dom.RateLimitEnabled,
+			"smtp_per_ip":      dom.RateLimitSMTPPerIP,
+			"smtp_per_user":    dom.RateLimitSMTPPerUser,
+			"smtp_per_domain":  dom.RateLimitSMTPPerDomain,
+			"auth_per_ip":      dom.RateLimitAuthPerIP,
+			"imap_per_user":    dom.RateLimitIMAPPerUser,
+			"cleanup_interval": dom.RateLimitCleanupInterval,
 		},
 		"auth": map[string]interface{}{
 			"totp_enforced":              dom.AuthTOTPEnforced,

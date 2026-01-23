@@ -135,7 +135,8 @@ func (s *SetupService) CreateAdminUser(ctx context.Context, req *AdminUserReques
 		domainID = existingDomain.ID
 	} else {
 		// Create domain from template to ensure all security settings are initialized
-		domainSvc := NewDomainService(s.domainRepo)
+		repos := &repository.Repositories{Domain: s.domainRepo}
+		domainSvc := NewDomainService(repos, s.logger)
 		newDomain, err := domainSvc.CreateDomainFromTemplate(domainName)
 		if err != nil {
 			return fmt.Errorf("failed to create domain: %w", err)

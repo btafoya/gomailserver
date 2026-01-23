@@ -29,15 +29,14 @@ type UserService struct {
 // NewUserService creates a new user service
 func NewUserService(repos *repository.Repositories, logger *zap.Logger) *UserService {
 	return &UserService{
-		repos:      repos,
-		logger:     logger,
+		repos:  repos,
+		logger: logger,
 	}
-}
 }
 
 // Authenticate verifies user credentials
 func (s *UserService) Authenticate(email, password string) (*domain.User, error) {
-	user, err := s.repo.GetByEmail(email)
+	user, err := s.repos.User.GetByEmail(email)
 	if err != nil {
 		s.logger.Debug("authentication failed - user not found",
 			zap.String("email", email),
@@ -64,7 +63,7 @@ func (s *UserService) Authenticate(email, password string) (*domain.User, error)
 	// Update last login
 	now := time.Now()
 	user.LastLogin = &now
-	if err := s.repo.UpdateLastLogin(user.ID); err != nil {
+	if err := s.repos.User.UpdateLastLogin(user.ID); err != nil {
 		s.logger.Error("failed to update last login",
 			zap.Error(err),
 			zap.Int64("user_id", user.ID),
@@ -101,7 +100,7 @@ func (s *UserService) Create(user *domain.User, password string) error {
 	}
 	user.PasswordHash = hash
 
-	if err := s.repo.Create(user); err != nil {
+	if err := s.repos.User.Create(user); err != nil {
 		s.logger.Error("failed to create user",
 			zap.Error(err),
 			zap.String("email", user.Email),
@@ -119,32 +118,32 @@ func (s *UserService) Create(user *domain.User, password string) error {
 
 // GetByID retrieves a user by ID (implements UserServiceInterface)
 func (s *UserService) GetByID(id int64) (*domain.User, error) {
-	return s.repo.GetByID(id)
+	return s.repos.User.GetByID(id)
 }
 
 // GetByEmail retrieves a user by email (implements UserServiceInterface)
 func (s *UserService) GetByEmail(email string) (*domain.User, error) {
-	return s.repo.GetByEmail(email)
+	return s.repos.User.GetByEmail(email)
 }
 
 // ListAll retrieves all users
-func (s *UserService) ListAll(ctx context.Context) ([]*domain.User, error) {
-	return s.repo.ListAll()
+func (s *UserService) ListAll() ([]*domain.User, error) {
+	return s.repos.User.ListAll()
 }
 
 // CreateWithPassword creates a new user with a hashed password (for API handlers)
-func (s *UserService) CreateWithPassword(ctx context.Context, user *domain.User, password string) error {
+func (s *UserService) CreateWithPassword(user *domain.User, password string) error {
 	return s.Create(user, password)
 }
 
 // Update updates a user (implements UserServiceInterface)
 func (s *UserService) Update(user *domain.User) error {
-	return s.repo.Update(user)
+	return s.repos.User.Update(user)
 }
 
 // Delete deletes a user (implements UserServiceInterface)
 func (s *UserService) Delete(id int64) error {
-	return s.repo.Delete(id)
+	return s.repos.User.Delete(id)
 }
 
 // UpdatePassword updates a user's password (implements UserServiceInterface)
@@ -154,7 +153,7 @@ func (s *UserService) UpdatePassword(userID int64, newPassword string) error {
 		return err
 	}
 
-	if err := s.repo.UpdatePassword(userID, hash); err != nil {
+	if err := s.repos.User.UpdatePassword(userID, hash); err != nil {
 		s.logger.Error("failed to update password",
 			zap.Error(err),
 			zap.Int64("user_id", userID),
@@ -171,5 +170,5 @@ func (s *UserService) UpdatePassword(userID int64, newPassword string) error {
 
 // GetDomainByID retrieves a domain by ID (helper for user operations that need domain info)
 func (s *UserService) GetDomainByID(ctx context.Context, domainID int64) (*domain.Domain, error) {
-	return s.domainRepo.GetByID(domainID)
+	return s.repos.Domain.GetByID(domainID)
 }

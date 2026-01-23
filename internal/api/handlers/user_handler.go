@@ -28,17 +28,17 @@ func NewUserHandler(service *service.UserService, logger *zap.Logger) *UserHandl
 
 // UserRequest represents a user creation/update request
 type UserRequest struct {
-	Email           string `json:"email"`
-	Password        string `json:"password,omitempty"`
-	FullName        string `json:"full_name"`
-	DisplayName     string `json:"display_name,omitempty"`
-	DomainID        int64  `json:"domain_id"`
-	Quota           int64  `json:"quota,omitempty"`
-	Status          string `json:"status,omitempty"`
-	ForwardTo        string `json:"forward_to,omitempty"`
-	AutoReplyEnabled bool   `json:"auto_reply_enabled"`
-	AutoReplySubject string `json:"auto_reply_subject,omitempty"`
-	AutoReplyBody    string `json:"auto_reply_body,omitempty"`
+	Email            string  `json:"email"`
+	Password         string  `json:"password,omitempty"`
+	FullName         string  `json:"full_name"`
+	DisplayName      string  `json:"display_name,omitempty"`
+	DomainID         int64   `json:"domain_id"`
+	Quota            int64   `json:"quota,omitempty"`
+	Status           string  `json:"status,omitempty"`
+	ForwardTo        string  `json:"forward_to,omitempty"`
+	AutoReplyEnabled bool    `json:"auto_reply_enabled"`
+	AutoReplySubject string  `json:"auto_reply_subject,omitempty"`
+	AutoReplyBody    string  `json:"auto_reply_body,omitempty"`
 	SpamThreshold    float64 `json:"spam_threshold,omitempty"`
 }
 
@@ -72,7 +72,7 @@ type PasswordResetRequest struct {
 func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 	// TODO: Add pagination support with query parameters
 	// For now, retrieve all users
-	users, err := h.service.ListAll(r.Context())
+	users, err := h.service.ListAll()
 	if err != nil {
 		h.logger.Error("Failed to list users", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve users")
@@ -112,7 +112,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Convert request to user model
 	newUser := &domain.User{
-		Email:           req.Email,
+		Email:            req.Email,
 		FullName:         req.FullName,
 		DisplayName:      req.DisplayName,
 		DomainID:         req.DomainID,
@@ -134,7 +134,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user (password will be hashed by service)
-	err := h.service.CreateWithPassword(r.Context(), newUser, req.Password)
+	err := h.service.CreateWithPassword(newUser, req.Password)
 	if err != nil {
 		h.logger.Error("Failed to create user",
 			zap.String("email", req.Email),

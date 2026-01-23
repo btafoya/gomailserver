@@ -57,7 +57,7 @@ func (c *SMTPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	_, err := conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read SMTP response: %v", err)
 		result.Details["error"] = err.Error()
@@ -147,7 +147,7 @@ func (c *SMTPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	}
 
 	data := make([]byte, 1024)
-	_, err := conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read HELO response: %v", err)
 		result.Details["error"] = err.Error()
@@ -254,7 +254,7 @@ func (c *IMAPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	_, err := conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read IMAP greeting: %v", err)
 		result.Details["error"] = err.Error()
@@ -335,7 +335,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	defer conn.Close()
 
 	data := make([]byte, 1024)
-	_, err := conn.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read IMAP greeting: %v", err)
 		result.Details["error"] = err.Error()
@@ -480,7 +480,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	}
 
 	data := make([]byte, 1024)
-	_, err := smtpConn.Read(data)
+	_, err = smtpConn.Read(data)
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to read HELO response: %v", err)
 		result.Details["smtp_error"] = err.Error()
@@ -711,7 +711,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 		return result, nil
 	}
 
-	response := string(data)
+	response = string(data)
 	if !strings.Contains(response, "SEARCH") && !strings.Contains(response, "OK") {
 		result.Message = "Test message not found in INBOX"
 		result.Details["search_response"] = response

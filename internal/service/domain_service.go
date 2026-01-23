@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
 )
@@ -12,7 +14,8 @@ const DefaultTemplateDomainName = "_default"
 
 // DomainService handles domain business logic including default templates
 type DomainService struct {
-	repo repository.DomainRepository
+	repo   repository.DomainRepository
+	logger *zap.Logger
 }
 
 // NewDomainService creates a new domain service

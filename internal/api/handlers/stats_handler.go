@@ -39,21 +39,21 @@ func NewStatsHandler(
 
 // DashboardStats represents dashboard statistics
 type DashboardStats struct {
-	TotalDomains       int64              `json:"total_domains"`
-	ActiveDomains      int64              `json:"active_domains"`
-	TotalUsers         int64              `json:"total_users"`
-	ActiveUsers        int64              `json:"active_users"`
-	QueuedMessages     int64              `json:"queued_messages"`
-	FailedMessages     int64              `json:"failed_messages"`
-	TotalStorageUsed   int64              `json:"total_storage_used"`
-	TotalStorageQuota  int64              `json:"total_storage_quota"`
-	MessagesToday      int64              `json:"messages_today"`
-	MessagesThisWeek   int64              `json:"messages_this_week"`
-	MessagesThisMonth  int64              `json:"messages_this_month"`
-	RecentActivity     []ActivityItem     `json:"recent_activity"`
-	TopDomainsByUsers  []DomainStat       `json:"top_domains_by_users"`
-	TopDomainsByUsage  []DomainStat       `json:"top_domains_by_usage"`
-	SystemHealth       SystemHealthStatus `json:"system_health"`
+	TotalDomains      int64              `json:"total_domains"`
+	ActiveDomains     int64              `json:"active_domains"`
+	TotalUsers        int64              `json:"total_users"`
+	ActiveUsers       int64              `json:"active_users"`
+	QueuedMessages    int64              `json:"queued_messages"`
+	FailedMessages    int64              `json:"failed_messages"`
+	TotalStorageUsed  int64              `json:"total_storage_used"`
+	TotalStorageQuota int64              `json:"total_storage_quota"`
+	MessagesToday     int64              `json:"messages_today"`
+	MessagesThisWeek  int64              `json:"messages_this_week"`
+	MessagesThisMonth int64              `json:"messages_this_month"`
+	RecentActivity    []ActivityItem     `json:"recent_activity"`
+	TopDomainsByUsers []DomainStat       `json:"top_domains_by_users"`
+	TopDomainsByUsage []DomainStat       `json:"top_domains_by_usage"`
+	SystemHealth      SystemHealthStatus `json:"system_health"`
 }
 
 // ActivityItem represents a recent activity entry
@@ -76,60 +76,60 @@ type DomainStat struct {
 
 // SystemHealthStatus represents system health indicators
 type SystemHealthStatus struct {
-	Status           string  `json:"status"` // "healthy", "degraded", "critical"
-	DatabaseStatus   string  `json:"database_status"`
-	SMTPStatus       string  `json:"smtp_status"`
-	IMAPStatus       string  `json:"imap_status"`
-	QueueDepth       int64   `json:"queue_depth"`
-	QueueHealthy     bool    `json:"queue_healthy"`
-	DiskUsage        float64 `json:"disk_usage_percent"`
-	MemoryUsage      float64 `json:"memory_usage_percent"`
-	CPUUsage         float64 `json:"cpu_usage_percent"`
-	UptimeSeconds    int64   `json:"uptime_seconds"`
+	Status         string  `json:"status"` // "healthy", "degraded", "critical"
+	DatabaseStatus string  `json:"database_status"`
+	SMTPStatus     string  `json:"smtp_status"`
+	IMAPStatus     string  `json:"imap_status"`
+	QueueDepth     int64   `json:"queue_depth"`
+	QueueHealthy   bool    `json:"queue_healthy"`
+	DiskUsage      float64 `json:"disk_usage_percent"`
+	MemoryUsage    float64 `json:"memory_usage_percent"`
+	CPUUsage       float64 `json:"cpu_usage_percent"`
+	UptimeSeconds  int64   `json:"uptime_seconds"`
 }
 
 // DomainStats represents statistics for a specific domain
 type DomainStats struct {
-	DomainID          int64  `json:"domain_id"`
-	DomainName        string `json:"domain_name"`
-	Status            string `json:"status"`
-	TotalUsers        int64  `json:"total_users"`
-	ActiveUsers       int64  `json:"active_users"`
-	DisabledUsers     int64  `json:"disabled_users"`
-	TotalStorageUsed  int64  `json:"total_storage_used"`
-	TotalStorageQuota int64  `json:"total_storage_quota"`
-	TotalAliases      int64  `json:"total_aliases"`
-	MessagesToday     int64  `json:"messages_today"`
-	MessagesThisWeek  int64  `json:"messages_this_week"`
-	MessagesThisMonth int64  `json:"messages_this_month"`
+	DomainID          int64      `json:"domain_id"`
+	DomainName        string     `json:"domain_name"`
+	Status            string     `json:"status"`
+	TotalUsers        int64      `json:"total_users"`
+	ActiveUsers       int64      `json:"active_users"`
+	DisabledUsers     int64      `json:"disabled_users"`
+	TotalStorageUsed  int64      `json:"total_storage_used"`
+	TotalStorageQuota int64      `json:"total_storage_quota"`
+	TotalAliases      int64      `json:"total_aliases"`
+	MessagesToday     int64      `json:"messages_today"`
+	MessagesThisWeek  int64      `json:"messages_this_week"`
+	MessagesThisMonth int64      `json:"messages_this_month"`
 	TopUsers          []UserStat `json:"top_users"`
 }
 
 // UserStat represents user statistics
 type UserStat struct {
-	UserID       int64  `json:"user_id"`
-	Email        string `json:"email"`
-	StorageUsed  int64  `json:"storage_used"`
-	MessageCount int64  `json:"message_count"`
+	UserID       int64   `json:"user_id"`
+	Email        string  `json:"email"`
+	StorageUsed  int64   `json:"storage_used"`
+	MessageCount int64   `json:"message_count"`
 	QuotaPercent float64 `json:"quota_percent"`
 }
 
 // UserStats represents statistics for a specific user
 type UserStats struct {
-	UserID            int64  `json:"user_id"`
-	Email             string `json:"email"`
-	DomainID          int64  `json:"domain_id"`
-	DomainName        string `json:"domain_name"`
-	Status            string `json:"status"`
-	StorageUsed       int64  `json:"storage_used"`
-	StorageQuota      int64  `json:"storage_quota"`
+	UserID            int64   `json:"user_id"`
+	Email             string  `json:"email"`
+	DomainID          int64   `json:"domain_id"`
+	DomainName        string  `json:"domain_name"`
+	Status            string  `json:"status"`
+	StorageUsed       int64   `json:"storage_used"`
+	StorageQuota      int64   `json:"storage_quota"`
 	QuotaPercent      float64 `json:"quota_percent"`
-	TotalMessages     int64  `json:"total_messages"`
-	MessagesToday     int64  `json:"messages_today"`
-	MessagesThisWeek  int64  `json:"messages_this_week"`
-	MessagesThisMonth int64  `json:"messages_this_month"`
-	LastLogin         string `json:"last_login,omitempty"`
-	CreatedAt         string `json:"created_at"`
+	TotalMessages     int64   `json:"total_messages"`
+	MessagesToday     int64   `json:"messages_today"`
+	MessagesThisWeek  int64   `json:"messages_this_week"`
+	MessagesThisMonth int64   `json:"messages_this_month"`
+	LastLogin         string  `json:"last_login,omitempty"`
+	CreatedAt         string  `json:"created_at"`
 }
 
 // Dashboard retrieves dashboard statistics
@@ -153,7 +153,7 @@ func (h *StatsHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all users
-	users, err := h.userService.ListAll(ctx)
+	users, err := h.userService.ListAll()
 	if err != nil {
 		h.logger.Error("Failed to list users for dashboard", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve dashboard statistics")
@@ -241,7 +241,7 @@ func (h *StatsHandler) Domain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all users and filter by domain
-	allUsers, err := h.userService.ListAll(ctx)
+	allUsers, err := h.userService.ListAll()
 	if err != nil {
 		h.logger.Error("Failed to list users for domain stats", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve domain statistics")

@@ -20,6 +20,7 @@ import (
 	contactsvc "github.com/btafoya/gomailserver/internal/contact/service"
 	"github.com/btafoya/gomailserver/internal/database"
 	"github.com/btafoya/gomailserver/internal/imap"
+	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/repository/sqlite"
 	"github.com/btafoya/gomailserver/internal/reputation"
 	repService "github.com/btafoya/gomailserver/internal/reputation/service"
@@ -131,11 +132,18 @@ func run(cmd *cobra.Command, args []string) error {
 	logger.Debug("repositories initialized")
 
 	// Create services
-	userSvc := service.NewUserService(userRepo, domainRepo, logger)
+	repos := &repository.Repositories{
+		User:    userRepo,
+		Domain:  domainRepo,
+		Mailbox: mailboxRepo,
+		Message: messageRepo,
+		Queue:   queueRepo,
+	}
+	userSvc := service.NewUserService(repos, logger)
 	mailboxSvc := service.NewMailboxService(mailboxRepo, logger)
 	messageSvc := service.NewMessageService(messageRepo, "./data/mail", logger)
 	queueSvc := service.NewQueueService(queueRepo, reputationDB.TelemetryService, logger)
-	domainSvc := service.NewDomainService(domainRepo)
+	domainSvc := service.NewDomainService(repos, logger)
 
 	// Wire up cross-service dependencies for webmail
 	messageSvc.SetQueueService(queueSvc)

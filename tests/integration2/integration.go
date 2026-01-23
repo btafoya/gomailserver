@@ -7,13 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emersion/go-smtp/v2"
-	"github.com/emersion/go-imap/client"
-)
-
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
 	"github.com/btafoya/gomailserver/internal/service"
+	"github.com/emersion/go-imap/client"
 )
 
 func TestSMTPReceive(t *testing.T) {
@@ -100,17 +97,17 @@ func TestQueueProcessing(t *testing.T) {
 	t.Log("Queue service initialized")
 
 	testMessage := &domain.QueueItem{
-		ID:        1,
-		UserID:     1001,
-		From:       "test@example.com",
-		To:         []string{"test@localhost"},
-		Subject:    "Queue Test Message",
-		Message:    []byte("Queue test message"),
+		ID:          1,
+		UserID:      1001,
+		From:        "test@example.com",
+		To:          []string{"test@localhost"},
+		Subject:     "Queue Test Message",
+		Message:     []byte("Queue test message"),
 		Status:      "pending",
-		CreatedAt:    time.Now(),
+		CreatedAt:   time.Now(),
 		NextRetryAt: nil,
-		RetryCount:   0,
-			LastError:  nil,
+		RetryCount:  0,
+		LastError:   nil,
 	}
 
 	t.Log("Creating test queue item")
@@ -134,9 +131,6 @@ func TestQueueProcessing(t *testing.T) {
 	t.Logf("Enqueued message status: %s", item.Status)
 
 	t.Logf("Enqueued message message size: %d bytes", len(item.Message))
-}
-
-	t.Cleanup(context.Background())
 
 	t.Log("Queue processing test completed")
 }
@@ -170,14 +164,15 @@ func TestIMAPDelivery(t *testing.T) {
 
 	seq, _ := mbox.Unseq()
 	if err != nil {
-		t	t.Fatalf("Failed to get unsorted sequence for INBOX: %v", err)
+		t.Fatalf("Failed to get unsorted sequence for INBOX: %v", err)
 	}
 
 	// Search for test message
 	searchClient := imap.NewSearchClient("", true) // empty body for full search
- criteria := imap.NewSearchCriteria().
-	criteria.WithCharset("utf-8").WithBodyFields(false).
-		criteria.WithSearchAll().
+	criteria := imap.NewSearchCriteria().
+		WithCharset("utf-8").
+		WithBodyFields(false).
+		WithSearchAll()
 
 	messages, err := searchClient.Criteria(criteria).Search("")
 	if err != nil {
@@ -226,14 +221,14 @@ func NewSQLiteQueueRepository(path string) repository.QueueRepository {
 
 func (r *mockSQLiteQueueRepository) Enqueue(from string, to []string, message []byte) (string, error) {
 	item := &domain.QueueItem{
-			From:        from,
-			To:          to,
-		Message:      message,
-		Status:       "pending",
-		CreatedAt:     time.Now(),
-		NextRetryAt:   nil,
-		RetryCount:   0,
-		}
+		From:        from,
+		To:          to,
+		Message:     message,
+		Status:      "pending",
+		CreatedAt:   time.Now(),
+		NextRetryAt: nil,
+		RetryCount:  0,
+	}
 
 	id := int64(time.Now().Unix())
 	r.items = append(r.items, item)

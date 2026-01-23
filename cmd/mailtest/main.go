@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -193,4 +195,39 @@ func (cmd *mailtestCmd) printUsage() {
 	fmt.Println("  gomailserver test basic")
 	fmt.Println("  gomailserver test --smtp-addr mail.example.com:587 --verbose")
 	fmt.Println("  gomailserver test basic --from sender@example.com --to recipient@example.com")
+}
+
+func main() {
+	cmd := newMailtestCmd()
+
+	// Define flags
+	flag.StringVar(&cmd.smtpAddr, "smtp-addr", cmd.smtpAddr, "SMTP server address")
+	flag.StringVar(&cmd.imapAddr, "imap-addr", cmd.imapAddr, "IMAP server address")
+	flag.StringVar(&cmd.httpAddr, "http-addr", cmd.httpAddr, "HTTP API address")
+	flag.StringVar(&cmd.username, "username", cmd.username, "Authentication username")
+	flag.StringVar(&cmd.password, "password", cmd.password, "Authentication password")
+	flag.StringVar(&cmd.fromAddr, "from", cmd.fromAddr, "From email address")
+	flag.StringVar(&cmd.toAddr, "to", cmd.toAddr, "To email address")
+	flag.StringVar(&cmd.subject, "subject", cmd.subject, "Email subject")
+	flag.StringVar(&cmd.body, "body", cmd.body, "Email body")
+	flag.StringVar(&cmd.outputDir, "output-dir", cmd.outputDir, "Output directory for reports")
+	flag.BoolVar(&cmd.htmlReport, "html-report", cmd.htmlReport, "Generate HTML report")
+	flag.BoolVar(&cmd.jsonReport, "json-report", cmd.jsonReport, "Generate JSON report")
+	flag.BoolVar(&cmd.verbose, "verbose", cmd.verbose, "Verbose output")
+	flag.BoolVar(&cmd.verbose, "v", cmd.verbose, "Verbose output (shorthand)")
+	flag.BoolVar(&cmd.debug, "debug", cmd.debug, "Debug output")
+
+	help := flag.Bool("help", false, "Show help")
+	helpShort := flag.Bool("h", false, "Show help (shorthand)")
+
+	flag.Parse()
+
+	if *help || *helpShort {
+		cmd.printUsage()
+		os.Exit(0)
+	}
+
+	if err := cmd.run(flag.Args()); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
