@@ -1,84 +1,146 @@
+import { useApiBase } from '../useApiBase'
+
+export const getAuthToken = () => {
+  return typeof window !== 'undefined' ? localStorage.getItem('token') : null
+}
+
+export const getAuthHeaders = () => {
+  const token = getAuthToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  }
+}
+
+export interface Mailbox {
+  id: number
+  name: string
+  email: string
+  domain_id: number
+  quota: number
+  used: number
+  message_count: number
+  status: string
+  auto_reply_enabled?: boolean
+  auto_reply_message?: string
+  forwarding_enabled?: boolean
+  forwarding_address?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MailboxCreateRequest {
+  name: string
+  email: string
+  domain_id: number
+  quota?: number
+  auto_reply_enabled?: boolean
+  auto_reply_message?: string
+  forwarding_enabled?: boolean
+  forwarding_address?: string
+}
+
 export const useMailboxApi = () => {
-  const { $fetch } = useNuxtApp()
-  const config = useRuntimeConfig()
+  const API_BASE = useApiBase()
 
-  const baseApiUrl = config.public.apiBaseUrl || '/api/v1'
-
-  const getMailboxes = async (domainId?: string) => {
+  const getMailboxes = async (domainId?: number): Promise<Mailbox[]> => {
     const url = domainId 
-      ? `${baseApiUrl}/domains/${domainId}/mailboxes`
-      : `${baseApiUrl}/mailboxes`
+      ? `${API_BASE}/domains/${domainId}/mailboxes`
+      : `${API_BASE}/mailboxes`
     
-    const response = await $fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
     })
-    return response
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch mailboxes')
+    }
+
+    const data = await response.json()
+    return data.data || []
   }
 
-  const getMailbox = async (id: string) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+  const getMailbox = async (id: number): Promise<Mailbox> => {
+    const response = await fetch(`${API_BASE}/mailboxes/${id}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
     })
-    return response
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch mailbox')
+    }
+
+    const data = await response.json()
+    return data.data
   }
 
-  const createMailbox = async (data: any) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes`, {
+  const createMailbox = async (mailbox: MailboxCreateRequest): Promise<Mailbox> => {
+    const response = await fetch(`${API_BASE}/mailboxes`, {
       method: 'POST',
-      body: data,
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders(),
+      body: JSON.stringify(mailbox)
     })
-    return response
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to create mailbox')
+    }
+
+    const data = await response.json()
+    return data.data
   }
 
-  const updateMailbox = async (id: string, data: any) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes/${id}`, {
+  const updateMailbox = async (id: number, mailbox: Partial<MailboxCreateRequest>): Promise<Mailbox> => {
+    const response = await fetch(`${API_BASE}/mailboxes/${id}`, {
       method: 'PUT',
-      body: data,
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders(),
+      body: JSON.stringify(mailbox)
     })
-    return response
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to update mailbox')
+    }
+
+    const data = await response.json()
+    return data.data
   }
 
-  const deleteMailbox = async (id: string) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes/${id}`, {
+  const deleteMailbox = async (id: number): Promise<void> => {
+    const response = await fetch(`${API_BASE}/mailboxes/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      headers: getAuthHeaders()
     })
-    return response
+
+    if (!response.ok) {
+      throw new Error('Failed to delete mailbox')
+    }
   }
 
-  const getMailboxStats = async (id: string) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes/${id}/stats`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+  const getMailboxStats = async (id: number): Promise<any> => {
+    const response = await fetch(`${API_BASE}/mailboxes/${id}/stats`, {
+      method: 'GET',
+      headers: getAuthHeaders()
     })
-    return response
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch mailbox stats')
+    }
+
+    return response.json()
   }
 
-  const updateMailboxQuota = async (id: string, quota: number) => {
-    const response = await $fetch(`${baseApiUrl}/mailboxes/${id}/quota`, {
+  const updateMailboxQuota = async (id: number, quota: number): Promise<void> => {
+    const response = await fetch(`${API_BASE}/mailboxes/${id}/quota`, {
       method: 'PUT',
-      body: { quota },
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ quota })
     })
-    return response
+
+    if (!response.ok) {
+      throw new Error('Failed to update mailbox quota')
+    }
   }
 
   return {
