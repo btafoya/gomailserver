@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	dkimPkg "github.com/btafoya/gomailserver/internal/dkim"
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	"go.uber.org/zap"
 )
 
 const DefaultTemplateDomainName = "_default"
@@ -116,7 +116,7 @@ func (s *DomainService) EnsureDefaultTemplate() error {
 }
 
 // List retrieves all domains
-func (s *DomainService) List(ctx context.Context) ([]*domain.Domain, error) {
+func (s *DomainService) List(ctx context.Context, offset, limit int) ([]*domain.Domain, error) {
 	return s.repo.List(offset, limit)
 }
 

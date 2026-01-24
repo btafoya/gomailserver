@@ -1,7 +1,6 @@
 package antivirus
 
 import (
-	clamavPkg "github.com/btafoya/gomailserver/internal/clamav"
 	"github.com/btafoya/gomailserver/internal/domain"
 	"go.uber.org/zap"
 )
@@ -33,7 +32,7 @@ const (
 	ActionTag        ScanAction = "tag"
 )
 
-func (s *AntivirusScanner) ScanMessage(domainName string, message []byte) (*ScanResult, ScanAction, error) {
+func (s *Scanner) ScanMessage(domainName string, message []byte) (*ScanResult, ScanAction, error) {
 	// Get antivirus configuration for the domain
 	config, err := s.domainService.GetAntivirusConfig(domainName)
 	if err != nil {
@@ -56,5 +55,5 @@ func (s *AntivirusScanner) ScanMessage(domainName string, message []byte) (*Scan
 	}
 
 	// Apply action based on domain policy
-	return result, config.VirusAction, nil
+	return result, ScanAction(config.VirusAction), nil
 }
