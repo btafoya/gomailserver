@@ -1,17 +1,22 @@
 [Unit]
 Description=gomailserver - Modern Go Mail Server
 Documentation=https://github.com/btafoya/gomailserver
-After=network-online.target
+After=network-online.target clamav-daemon.service spamassassin.service
 Wants=network-online.target
+RequiresMountsFor=/var/lib/gomailserver
 
 [Service]
-Type=simple
+Type=exec
 User=gomailserver
 Group=gomailserver
 
 # Binary and configuration
 ExecStart=/usr/local/bin/gomailserver run --config /etc/gomailserver/gomailserver.yaml
 ExecReload=/bin/kill -HUP $MAINPID
+
+# Pre/post commands
+ExecStartPre=/bin/sh -c 'test -f /etc/gomailserver/gomailserver.yaml || (echo "Configuration file missing" >&2; exit 1)'
+ExecStartPost=/bin/sh -c 'echo "gomailserver started at $(date)" >> /var/log/gomailserver/startup.log'
 
 # Working directory and data storage
 WorkingDirectory=/var/lib/gomailserver
@@ -20,34 +25,58 @@ StateDirectory=gomailserver
 ConfigurationDirectory=gomailserver
 LogsDirectory=gomailserver
 
-# Restart policy
+# Restart policy with exponential backoff
 Restart=on-failure
 RestartSec=10s
-KillMode=process
+StartLimitIntervalSec=300
+StartLimitBurst=3
+KillMode=mixed
 KillSignal=SIGTERM
-TimeoutStopSec=30
+TimeoutStopSec=90
+TimeoutStartSec=30
 
-# Security hardening
+# Security hardening (Defense in Depth)
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
+PrivateDevices=true
+ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/var/lib/gomailserver /var/log/gomailserver
+ReadWritePaths=/var/lib/gomailserver /var/log/gomailserver /run/gomailserver
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictRealtime=true
 RestrictNamespaces=true
 RestrictSUIDSGID=true
+RemoveIPC=true
 LockPersonality=true
 SystemCallArchitectures=native
+SystemCallFilter=@system-service
+MemoryDenyWriteExecute=true
 
 # Resource limits
 LimitNOFILE=65536
-LimitNPROC=4096
+LimitNPROC=2048
+LimitCORE=0
+MemoryLimit=1G
+TasksMax=1024
 
-# Environment
+# Environment and capabilities
 Environment="GOMAILSERVER_ENV=production"
+Environment="GOMEMLIMIT=512MiB"
+Environment="GOMAXPROCS=2"
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+# Health monitoring
+WatchdogSec=30
+NotifyAccess=main
+Type=notify
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gomailserver
 
 [Install]
 WantedBy=multi-user.target

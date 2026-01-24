@@ -1,0 +1,62 @@
+# gomailserver log rotation configuration
+# Place this file in /etc/logrotate.d/gomailserver
+
+/var/log/gomailserver/*.log {
+    # Rotate weekly
+    weekly
+
+    # Keep 4 weeks of logs
+    rotate 4
+
+    # Compress old logs
+    compress
+    delaycompress
+
+    # Don't rotate empty logs
+    notifempty
+
+    # Create new log files with correct permissions
+    create 640 gomailserver gomailserver
+
+    # Run postrotate script to notify service
+    postrotate
+        if systemctl is-active --quiet gomailserver; then
+            systemctl reload gomailserver || true
+        fi
+    endscript
+
+    # Truncate logs instead of removing them
+    copytruncate
+
+    # Maximum log size before rotation (100MB)
+    size 100M
+
+    # Use date extension for rotated logs
+    dateext
+    dateformat -%Y%m%d-%s
+}
+
+/var/lib/gomailserver/backups/*.log {
+    # Rotate monthly for backup logs
+    monthly
+
+    # Keep 12 months of backup logs
+    rotate 12
+
+    # Compress old logs
+    compress
+    delaycompress
+
+    # Don't rotate empty logs
+    notifempty
+
+    # Create new log files with correct permissions
+    create 640 gomailserver gomailserver
+
+    # Maximum log size before rotation (50MB)
+    size 50M
+
+    # Use date extension
+    dateext
+    dateformat -%Y%m%d-%s
+}
