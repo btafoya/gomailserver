@@ -30,7 +30,7 @@ require (
 	)
 
 // Replace any invalid internal module references  
-replace github.com/btafoya/gomailserver/internal/clamav => ./internal/security/antivirus
+replace github.com/btafoya/gomailserver/internal/clamav => ./internal/security/antivirus/clamav
 
 require (
 	github.com/btafoya/gomailserver/internal/security/antivirus v0.0.0
