@@ -446,13 +446,28 @@ All configuration and metadata stored in SQLite:
 
 ### Backup
 
+gomailserver includes a comprehensive automated backup system:
+
 ```bash
 # Manual backup
-cp ./data/mailserver.db ./backups/mailserver-$(date +%Y%m%d).db
+sudo /opt/gomailserver/scripts/backup.sh
 
-# Automatic backup scripts available in scripts/ directory
-# Use backup automation for production deployments
+# Automated daily backups (install cron config)
+sudo cp /opt/gomailserver/scripts/cron-backup /etc/cron.d/gomailserver-backup
+
+# Verify backup integrity
+sudo /opt/gomailserver/scripts/verify-backup.sh
 ```
+
+**Backup Features:**
+- SQLite database with integrity verification
+- Filesystem messages with compression
+- DKIM keys with secure permissions
+- Configuration files
+- Automatic cleanup with retention policies
+- Comprehensive verification scripts
+
+See `scripts/BACKUP-README.md` for complete backup documentation.
 
 ## Technical Stack
 
@@ -567,6 +582,7 @@ The gomailserver project is now fully production-ready with:
 ### Development Guidelines
 - **CLAUDE.md** - Development guidelines for autonomous work
 - **PR.md** - Pull request guidelines and requirements
+- **scripts/BACKUP-README.md** - Comprehensive backup system documentation
 - **.doc_archive/** - Historical documentation and phase completion files (60+ archived documents)
 
 ## Repository Information

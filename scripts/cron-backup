@@ -1,0 +1,11 @@
+# gomailserver Cron Backup Configuration
+# Install this file to /etc/cron.d/gomailserver-backup
+
+# Daily backup at 2:00 AM
+0 2 * * * gomailserver /opt/gomailserver/scripts/backup.sh --quiet
+
+# Weekly full backup on Sundays at 3:00 AM (keeps 30 days)
+0 3 * * 0 gomailserver /opt/gomailserver/scripts/backup.sh --quiet --retention 30
+
+# Optional: Monthly archive backup on the 1st at 4:00 AM (keeps 365 days)
+0 4 1 * * gomailserver /opt/gomailserver/scripts/backup.sh --quiet --retention 365 --backup-dir /var/lib/gomailserver/monthly-backups
