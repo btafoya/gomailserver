@@ -6,6 +6,7 @@ build/
 *.so
 *.dylib
 gomailserver
+cmd/gomailserver/
 
 # Test binary, built with `go test -c`
 *.test
