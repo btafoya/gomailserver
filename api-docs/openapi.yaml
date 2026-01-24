@@ -1,0 +1,636 @@
+openapi: 3.0.3
+info:
+  title: gomailserver API
+  description: REST API for gomailserver - A modern, composable mail server
+  version: 1.0.0
+  contact:
+    name: gomailserver
+    url: https://github.com/btafoya/gomailserver
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+
+servers:
+  - url: http://localhost:8980/api/v1
+    description: Development server
+  - url: https://mail.example.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+paths:
+  # Authentication
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user with email and password
+      tags: [Authentication]
+      security: []  # No auth required
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: mypassword123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token
+                  refresh_token:
+                    type: string
+                    description: JWT refresh token
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      tags: [Authentication]
+      security: []  # No auth required
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: New JWT access token
+                  refresh_token:
+                    type: string
+                    description: New JWT refresh token
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Domains
+  /domains:
+    get:
+      summary: List domains
+      description: Get all domains (admin only)
+      tags: [Domains]
+      responses:
+        '200':
+          description: List of domains
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  domains:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Domain'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      summary: Create domain
+      description: Create a new domain (admin only)
+      tags: [Domains]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainCreate'
+      responses:
+        '201':
+          description: Domain created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /domains/{id}:
+    get:
+      summary: Get domain
+      description: Get domain details (admin only)
+      tags: [Domains]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Domain ID
+      responses:
+        '200':
+          description: Domain details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update domain
+      description: Update domain configuration (admin only)
+      tags: [Domains]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainUpdate'
+      responses:
+        '200':
+          description: Domain updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+
+    delete:
+      summary: Delete domain
+      description: Delete a domain (admin only)
+      tags: [Domains]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Domain ID
+      responses:
+        '204':
+          description: Domain deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Users
+  /users:
+    get:
+      summary: List users
+      description: Get users for current domain
+      tags: [Users]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create user
+      description: Create a new user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # Webmail
+  /webmail/mailboxes:
+    get:
+      summary: List mailboxes
+      description: Get user's mailboxes
+      tags: [Webmail]
+      responses:
+        '200':
+          description: List of mailboxes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mailboxes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Mailbox'
+
+  /webmail/mailboxes/{id}/messages:
+    get:
+      summary: List messages
+      description: Get messages in a mailbox
+      tags: [Webmail]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Mailbox ID
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+  /webmail/messages:
+    post:
+      summary: Send message
+      description: Send a new email message
+      tags: [Webmail]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+                - subject
+              properties:
+                to:
+                  type: string
+                  format: email
+                  example: recipient@example.com
+                cc:
+                  type: string
+                  example: cc@example.com
+                bcc:
+                  type: string
+                  example: bcc@example.com
+                subject:
+                  type: string
+                  example: Hello World
+                body_text:
+                  type: string
+                  example: Plain text message body
+                body_html:
+                  type: string
+                  example: "<p>HTML message body</p>"
+                attachments:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of attachment file paths
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+                    example: "20231201120000.123@example.com"
+                  status:
+                    type: string
+                    example: "queued"
+
+  # Statistics
+  /stats:
+    get:
+      summary: Get statistics
+      description: Get mail server statistics
+      tags: [Statistics]
+      responses:
+        '200':
+          description: Server statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stats'
+
+  # Reputation Management
+  /reputation/domains/{domain}/score:
+    get:
+      summary: Get domain reputation score
+      description: Get current reputation score for a domain
+      tags: [Reputation]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain name
+      responses:
+        '200':
+          description: Domain reputation score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  domain:
+                    type: string
+                  score:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                  last_updated:
+                    type: string
+                    format: date-time
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: John Doe
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+        status:
+          type: string
+          enum: [active, disabled]
+          example: active
+        quota:
+          type: integer
+          example: 1073741824
+        used_quota:
+          type: integer
+          example: 524288000
+
+    Domain:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: example.com
+        status:
+          type: string
+          enum: [active, disabled]
+        dkim_enabled:
+          type: boolean
+        spf_enabled:
+          type: boolean
+        dmarc_enabled:
+          type: boolean
+
+    Mailbox:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: INBOX
+        special_use:
+          type: string
+          example: \\Inbox
+        subscribed:
+          type: boolean
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        from:
+          type: string
+        to:
+          type: array
+          items:
+            type: string
+        date:
+          type: string
+          format: date-time
+        size:
+          type: integer
+        flags:
+          type: array
+          items:
+            type: string
+
+    Stats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        total_domains:
+          type: integer
+        total_messages:
+          type: integer
+        queue_size:
+          type: integer
+        uptime:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+
+    UserCreate:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        name:
+          type: string
+
+    DomainCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        dkim_enabled:
+          type: boolean
+          default: true
+        spf_enabled:
+          type: boolean
+          default: true
+        dmarc_enabled:
+          type: boolean
+          default: true
+
+    DomainUpdate:
+      type: object
+      properties:
+        dkim_enabled:
+          type: boolean
+        spf_enabled:
+          type: boolean
+        dmarc_enabled:
+          type: boolean
+        status:
+          type: string
+          enum: [active, disabled]
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid request body"
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Missing authorization header"
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Access denied"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Resource not found"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key

@@ -76,6 +76,7 @@ func NewServer(
 	// Wire up cross-service dependencies for webmail
 	messageService.SetQueueService(queueService)
 	messageService.SetMailboxService(mailboxService)
+	messageService.SetUserService(userService)
 
 	// Create router with all dependencies
 	router := NewRouter(RouterConfig{

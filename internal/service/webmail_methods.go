@@ -104,11 +104,23 @@ func (s *MessageService) GetMessage(ctx context.Context, messageID, userID int) 
 
 // SendMessage sends a new message via the queue
 func (s *MessageService) SendMessage(ctx context.Context, userID int, req *SendMessageRequest) (int, error) {
+	// Get user details to set From address
+	user, err := s.userService.GetByID(int64(userID))
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user details: %w", err)
+	}
+
+	// Use user's email as From address if not specified
+	fromAddr := req.From
+	if fromAddr == "" {
+		fromAddr = user.Email
+	}
+
 	// Build MIME message
 	var buf strings.Builder
 
 	// Write headers
-	buf.WriteString(fmt.Sprintf("From: %s\r\n", req.From))
+	buf.WriteString(fmt.Sprintf("From: %s\r\n", fromAddr))
 	buf.WriteString(fmt.Sprintf("To: %s\r\n", req.To))
 	if req.Cc != "" {
 		buf.WriteString(fmt.Sprintf("Cc: %s\r\n", req.Cc))
@@ -146,7 +158,7 @@ func (s *MessageService) SendMessage(ctx context.Context, userID int, req *SendM
 
 	// Queue message for SMTP delivery if QueueService is available
 	if s.queueService != nil {
-		_, err := s.queueService.Enqueue(req.From, recipients, messageData)
+		_, err := s.queueService.Enqueue(fromAddr, recipients, messageData)
 		if err != nil {
 			return 0, fmt.Errorf("failed to queue message for delivery: %w", err)
 		}

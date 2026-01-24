@@ -34,6 +34,7 @@ type MessageService struct {
 	storagePath    string
 	queueService   *QueueService
 	mailboxService *MailboxService
+	userService    UserServiceInterface
 }
 
 // NewMessageService creates a new message service
@@ -48,6 +49,11 @@ func NewMessageService(repo repository.MessageRepository, storagePath string, lo
 // SetQueueService sets the queue service dependency (optional, for sending)
 func (s *MessageService) SetQueueService(queueService *QueueService) {
 	s.queueService = queueService
+}
+
+// SetUserService sets the user service dependency (required for sending)
+func (s *MessageService) SetUserService(userService UserServiceInterface) {
+	s.userService = userService
 }
 
 // SetMailboxService sets the mailbox service dependency (optional, for drafts/sent)

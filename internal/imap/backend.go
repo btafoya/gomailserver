@@ -159,6 +159,15 @@ func (b *Backend) Login(connInfo *imap.ConnInfo, username, password string) (bac
 		zap.Int64("user_id", user.ID),
 	)
 
+	// Ensure default mailboxes exist
+	if err := b.ensureDefaultMailboxes(user); err != nil {
+		b.logger.Error("failed to create default mailboxes",
+			zap.Error(err),
+			zap.Int64("user_id", user.ID),
+		)
+		// Don't fail login for this, just log the error
+	}
+
 	return &User{
 		user:           user,
 		backend:        b,
@@ -166,6 +175,43 @@ func (b *Backend) Login(connInfo *imap.ConnInfo, username, password string) (bac
 		messageService: b.messageService,
 		logger:         b.logger,
 	}, nil
+}
+
+// ensureDefaultMailboxes creates default mailboxes if they don't exist
+func (b *Backend) ensureDefaultMailboxes(user *domain.User) error {
+	defaultMailboxes := []struct {
+		name       string
+		specialUse string
+	}{
+		{"INBOX", ""},
+		{"Drafts", "\\Drafts"},
+		{"Sent", "\\Sent"},
+		{"Trash", "\\Trash"},
+		{"Junk", "\\Junk"},
+	}
+
+	for _, mb := range defaultMailboxes {
+		// Check if mailbox exists
+		_, err := b.mailboxService.GetByName(user.ID, mb.name)
+		if err != nil {
+			// Mailbox doesn't exist, create it
+			if createErr := b.mailboxService.Create(user.ID, mb.name, mb.specialUse); createErr != nil {
+				b.logger.Error("failed to create default mailbox",
+					zap.Error(createErr),
+					zap.Int64("user_id", user.ID),
+					zap.String("mailbox", mb.name),
+				)
+				// Continue with other mailboxes
+			} else {
+				b.logger.Info("created default mailbox",
+					zap.Int64("user_id", user.ID),
+					zap.String("mailbox", mb.name),
+				)
+			}
+		}
+	}
+
+	return nil
 }
 
 // User implements IMAP user interface
@@ -245,7 +291,22 @@ func (u *User) CreateMailbox(name string) error {
 		zap.String("mailbox", name),
 	)
 
-	err := u.mailboxService.Create(u.user.ID, name, "")
+	// Determine special use based on name
+	specialUse := ""
+	switch strings.ToLower(name) {
+	case "drafts":
+		specialUse = "\\Drafts"
+	case "sent":
+		specialUse = "\\Sent"
+	case "trash":
+		specialUse = "\\Trash"
+	case "junk", "spam":
+		specialUse = "\\Junk"
+	case "archive":
+		specialUse = "\\Archive"
+	}
+
+	err := u.mailboxService.Create(u.user.ID, name, specialUse)
 	if err != nil {
 		u.logger.Error("failed to create mailbox",
 			zap.Error(err),
