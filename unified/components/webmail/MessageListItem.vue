@@ -5,7 +5,8 @@
       {
         'bg-muted/30': selected,
         'bg-blue-50 dark:bg-blue-950/20': currentMessage,
-        'font-semibold': !message.read
+        'font-semibold': !message.read,
+        'border-l-4 border-green-400': message.task_completed,
       }
     ]"
     @click="handleClick"
@@ -38,10 +39,29 @@
           ]"
           :fill="message.starred"
         />
-      </UButton>
-    </div>
+       </UButton>
+       
+       <!-- Task Completion -->
+       <div class="mr-3 flex items-center">
+         <UButton
+           variant="ghost"
+           size="sm"
+           icon
+           @click.stop="toggleTaskCompletion"
+         >
+           <CheckSquare
+             :class="[
+               'h-4 w-4 transition-colors',
+               message.task_completed
+                 ? 'fill-green-400 text-green-400'
+                 : 'text-muted-foreground hover:text-green-400'
+             ]"
+             :fill="message.task_completed"
+           />
+         </UButton>
+       </div>
 
-    <!-- Sender Avatar -->
+     <!-- Sender Avatar -->
     <div class="mr-3 flex items-center">
       <UAvatar
         :src="senderAvatar"
@@ -103,7 +123,9 @@
 </template>
 
 <script setup>
-import { Star, Paperclip } from 'lucide-vue-next'
+import { Star, Paperclip, CheckSquare } from 'lucide-vue-next'
+import { useWebmailStore } from '~/stores/webmail'
+import { useWebmailApi } from '~/composables/useWebmailApi'
 
 interface Props {
   message: {
@@ -134,6 +156,7 @@ interface Props {
     starred: boolean
     answered: boolean
     forwarded: boolean
+    task_completed: boolean
   }
   selected: boolean
   currentMessage: boolean
@@ -162,6 +185,10 @@ const hasAttachments = computed(() => {
   return props.message.attachments && props.message.attachments.length > 0
 })
 
+const isTaskCompleted = computed(() => {
+  return props.message.task_completed || false
+})
+
 // Methods
 const handleClick = () => {
   emit('select', props.message)
@@ -178,6 +205,23 @@ const toggleStar = () => {
   const flags = props.message.starred ? ['\\Flagged'] : ['\\Flagged']
   const action = props.message.starred ? 'remove' : 'add'
   webmailStore.updateMessageFlags(props.message.id, flags, action)
+}
+
+const toggleTaskCompletion = () => {
+  const webmailStore = useWebmailStore()
+  const { completeTask } = useWebmailApi()
+  
+  completeTask(props.message.id, !isTaskCompleted.value)
+    .then(() => {
+      // Update local state to reflect change immediately
+      const message = webmailStore.messages.find(msg => msg.id === props.message.id)
+      if (message) {
+        message.task_completed = !isTaskCompleted.value
+      }
+    })
+    .catch(error => {
+      console.error('Failed to update task completion:', error)
+    })
 }
 
 const extractNameFromEmail = (email) => {

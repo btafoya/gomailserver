@@ -391,6 +391,8 @@ func NewRouter(config RouterConfig) *Router {
 				r.Delete("/messages/{id}", webmailHandler.DeleteMessage)
 				r.Post("/messages/{id}/move", webmailHandler.MoveMessage)
 				r.Post("/messages/{id}/flags", webmailHandler.UpdateFlags)
+				r.Post("/messages/{id}/complete", webmailHandler.CompleteTask)
+				r.Post("/messages/{id}/phishing", webmailHandler.AnalyzePhishing)
 				r.Get("/search", webmailHandler.SearchMessages)
 				r.Get("/attachments/{id}", webmailHandler.DownloadAttachment)
 				r.Post("/drafts", webmailHandler.SaveDraft)

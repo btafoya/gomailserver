@@ -2,12 +2,14 @@ package caldav
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/btafoya/gomailserver/internal/calendar/domain"
+	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/btafoya/gomailserver/internal/webdav"
 	"go.uber.org/zap"
 )
@@ -18,15 +20,70 @@ type Handler struct {
 	logger          *zap.Logger
 	calendarService domain.CalendarService
 	eventService    domain.EventService
+	userService     *service.UserService
 }
 
 // NewHandler creates a new CalDAV handler
-func NewHandler(logger *zap.Logger, calendarService domain.CalendarService, eventService domain.EventService) *Handler {
+func NewHandler(logger *zap.Logger, calendarService domain.CalendarService, eventService domain.EventService, userService *service.UserService) *Handler {
 	return &Handler{
 		webdavHandler:   webdav.NewHandler(logger, "/caldav"),
 		logger:          logger,
 		calendarService: calendarService,
 		eventService:    eventService,
+		userService:     userService,
+	}
+}
+
+// Permission checking helpers
+func (h *Handler) hasReadPermission(userID int64, calendarID int64) bool {
+	return h.calendarService.HasReadAccess(userID, calendarID)
+}
+
+func (h *Handler) hasWritePermission(userID int64, calendarID int64) bool {
+	return h.calendarService.HasWriteAccess(userID, calendarID)
+}
+
+func (h *Handler) hasAdminPermission(userID int64, calendarID int64) bool {
+	return h.calendarService.HasAdminAccess(userID, calendarID)
+}
+
+// extractACLProperties extracts ACL-related properties from request
+func (h *Handler) extractACLProperties(r *http.Request) map[string]string {
+	properties := map[string]string{}
+
+	// Check for ACL extension in request headers
+	if aclHeader := r.Header.Get("Acl"); aclHeader != "" {
+		properties[aclHeader] = aclHeader
+	}
+
+	return properties
+}
+
+// writeCalendarResponse writes CalDAV XML responses
+func (h *Handler) writeCalendarResponse(w http.ResponseWriter, responseTag string, calendar *domain.Calendar) {
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusMultiStatus)
+
+	encoder := xml.NewEncoder(w)
+
+	response := &webdav.MultiStatus{
+		XMLName: xml.Name{Space: "DAV:", Local: "multistatus"},
+		Responses: []webdav.Response{
+			{
+				Href: fmt.Sprintf("/caldav/%s/%d", calendar.ID),
+				PropStats: []webdav.PropStat{
+					{
+						Prop:   webdav.PropValue{DisplayName: &calendar.Name},
+						Status: "HTTP/1.1 200 OK",
+					},
+				},
+			},
+		},
+	}
+
+	if err := encoder.Encode(response); err != nil {
+		h.logger.Error("failed to encode calendar response", zap.Error(err))
+		return
 	}
 }
 

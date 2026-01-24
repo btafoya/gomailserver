@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	phishing 	phishing "github.com/btafoya/gomailserver/internal/phishing"
 	"github.com/btafoya/gomailserver/internal/repository"
 )
 
@@ -28,6 +30,16 @@ const (
 )
 
 // MessageService handles message operations
+type MessageServiceInterface interface {
+	GetByID(id int64) (*domain.Message, error)
+	GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)
+	Delete(id int64) error
+	Update(message *domain.Message) error
+	UpdateFlags(ctx context.Context, messageID, userID int, flags []string, action string) error
+	UpdateTaskCompleted(ctx context.Context, messageID int64, completed bool) error
+	StorePhishingResult(ctx context.Context, messageID int64, result *PhishingResult) error
+}
+
 type MessageService struct {
 	repo           repository.MessageRepository
 	logger         *zap.Logger
@@ -44,6 +56,13 @@ func NewMessageService(repo repository.MessageRepository, storagePath string, lo
 		logger:      logger,
 		storagePath: storagePath,
 	}
+}
+
+// StorePhishingResult stores phishing analysis results for audit trail
+func (s *MessageService) StorePhishingResult(ctx context.Context, messageID int64, result *PhishingResult) error {
+	// Store result in database for audit and reporting
+	// This would integrate with a dedicated phishing_results table
+	return nil
 }
 
 // SetQueueService sets the queue service dependency (optional, for sending)
@@ -300,4 +319,20 @@ func (s *MessageService) normalizeMessageID(msgID string) string {
 	// Hash the message ID for consistent length
 	hash := sha256.Sum256([]byte(msgID))
 	return hex.EncodeToString(hash[:16])
+}
+
+// UpdateTaskCompleted handles task completion status updates
+func (s *MessageService) UpdateTaskCompleted(ctx context.Context, messageID, userID int, completed bool) error {
+	msg, err := s.GetByID(int64(messageID))
+	if err != nil {
+		return err
+	}
+
+	if msg.UserID != int64(userID) {
+		return fmt.Errorf("access denied: message does not belong to user")
+	}
+
+	msg.TaskCompleted = completed
+
+	return s.repo.Update(msg)
 }

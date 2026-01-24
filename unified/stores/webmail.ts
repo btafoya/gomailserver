@@ -3,7 +3,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { useApiBase } from '~/composables/useApiBase'
+import { useApiBase } from '../composables/useApiBase'
 
 // Types
 export interface Mailbox {
@@ -35,6 +35,7 @@ export interface Message {
   starred: boolean
   answered: boolean
   forwarded: boolean
+  task_completed: boolean
 }
 
 export interface Attachment {
@@ -416,6 +417,7 @@ export const useWebmailStore = defineStore('webmail', {
           message.starred = message.flags.includes('\\Flagged')
           message.answered = message.flags.includes('\\Answered')
           message.forwarded = message.flags.includes('$Forwarded')
+          message.task_completed = message.task_completed || false
         }
       } catch (error) {
         this.setError('Failed to update message flags')

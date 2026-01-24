@@ -6,9 +6,12 @@ import (
 	"strconv"
 
 	"github.com/btafoya/gomailserver/internal/api/middleware"
+	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/phishing"
 	"github.com/btafoya/gomailserver/internal/service"
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // WebmailHandler handles webmail-related HTTP requests
@@ -22,12 +25,14 @@ type WebmailHandler struct {
 func NewWebmailHandler(
 	mailboxService *service.MailboxService,
 	messageService *service.MessageService,
+	phishingService *phishing.PhishingDetectionService,
 	logger *zap.Logger,
 ) *WebmailHandler {
 	return &WebmailHandler{
-		mailboxService: mailboxService,
-		messageService: messageService,
-		logger:         logger,
+		mailboxService:  mailboxService,
+		messageService:  messageService,
+		phishingService: phishingService,
+		logger:          logger,
 	}
 }
 
@@ -279,6 +284,81 @@ func (h *WebmailHandler) UpdateFlags(w http.ResponseWriter, r *http.Request) {
 	middleware.RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "flags updated successfully",
 	})
+}
+
+// CompleteTask handles POST /api/v1/webmail/messages/:id/complete
+func (h *WebmailHandler) CompleteTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		middleware.RespondError(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	messageID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		middleware.RespondError(w, http.StatusBadRequest, "invalid message ID")
+		return
+	}
+
+	var req struct {
+		Completed bool `json:"completed"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		middleware.RespondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err = h.messageService.UpdateTaskCompleted(ctx, int(messageID), int(userID), req.Completed)
+	if err != nil {
+		h.logger.Error("failed to update task completion", zap.Error(err), zap.Int64("message_id", messageID))
+		middleware.RespondError(w, http.StatusInternalServerError, "failed to update task completion")
+		return
+	}
+
+	middleware.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "task completion updated successfully",
+	})
+}
+
+// AnalyzePhishing handles POST /api/v1/webmail/messages/:id/phishing
+func (h *WebmailHandler) AnalyzePhishing(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		middleware.RespondError(w, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	messageID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		middleware.RespondError(w, http.StatusBadRequest, "invalid message ID")
+		return
+	}
+
+	message, err := h.messageService.GetByID(int64(messageID))
+	if err != nil {
+		middleware.RespondError(w, http.StatusInternalServerError, "failed to retrieve message")
+		return
+	}
+
+	// Perform AI phishing detection
+	result, err := h.phishingService.AnalyzeMessage(ctx, message)
+	if err != nil {
+		h.logger.Error("phishing analysis failed", zap.Error(err), zap.Int64("message_id", messageID))
+		middleware.RespondError(w, http.StatusInternalServerError, "phishing analysis failed")
+		return
+	}
+
+	// Store phishing analysis result for audit trail
+	err = h.messageService.StorePhishingResult(ctx, messageID, result)
+	if err != nil {
+		h.logger.Error("failed to store phishing result", zap.Error(err))
+		// Continue with response anyway
+	}
+
+	middleware.RespondJSON(w, http.StatusOK, result)
 }
 
 // SearchMessages handles GET /api/v1/webmail/search

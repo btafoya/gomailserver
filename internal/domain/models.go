@@ -4,33 +4,33 @@ import "time"
 
 // Domain represents an email domain with per-domain security configuration
 type Domain struct {
-	ID             int64     `json:"id"`
-	Name           string    `json:"name"`
-	Status         string    `json:"status"`
-	MaxUsers       int       `json:"max_users"`
-	MaxMailboxSize int64     `json:"max_mailbox_size"`
-	DefaultQuota   int64     `json:"default_quota"`
-	CatchallEmail  *string   `json:"catchall_email,omitempty"`
-	BackupMX       bool      `json:"backup_mx"`
+	ID             int64   `json:"id"`
+	Name           string  `json:"name"`
+	Status         string  `json:"status"`
+	MaxUsers       int     `json:"max_users"`
+	MaxMailboxSize int64   `json:"max_mailbox_size"`
+	DefaultQuota   int64   `json:"default_quota"`
+	CatchallEmail  *string `json:"catchall_email,omitempty"`
+	BackupMX       bool    `json:"backup_mx"`
 
 	// DKIM configuration
-	DKIMSelector        string `json:"dkim_selector,omitempty"`
-	DKIMPrivateKey      string `json:"-"`
-	DKIMPublicKey       string `json:"dkim_public_key,omitempty"`
-	DKIMSigningEnabled  bool   `json:"dkim_signing_enabled"`
-	DKIMVerifyEnabled   bool   `json:"dkim_verify_enabled"`
-	DKIMKeySize         int    `json:"dkim_key_size"`
-	DKIMKeyType         string `json:"dkim_key_type"`
-	DKIMHeadersToSign   string `json:"dkim_headers_to_sign"` // JSON array
+	DKIMSelector       string `json:"dkim_selector,omitempty"`
+	DKIMPrivateKey     string `json:"-"`
+	DKIMPublicKey      string `json:"dkim_public_key,omitempty"`
+	DKIMSigningEnabled bool   `json:"dkim_signing_enabled"`
+	DKIMVerifyEnabled  bool   `json:"dkim_verify_enabled"`
+	DKIMKeySize        int    `json:"dkim_key_size"`
+	DKIMKeyType        string `json:"dkim_key_type"`
+	DKIMHeadersToSign  string `json:"dkim_headers_to_sign"` // JSON array
 
 	// SPF configuration
-	SPFRecord          string `json:"spf_record,omitempty"`
-	SPFEnabled         bool   `json:"spf_enabled"`
-	SPFDNSServer       string `json:"spf_dns_server"`
-	SPFDNSTimeout      int    `json:"spf_dns_timeout"`
-	SPFMaxLookups      int    `json:"spf_max_lookups"`
-	SPFFailAction      string `json:"spf_fail_action"`
-	SPFSoftFailAction  string `json:"spf_softfail_action"`
+	SPFRecord         string `json:"spf_record,omitempty"`
+	SPFEnabled        bool   `json:"spf_enabled"`
+	SPFDNSServer      string `json:"spf_dns_server"`
+	SPFDNSTimeout     int    `json:"spf_dns_timeout"`
+	SPFMaxLookups     int    `json:"spf_max_lookups"`
+	SPFFailAction     string `json:"spf_fail_action"`
+	SPFSoftFailAction string `json:"spf_softfail_action"`
 
 	// DMARC configuration
 	DMARCPolicy        string `json:"dmarc_policy,omitempty"`
@@ -41,16 +41,16 @@ type Domain struct {
 	DMARCReportEmail   string `json:"dmarc_report_email,omitempty"`
 
 	// ClamAV antivirus configuration
-	ClamAVEnabled      bool   `json:"clamav_enabled"`
-	ClamAVMaxScanSize  int64  `json:"clamav_max_scan_size"`
-	ClamAVVirusAction  string `json:"clamav_virus_action"`
-	ClamAVFailAction   string `json:"clamav_fail_action"`
+	ClamAVEnabled     bool   `json:"clamav_enabled"`
+	ClamAVMaxScanSize int64  `json:"clamav_max_scan_size"`
+	ClamAVVirusAction string `json:"clamav_virus_action"`
+	ClamAVFailAction  string `json:"clamav_fail_action"`
 
 	// SpamAssassin configuration
-	SpamEnabled           bool    `json:"spam_enabled"`
-	SpamRejectScore       float64 `json:"spam_reject_score"`
-	SpamQuarantineScore   float64 `json:"spam_quarantine_score"`
-	SpamLearningEnabled   bool    `json:"spam_learning_enabled"`
+	SpamEnabled         bool    `json:"spam_enabled"`
+	SpamRejectScore     float64 `json:"spam_reject_score"`
+	SpamQuarantineScore float64 `json:"spam_quarantine_score"`
+	SpamLearningEnabled bool    `json:"spam_learning_enabled"`
 
 	// Greylisting configuration
 	GreylistEnabled         bool `json:"greylist_enabled"`
@@ -60,22 +60,22 @@ type Domain struct {
 	GreylistWhitelistAfter  int  `json:"greylist_whitelist_after"`
 
 	// Rate limiting configuration (JSON objects)
-	RateLimitEnabled           bool   `json:"ratelimit_enabled"`
-	RateLimitSMTPPerIP         string `json:"ratelimit_smtp_per_ip"`         // JSON: {"count":100,"window_minutes":60}
-	RateLimitSMTPPerUser       string `json:"ratelimit_smtp_per_user"`       // JSON
-	RateLimitSMTPPerDomain     string `json:"ratelimit_smtp_per_domain"`     // JSON
-	RateLimitAuthPerIP         string `json:"ratelimit_auth_per_ip"`         // JSON
-	RateLimitIMAPPerUser       string `json:"ratelimit_imap_per_user"`       // JSON
-	RateLimitCleanupInterval   int    `json:"ratelimit_cleanup_interval"`
+	RateLimitEnabled         bool   `json:"ratelimit_enabled"`
+	RateLimitSMTPPerIP       string `json:"ratelimit_smtp_per_ip"`     // JSON: {"count":100,"window_minutes":60}
+	RateLimitSMTPPerUser     string `json:"ratelimit_smtp_per_user"`   // JSON
+	RateLimitSMTPPerDomain   string `json:"ratelimit_smtp_per_domain"` // JSON
+	RateLimitAuthPerIP       string `json:"ratelimit_auth_per_ip"`     // JSON
+	RateLimitIMAPPerUser     string `json:"ratelimit_imap_per_user"`   // JSON
+	RateLimitCleanupInterval int    `json:"ratelimit_cleanup_interval"`
 
 	// Authentication security configuration
-	AuthTOTPEnforced             bool `json:"auth_totp_enforced"`
-	AuthBruteForceEnabled        bool `json:"auth_brute_force_enabled"`
-	AuthBruteForceThreshold      int  `json:"auth_brute_force_threshold"`
-	AuthBruteForceWindowMinutes  int  `json:"auth_brute_force_window_minutes"`
-	AuthBruteForceBlockMinutes   int  `json:"auth_brute_force_block_minutes"`
-	AuthIPBlacklistEnabled       bool `json:"auth_ip_blacklist_enabled"`
-	AuthCleanupInterval          int  `json:"auth_cleanup_interval"`
+	AuthTOTPEnforced            bool `json:"auth_totp_enforced"`
+	AuthBruteForceEnabled       bool `json:"auth_brute_force_enabled"`
+	AuthBruteForceThreshold     int  `json:"auth_brute_force_threshold"`
+	AuthBruteForceWindowMinutes int  `json:"auth_brute_force_window_minutes"`
+	AuthBruteForceBlockMinutes  int  `json:"auth_brute_force_block_minutes"`
+	AuthIPBlacklistEnabled      bool `json:"auth_ip_blacklist_enabled"`
+	AuthCleanupInterval         int  `json:"auth_cleanup_interval"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -89,7 +89,7 @@ type User struct {
 	PasswordHash     string     `json:"-"`
 	FullName         string     `json:"full_name,omitempty"`
 	DisplayName      string     `json:"display_name,omitempty"`
-	Role             string     `json:"role"`                     // admin or user
+	Role             string     `json:"role"` // admin or user
 	Quota            int64      `json:"quota"`
 	UsedQuota        int64      `json:"used_quota"`
 	Status           string     `json:"status"`
@@ -140,6 +140,7 @@ type Message struct {
 	Flags         string    `json:"flags"`
 	Categories    string    `json:"categories"`
 	ThreadID      string    `json:"thread_id,omitempty"`
+	TaskCompleted bool      `json:"task_completed,omitempty"`
 	ReceivedAt    time.Time `json:"received_at"`
 	InternalDate  time.Time `json:"internal_date"`
 	Subject       string    `json:"subject,omitempty"`
@@ -202,13 +203,13 @@ type GreylistTriplet struct {
 
 // RateLimitEntry represents a rate limit tracking entry
 type RateLimitEntry struct {
-	ID         int64     `json:"id"`
-	Key        string    `json:"key"` // IP or user identifier
-	Type       string    `json:"type"` // "ip" or "user"
-	Count      int       `json:"count"`
+	ID          int64     `json:"id"`
+	Key         string    `json:"key"`  // IP or user identifier
+	Type        string    `json:"type"` // "ip" or "user"
+	Count       int       `json:"count"`
 	WindowStart time.Time `json:"window_start"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // LoginAttempt represents a login attempt for brute force tracking
@@ -246,15 +247,15 @@ type QuarantineMessage struct {
 
 // APIKey represents an API key for programmatic access
 type APIKey struct {
-	ID           int64      `json:"id"`
-	UserID       int64      `json:"user_id"`
-	DomainID     int64      `json:"domain_id"`
-	Name         string     `json:"name"`
-	KeyHash      string     `json:"-"`
-	Scopes       string     `json:"scopes"` // JSON array ["read","write"]
-	LastUsedAt   *time.Time `json:"last_used_at,omitempty"`
-	LastUsedIP   string     `json:"last_used_ip,omitempty"`
-	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID         int64      `json:"id"`
+	UserID     int64      `json:"user_id"`
+	DomainID   int64      `json:"domain_id"`
+	Name       string     `json:"name"`
+	KeyHash    string     `json:"-"`
+	Scopes     string     `json:"scopes"` // JSON array ["read","write"]
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	LastUsedIP string     `json:"last_used_ip,omitempty"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }

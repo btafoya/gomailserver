@@ -16,6 +16,13 @@ type Calendar struct {
 	SyncToken   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+
+	// Sharing permissions for real-time collaboration
+	OwnerID      *int64  `json:",omitempty"`
+	ReadUsers    []int64 `json:",omitempty"`
+	WriteUsers   []int64 `json:",omitempty"`
+	ReadAllUsers bool    `json:",omitempty"`
+	AdminUsers   []int64 `json:",omitempty"`
 }
 
 // CalendarRepository defines the interface for calendar persistence
@@ -32,13 +39,16 @@ type CalendarRepository interface {
 	// GetByUserAndName retrieves a calendar by user ID and name
 	GetByUserAndName(userID int64, name string) (*Calendar, error)
 
+	// GetAll retrieves all calendars (for sharing operations)
+	GetAll() ([]*Calendar, error)
+
 	// Update updates an existing calendar
 	Update(calendar *Calendar) error
 
 	// Delete deletes a calendar
 	Delete(id int64) error
 
-	// UpdateSyncToken updates the sync token for a calendar
+	// UpdateSyncToken updates sync token for a calendar
 	UpdateSyncToken(id int64, token string) error
 }
 
@@ -61,4 +71,12 @@ type CalendarService interface {
 
 	// GenerateSyncToken generates a new sync token for a calendar
 	GenerateSyncToken(id int64) (string, error)
+
+	// Calendar sharing and permission methods
+	ShareCalendar(calendarID int64, readUsers, writeUsers, adminUsers []int64, readAll bool) error
+	UnshareCalendar(calendarID int64, userID int64) error
+	HasReadAccess(userID, calendarID int64) bool
+	HasWriteAccess(userID, calendarID int64) bool
+	HasAdminAccess(userID, calendarID int64) bool
+	GetSharedCalendars(userID int64) ([]*Calendar, error)
 }

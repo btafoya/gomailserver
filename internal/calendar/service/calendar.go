@@ -150,3 +150,125 @@ func (s *CalendarService) generateSyncToken() (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
+
+func (s *CalendarService) ShareCalendar(calendarID int64, readUsers, writeUsers, adminUsers []int64, readAll bool) error {
+	calendar, err := s.calendarRepo.GetByID(calendarID)
+	if err != nil {
+		return fmt.Errorf("failed to get calendar: %w", err)
+	}
+	if calendar == nil {
+		return fmt.Errorf("calendar not found")
+	}
+
+	calendar.ReadUsers = readUsers
+	calendar.WriteUsers = writeUsers
+	calendar.AdminUsers = adminUsers
+	calendar.ReadAllUsers = readAll
+
+	if err := s.calendarRepo.Update(calendar); err != nil {
+		return fmt.Errorf("failed to update calendar sharing: %w", err)
+	}
+
+	return nil
+}
+
+func (s *CalendarService) UnshareCalendar(calendarID int64, userID int64) error {
+	calendar, err := s.calendarRepo.GetByID(calendarID)
+	if err != nil {
+		return fmt.Errorf("failed to get calendar: %w", err)
+	}
+	if calendar == nil {
+		return fmt.Errorf("calendar not found")
+	}
+
+	calendar.ReadUsers = s.removeUserFromSlice(calendar.ReadUsers, userID)
+	calendar.WriteUsers = s.removeUserFromSlice(calendar.WriteUsers, userID)
+	calendar.AdminUsers = s.removeUserFromSlice(calendar.AdminUsers, userID)
+
+	if err := s.calendarRepo.Update(calendar); err != nil {
+		return fmt.Errorf("failed to update calendar sharing: %w", err)
+	}
+
+	return nil
+}
+
+func (s *CalendarService) HasReadAccess(userID, calendarID int64) bool {
+	calendar, err := s.calendarRepo.GetByID(calendarID)
+	if err != nil || calendar == nil {
+		return false
+	}
+
+	if calendar.UserID == userID || (calendar.OwnerID != nil && *calendar.OwnerID == userID) {
+		return true
+	}
+
+	if calendar.ReadAllUsers {
+		return true
+	}
+
+	return s.userInSlice(calendar.ReadUsers, userID) ||
+		s.userInSlice(calendar.WriteUsers, userID) ||
+		s.userInSlice(calendar.AdminUsers, userID)
+}
+
+func (s *CalendarService) HasWriteAccess(userID, calendarID int64) bool {
+	calendar, err := s.calendarRepo.GetByID(calendarID)
+	if err != nil || calendar == nil {
+		return false
+	}
+
+	if calendar.UserID == userID || (calendar.OwnerID != nil && *calendar.OwnerID == userID) {
+		return true
+	}
+
+	return s.userInSlice(calendar.WriteUsers, userID) ||
+		s.userInSlice(calendar.AdminUsers, userID)
+}
+
+func (s *CalendarService) HasAdminAccess(userID, calendarID int64) bool {
+	calendar, err := s.calendarRepo.GetByID(calendarID)
+	if err != nil || calendar == nil {
+		return false
+	}
+
+	if calendar.UserID == userID || (calendar.OwnerID != nil && *calendar.OwnerID == userID) {
+		return true
+	}
+
+	return s.userInSlice(calendar.AdminUsers, userID)
+}
+
+func (s *CalendarService) GetSharedCalendars(userID int64) ([]*domain.Calendar, error) {
+	allCalendars, err := s.calendarRepo.GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all calendars: %w", err)
+	}
+
+	var sharedCalendars []*domain.Calendar
+	for _, calendar := range allCalendars {
+		if s.HasReadAccess(userID, calendar.ID) && calendar.UserID != userID {
+			sharedCalendars = append(sharedCalendars, calendar)
+		}
+	}
+
+	return sharedCalendars, nil
+}
+
+func (s *CalendarService) userInSlice(slice []int64, userID int64) bool {
+	for _, id := range slice {
+		if id == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *CalendarService) removeUserFromSlice(slice []int64, userID int64) []int64 {
+	var result []int64
+	for _, id := range slice {
+		if id != userID {
+			result = append(result, id)
+		}
+	}
+	return result
+}

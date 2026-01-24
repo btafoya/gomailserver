@@ -55,11 +55,40 @@ func (m *Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
 	status.UidValidity = uint32(m.mailbox.UIDValidity)
 	status.UidNext = uint32(m.mailbox.UIDNext)
 
-	// TODO: Get actual message counts from database
-	status.Messages = 0      // Total messages
-	status.Recent = 0        // Recent messages
-	status.Unseen = 0        // First unseen message sequence number
-	status.UnseenSeqNum = 0  // Sequence number of first unseen
+		messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	if err != nil {
+		m.logger.Error("failed to get messages for status",
+			zap.Error(err),
+			return nil, err
+	}
+
+	// Calculate message counts
+	totalMessages := len(messages)
+	recentMessages := 0
+	unseenMessages := 0
+	firstUnseenSeqNum := uint32(0)
+
+	// Count messages by flags
+	for _, msg := range messages {
+		// Check if recent (received within last 5 minutes)
+		if time.Since(msg.ReceivedAt) < 5*time.Minute {
+			recentMessages++
+		}
+
+		// Check if unseen
+		if !strings.Contains(msg.Flags, "\\Seen") {
+			unseenMessages++
+			// Track first unseen sequence number
+			if firstUnseenSeqNum == 0 && msg.UID < firstUnseenSeqNum {
+				firstUnseenSeqNum = uint32(msg.UID)
+			}
+		}
+	}
+
+	status.Messages = uint32(totalMessages)
+	status.Recent = uint32(recentMessages)
+	status.Unseen = uint32(unseenMessages)
+	status.UnseenSeqNum = firstUnseenSeqNum
 
 	return status, nil
 }
@@ -112,9 +141,116 @@ func (m *Mailbox) SearchMessages(uid bool, criteria *imap.SearchCriteria) ([]uin
 		zap.Bool("uid", uid),
 	)
 
-	// TODO: Implement search
-	// TODO: Support various search criteria (FROM, TO, SUBJECT, etc.)
-	return []uint32{}, nil
+	// Get all messages for searching
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	if err != nil {
+		m.logger.Error("failed to get messages for search",
+			zap.Error(err),
+			return nil, err
+	}
+
+	var matchingUIDs []uint32
+
+	// Apply search criteria
+	for _, msg := range messages {
+		matches := true
+
+		// Search by subject
+		if criteria.Header != nil {
+			for _, field := range criteria.Header {
+				if strings.EqualFold(field.Key, "subject") && strings.ContainsFold(msg.Subject, field.Value) {
+					continue // Matches, don't exclude
+				}
+				if strings.EqualFold(field.Key, "subject") && !strings.ContainsFold(msg.Subject, field.Value) {
+					matches = false
+					break
+				}
+			}
+		}
+
+		// Search by from
+		if criteria.Header != nil && matches {
+			for _, field := range criteria.Header {
+				if strings.EqualFold(field.Key, "from") && strings.ContainsFold(msg.Sender, field.Value) {
+					continue // Matches, don't exclude
+				}
+				if strings.EqualFold(field.Key, "from") && !strings.ContainsFold(msg.Sender, field.Value) {
+					matches = false
+					break
+				}
+			}
+		}
+
+		// Search by body content
+		if criteria.Body != nil && matches {
+			for _, field := range criteria.Body {
+				if strings.EqualFold(field.Key, "text") && strings.ContainsFold(msg.Body, field.Value) {
+					continue // Matches, don't exclude
+				}
+				if strings.EqualFold(field.Key, "text") && !strings.ContainsFold(msg.Body, field.Value) {
+					matches = false
+					break
+				}
+			}
+		}
+
+		// Search by flags
+		if criteria.Flag != nil && matches {
+			for _, flag := range criteria.Flag {
+				hasFlag := strings.Contains(msg.Flags, "\\"+flag)
+				switch flag.Not {
+				case true:
+					if hasFlag {
+						matches = false
+						break
+					}
+				case false:
+					if !hasFlag {
+						matches = false
+						break
+					}
+				}
+			}
+		}
+
+		// Search by date criteria
+		if criteria.Since != nil && msg.ReceivedAt.Before(*criteria.Since) {
+			matches = false
+		}
+		if criteria.Before != nil && msg.ReceivedAt.After(*criteria.Before) {
+			matches = false
+		}
+
+		// Search by size
+		if criteria.Larger != nil && uint32(len(msg.Body)) < *criteria.Larger {
+			matches = false
+		}
+		if criteria.Smaller != nil && uint32(len(msg.Body)) > *criteria.Smaller {
+			matches = false
+		}
+
+		// Search by UID
+		if criteria.UID != nil {
+			for _, uidSet := range criteria.UID.Set() {
+				if uint32(msg.UID) == uidSet {
+					matches = true
+					break
+				}
+			}
+		}
+
+		// Search by sequence number
+		if criteria.SeqNum != nil && msg.SequenceNum == *criteria.SeqNum {
+			matches = true
+		}
+
+		// Add to results if matches
+		if matches {
+			matchingUIDs = append(matchingUIDs, uint32(msg.UID))
+		}
+	}
+
+	return matchingUIDs, nil
 }
 
 // CreateMessage appends a new message to the mailbox
@@ -143,9 +279,77 @@ func (m *Mailbox) UpdateMessagesFlags(uid bool, seqSet *imap.SeqSet, operation i
 		zap.Strings("flags", flags),
 	)
 
-	// TODO: Fetch messages by sequence set
-	// TODO: Update flags based on operation (SET, ADD, REMOVE)
-	// TODO: Handle \Seen, \Deleted, \Flagged, \Answered, \Draft
+	// Get messages to update
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	if err != nil {
+		m.logger.Error("failed to get messages for flag update",
+			zap.Error(err),
+			return err
+	}
+
+	// Filter by sequence set if provided
+	var messagesToUpdate []*domain.Message
+	if seqSet != nil {
+		// Convert sequence set to message indices
+		indices := seqSet.Set()
+		for _, index := range indices {
+			// Convert to 0-based for slice access
+			msgIndex := int(index) - 1
+			if msgIndex >= 0 && msgIndex < len(messages) {
+				messagesToUpdate = append(messagesToUpdate, messages[msgIndex])
+			}
+		}
+	} else {
+		// No sequence set, update all messages
+		messagesToUpdate = messages
+	}
+
+	// Convert IMAP flags to domain flags
+	domainFlags := m.convertIMAPToDomainFlags(flags)
+
+	// Update each message
+	for _, msg := range messagesToUpdate {
+		var newFlags string
+		switch operation {
+		case imap.FlagsSet:
+			newFlags = domainFlags
+		case imap.FlagsAdd:
+			// Add new flags to existing ones
+			existingFlags := m.convertDomainToMessageFlags(msg.Flags)
+			mergedFlags := append(existingFlags, domainFlags...)
+			// Remove duplicates
+			uniqueFlags := []string{}
+			flagSet := make(map[string]bool)
+			for _, flag := range mergedFlags {
+				if !flagSet[flag] {
+					flagSet[flag] = true
+					uniqueFlags = append(uniqueFlags, flag)
+				}
+			}
+			newFlags = strings.Join(uniqueFlags, ",")
+		case imap.FlagsRemove:
+			// Remove specified flags from existing ones
+			existingFlags := m.convertDomainToMessageFlags(msg.Flags)
+			remainingFlags := []string{}
+			flagSet := make(map[string]bool)
+			for _, flag := range existingFlags {
+				flagSet[flag] = true
+			}
+			for _, flag := range domainFlags {
+				if !flagSet[flag] {
+					remainingFlags = append(remainingFlags, flag)
+				}
+			}
+			newFlags = strings.Join(remainingFlags, ",")
+		}
+
+		// Update message in database
+		if err := m.messageService.UpdateFlags(msg.ID, newFlags); err != nil {
+			m.logger.Error("failed to update message flags",
+				zap.Error(err),
+				return err
+		}
+	}
 
 	return nil
 }
@@ -159,10 +363,66 @@ func (m *Mailbox) CopyMessages(uid bool, seqSet *imap.SeqSet, dest string) error
 		zap.Bool("uid", uid),
 	)
 
-	// TODO: Get destination mailbox
-	// TODO: Fetch messages by sequence set
-	// TODO: Copy message data to destination mailbox
-	// TODO: Preserve flags and date
+	// Get destination mailbox
+	destMailbox, err := m.mailboxService.GetByName(m.user.ID, dest)
+	if err != nil {
+		m.logger.Error("failed to get destination mailbox",
+			zap.Error(err),
+			return err
+	}
+
+	// Get messages to copy
+	var messagesToCopy []*domain.Message
+	if seqSet != nil {
+		// Convert sequence set to message indices
+		indices := seqSet.Set()
+		for _, index := range indices {
+			// Convert to 0-based for slice access
+			msgIndex := int(index) - 1
+			allMessages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+			if err != nil {
+				return err
+			}
+			if msgIndex >= 0 && msgIndex < len(allMessages) {
+				messagesToCopy = append(messagesToCopy, allMessages[msgIndex])
+			}
+		}
+	} else {
+		// No sequence set, get all messages
+		allMessages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+		if err != nil {
+			return err
+		}
+		messagesToCopy = allMessages
+	}
+
+	// Copy each message
+	for _, msg := range messagesToCopy {
+		// Create message copy with same content and flags
+		copyMsg := &domain.Message{
+			Subject:      msg.Subject,
+			Body:         msg.Body,
+			Flags:        msg.Flags,
+			ReceivedAt:    msg.ReceivedAt,
+			Sender:       msg.Sender,
+			Recipients:  msg.Recipients,
+			ThreadID:     msg.ThreadID,
+			MessageID:    msg.MessageID,
+		}
+
+		// Store copy in destination mailbox
+		_, err := m.messageService.Store(copyMsg, destMailbox.ID, m.convertDomainToMessageFlags(msg.Flags))
+		if err != nil {
+			m.logger.Error("failed to copy message",
+				zap.Error(err),
+				return err
+		}
+	}
+
+	m.logger.Info("messages copied",
+		zap.String("destination", dest),
+		zap.Int("count", len(messagesToCopy)),
+	)
 
 	return nil
 }
@@ -174,9 +434,34 @@ func (m *Mailbox) Expunge() error {
 		zap.String("mailbox", m.mailbox.Name),
 	)
 
-	// TODO: Find messages with \Deleted flag
-	// TODO: Permanently delete them from storage
-	// TODO: Update sequence numbers
+	// Get messages to delete
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	if err != nil {
+		m.logger.Error("failed to get messages for expunge",
+			zap.Error(err),
+			return err
+	}
+
+	// Find messages with \Deleted flag
+	var messagesToDelete []*domain.Message
+	for _, msg := range messages {
+		if strings.Contains(msg.Flags, "\\Deleted") {
+			messagesToDelete = append(messagesToDelete, msg)
+		}
+	}
+
+	// Delete messages permanently
+	for _, msg := range messagesToDelete {
+		if err := m.messageService.Delete(msg.ID); err != nil {
+			m.logger.Error("failed to delete message",
+				zap.Error(err),
+				return err
+		}
+	}
+
+	m.logger.Info("messages expunged",
+		zap.Int("count", len(messagesToDelete)),
+	)
 
 	return nil
 }
