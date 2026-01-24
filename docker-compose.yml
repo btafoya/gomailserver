@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  gomailserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: gomailserver:latest
+    container_name: gomailserver
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      - TZ=UTC
+      - GOMEMLIMIT=512MiB
+      - GOMAXPROCS=2
+
+    # Port mappings
+    ports:
+      - "25:25"      # SMTP
+      - "587:587"    # SMTP Submission
+      - "465:465"    # SMTPS
+      - "143:143"    # IMAP
+      - "993:993"    # IMAPS
+      - "8980:8980"  # HTTP Admin/Webmail
+
+    # Volume mounts for persistent data
+    volumes:
+      - gomailserver_data:/var/lib/gomailserver
+      - gomailserver_logs:/var/log/gomailserver
+      - gomailserver_config:/etc/gomailserver
+      - /etc/localtime:/etc/localtime:ro
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8980/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Networks
+    networks:
+      - gomailserver
+
+  # Optional: ClamAV container for antivirus scanning
+  clamav:
+    image: clamav/clamav:latest
+    container_name: gomailserver-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    networks:
+      - gomailserver
+    environment:
+      - CLAMAV_NO_FRESHCLAMD=true
+      - CLAMAV_NO_CLAMD=true
+
+  # Optional: Redis for caching (future use)
+  redis:
+    image: redis:7-alpine
+    container_name: gomailserver-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - gomailserver
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+
+volumes:
+  gomailserver_data:
+    driver: local
+  gomailserver_logs:
+    driver: local
+  gomailserver_config:
+    driver: local
+  clamav_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gomailserver:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

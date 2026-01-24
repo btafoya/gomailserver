@@ -1,0 +1,87 @@
+# Git and version control
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+api-docs/
+scripts/BACKUP-README.md
+ADMIN-GUIDE.md
+USER-GUIDE.md
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github/
+
+# Testing
+tests/
+*_test.go
+coverage.out
+*.cover
+
+# Development tools
+Makefile
+docker-compose.yml
+Dockerfile*
+
+# Build artifacts
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node modules (if any frontend build artifacts)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Go build cache
+.cache/
+vendor/
+
+# Database files (for development)
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration examples (use mounted configs in production)
+*.example.yaml
+*.example.yml
+config/
+
+# Backup files
+backups/
+*.bak
+
+# Archive files
+*.tar.gz
+*.zip
