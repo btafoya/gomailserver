@@ -89,24 +89,24 @@ func NewBackend(
 // NewSession creates a new SMTP session
 func (b *Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 	return &Session{
-		conn:           c,
-		backend:        b,
-		logger:         b.logger,
-		remoteAddr:     c.Conn().RemoteAddr().String(),
-		authenticated:  false,
+		conn:          c,
+		backend:       b,
+		logger:        b.logger,
+		remoteAddr:    c.Conn().RemoteAddr().String(),
+		authenticated: false,
 	}, nil
 }
 
 // Session represents an SMTP session
 type Session struct {
-	conn           *smtp.Conn
-	backend        *Backend
-	logger         *zap.Logger
-	remoteAddr     string
-	authenticated  bool
-	username       string
-	from           string
-	to             []string
+	conn          *smtp.Conn
+	backend       *Backend
+	logger        *zap.Logger
+	remoteAddr    string
+	authenticated bool
+	username      string
+	from          string
+	to            []string
 }
 
 // AuthPlain implements PLAIN authentication

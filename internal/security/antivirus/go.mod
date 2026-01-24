@@ -1,3 +1,3 @@
-module github.com/btafoya/gomailserver/internal/clamav
+module github.com/btafoya/gomailserver/internal/security/antivirus
 
 go 1.25.1
