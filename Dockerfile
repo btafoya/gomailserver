@@ -2,7 +2,7 @@
 # Multi-stage build for security and size optimization
 
 # Build stage
-FROM golang:1.23.5-alpine AS builder
+FROM golang:1.25.1-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -14,12 +14,10 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /build
 
-# Copy go mod files first for better caching
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy source code
+# Copy source code first (needed for local replace directives)
 COPY . .
+
+RUN go mod download
 
 # Build the application with security flags
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -73,12 +71,12 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8980/api/v1/health || exit 1
 
 # Expose ports
-EXPOSE 25/tcp   # SMTP
-EXPOSE 587/tcp  # SMTP Submission
-EXPOSE 465/tcp  # SMTPS
-EXPOSE 143/tcp  # IMAP
-EXPOSE 993/tcp  # IMAPS
-EXPOSE 8980/tcp # HTTP Admin/Webmail
+EXPOSE 25/tcp
+EXPOSE 587/tcp
+EXPOSE 465/tcp
+EXPOSE 143/tcp
+EXPOSE 993/tcp
+EXPOSE 8980/tcp
 
 # Switch to non-root user
 USER gomailserver:gomailserver

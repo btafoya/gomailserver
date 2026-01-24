@@ -2,7 +2,6 @@ package carddav
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -119,7 +118,31 @@ func (h *Handler) handlePropset(w http.ResponseWriter, r *http.Request, body []b
 				<displayname>Updated Contact</displayname>
 			</prop>
 			<status>HTTP/1.1 200 OK</status>
-	</propstat>
+		</propstat>
+		</response>
+		</multistatus>`))
+}
+
+// handleAddressbookMultiget handles addressbook-multiget REPORT requests
+func (h *Handler) handleAddressbookMultiget(w http.ResponseWriter, r *http.Request, body []byte) {
+	h.logger.Info("addressbook-multiget REPORT", zap.String("path", r.URL.Path))
+
+	// For now, return a simple response
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusMultiStatus)
+
+	responseXML := `<?xml version="1.0" encoding="UTF-8"?>
+<multistatus xmlns="DAV:">
+	<response>
+		<href>/carddav/addressbooks/123/Test%20Addressbook</href>
+		<propstat>
+			<prop>
+				<displayname/>
+				<getetag/>
+			</prop>
+			<status>HTTP/1.1 200 OK</status>
+		</propstat>
 	</response>
-	</multistatus>`))
+</multistatus>`
+	w.Write([]byte(responseXML))
 }

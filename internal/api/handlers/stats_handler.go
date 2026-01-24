@@ -137,7 +137,8 @@ func (h *StatsHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Get all domains
-	domains, err := h.domainService.List(ctx)
+	offset, limit := 0, 10000 // Default to all domains
+	domains, err := h.domainService.List(ctx, offset, limit)
 	if err != nil {
 		h.logger.Error("Failed to list domains for dashboard", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve dashboard statistics")

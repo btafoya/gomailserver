@@ -28,19 +28,19 @@ func NewDomainHandler(service *service.DomainService, logger *zap.Logger) *Domai
 
 // DomainRequest represents a domain creation/update request
 type DomainRequest struct {
-	Name              string `json:"name"`
-	Status            string `json:"status"`
-	CatchallEmail     string `json:"catchall_email,omitempty"`
-	MaxUsers          int    `json:"max_users,omitempty"`
-	DefaultQuota      int64  `json:"default_quota,omitempty"`
-	DKIMSelector      string `json:"dkim_selector,omitempty"`
-	DKIMPrivateKey    string `json:"dkim_private_key,omitempty"`
-	DKIMPublicKey     string `json:"dkim_public_key,omitempty"`
-	SPFRecord         string `json:"spf_record,omitempty"`
-	DMARCPolicy       string `json:"dmarc_policy,omitempty"`
-	DMARCReportEmail  string `json:"dmarc_report_email,omitempty"`
-	DKIMSigningEnabled bool  `json:"dkim_signing_enabled"`
-	DKIMVerifyEnabled  bool  `json:"dkim_verify_enabled"`
+	Name               string `json:"name"`
+	Status             string `json:"status"`
+	CatchallEmail      string `json:"catchall_email,omitempty"`
+	MaxUsers           int    `json:"max_users,omitempty"`
+	DefaultQuota       int64  `json:"default_quota,omitempty"`
+	DKIMSelector       string `json:"dkim_selector,omitempty"`
+	DKIMPrivateKey     string `json:"dkim_private_key,omitempty"`
+	DKIMPublicKey      string `json:"dkim_public_key,omitempty"`
+	SPFRecord          string `json:"spf_record,omitempty"`
+	DMARCPolicy        string `json:"dmarc_policy,omitempty"`
+	DMARCReportEmail   string `json:"dmarc_report_email,omitempty"`
+	DKIMSigningEnabled bool   `json:"dkim_signing_enabled"`
+	DKIMVerifyEnabled  bool   `json:"dkim_verify_enabled"`
 }
 
 // DomainResponse represents a domain in API responses
@@ -64,7 +64,20 @@ type DomainResponse struct {
 
 // List retrieves all domains
 func (h *DomainHandler) List(w http.ResponseWriter, r *http.Request) {
-	domains, err := h.service.List(r.Context())
+	// Parse pagination parameters
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 10000 {
+		limit = 100
+	}
+
+	offset := (page - 1) * limit
+
+	domains, err := h.service.List(r.Context(), offset, limit)
 	if err != nil {
 		h.logger.Error("Failed to list domains", zap.Error(err))
 		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve domains")

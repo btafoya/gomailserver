@@ -244,34 +244,6 @@ func (r *domainRepository) List(offset, limit int) ([]*domain.Domain, error) {
 
 	domains := make([]*domain.Domain, 0)
 	for rows.Next() {
-		domain, err := scanDomain(rows)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan domain: %w", err)
-		}
-		domains = append(domains, domain)
-	}
-
-	return domains, nil
-}
-
-// GetDKIMConfig retrieves DKIM configuration for a domain
-func (r *domainRepository) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
-	domain, err := r.GetByName(domainName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &domain.DKIMConfig{
-		Domain:     domain.Name,
-		Selector:   domain.DKIMSelector,
-		PrivateKey: []byte(domain.DKIMPrivateKey),
-		PublicKey:  domain.DKIMPublicKey,
-	}, nil
-}
-	defer rows.Close()
-
-	domains := make([]*domain.Domain, 0)
-	for rows.Next() {
 		dom := &domain.Domain{}
 
 		err := rows.Scan(
@@ -293,7 +265,26 @@ func (r *domainRepository) GetDKIMConfig(domainName string) (*domain.DKIMConfig,
 		}
 
 		domains = append(domains, dom)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan domain: %w", err)
+		}
+		domains = append(domains, dom)
 	}
 
-	return domains, rows.Err()
+	return domains, nil
+}
+
+// GetDKIMConfig retrieves DKIM configuration for a domain
+func (r *domainRepository) GetDKIMConfig(domainName string) (*domain.DKIMConfig, error) {
+	dom, err := r.GetByName(domainName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.DKIMConfig{
+		Domain:     dom.Name,
+		Selector:   dom.DKIMSelector,
+		PrivateKey: []byte(dom.DKIMPrivateKey),
+		PublicKey:  dom.DKIMPublicKey,
+	}, nil
 }

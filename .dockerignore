@@ -74,8 +74,8 @@ vendor/
 *.sqlite3
 
 # Configuration examples (use mounted configs in production)
-*.example.yaml
-*.example.yml
+# *.example.yaml
+# *.example.yml
 config/
 
 # Backup files
