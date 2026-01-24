@@ -1,13 +1,13 @@
 # GoMailServer Project TODO List Summary
 
 **Generated**: 2026-01-23
-**Total Tasks**: 57
-**Status**: Project stabilized - builds successfully
+**Total Tasks**: 58
+**Status**: Build issues identified - dependency resolution needed
 
 ## Quick Overview
 
-### Critical Blockers (6 tasks - ✅ COMPLETED)
-These tasks have been completed - project now builds successfully.
+### Critical Blockers (7 tasks - 🟡 6 COMPLETE, 1 BLOCKED)
+Build system has module dependency issues requiring resolution before proceeding.
 
 | ID | Task | Est. Time | Priority | Status |
 |----|------|-----------|----------|--------|
@@ -16,16 +16,17 @@ These tasks have been completed - project now builds successfully.
 | CRITICAL-3 | Fix UserService interface (6 missing methods) | 1 day | 🔴 HIGH | ✅ |
 | CRITICAL-4 | Fix API handler compilation errors | 1 day | 🔴 HIGH | ✅ |
 | CRITICAL-5 | Fix integration test dependency | 1-2 hours | 🔴 HIGH | ✅ |
-| CRITICAL-6 | Verify project builds successfully | 2-4 hours | 🔴 HIGH | ✅ |
+| CRITICAL-6 | **Verify project builds successfully** | 2-4 hours | 🔴 HIGH | 🟡 **BLOCKED** |
+| CRITICAL-7 | **Fix Go module dependency issues** | 1-2 hours | 🔴 HIGH | 🔴 **ACTIVE** |
 
 ### Phase Completion Status
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
-| Phase 1 | Core Mail Server | 5 | 🟡 60% (needs verification) |
-| Phase 2 | Security Foundation | 9 | 🟡 70% (needs testing) |
-| Phase 3 | REST API & Admin | 6 | 🟢 90% (mostly complete) |
-| Phase 4 | CalDAV/CardDAV | 6 | 🟢 90% (needs testing) |
+| Phase 1 | Core Mail Server | 5 | 🔴 **BLOCKED** (critical build issues) |
+| Phase 2 | Security Foundation | 9 | 🔴 **BLOCKED** (critical build issues) |
+| Phase 3 | REST API & Admin | 6 | 🔴 **BLOCKED** (critical build issues) |
+| Phase 4 | CalDAV/CardDAV | 6 | 🔴 **BLOCKED** (critical build issues) |
 | Phase 5 | PostmarkApp API | 5 | 🟡 60% (extensions incomplete) |
 | Phase 6 | Sieve Filtering | 4 | 🔴 0% (not started) |
 | Phase 7 | Webmail Client | 2 | 🟢 90% (nice-to-haves) |
@@ -68,11 +69,14 @@ These tasks have been completed - project now builds successfully.
 7. **Update AGENTS.md** if you discover new patterns or conventions
 
 ### Task Dependencies:
-- ✅ CRITICAL-6 (successful build) COMPLETED - All PHASE tasks now unblocked
+- 🔴 **ALL WORK BLOCKED** until CRITICAL-7 resolved - Go module dependency issues
+- 🟡 CRITICAL-6 (project builds) **BLOCKED** - Module dependency issues prevent build
+- ✅ CRITICAL-1 through CRITICAL-5 COMPLETED - Import fixes, stub implementations, interface fixes
 - ✅ INFRA-1, INFRA-2, INFRA-3 COMPLETED - CI/CD foundation established
 - All Phase tasks within a phase can be done in parallel
 - Testing tasks (Phase 10) depend on their respective feature phases
-- **Next**: Week 3-4 priorities (Phase 1 & 2 verification, INFRA-4 & 5)
+- **IMMEDIATE PRIORITY**: CRITICAL-7 - Fix Go module dependency issues
+- **After Critical Fixed**: Week 3-4 priorities (Phase 1 & 2 verification, INFRA-4 & 5)
 
 ### File Locations Reference:
 - PostgreSQL repos: `internal/repository/postgres/`
@@ -85,9 +89,9 @@ These tasks have been completed - project now builds successfully.
 
 ## Success Metrics
 
-### Immediate (Weeks 1-2): ✅ COMPLETED
-- [x] Project builds without errors
-- [x] All 6 CRITICAL tasks complete
+### Immediate (Weeks 1-2): 🟡 BLOCKED
+- [x] 5 of 6 CRITICAL tasks complete
+- [ ] **CRITICAL-6: Project builds without errors** - BLOCKED by module dependency issues
 - [x] CI/CD pipeline established
 
 ### Short-term (Weeks 3-6):
@@ -110,9 +114,12 @@ These tasks have been completed - project now builds successfully.
 
 ## Notes for Agents
 
-- **CRITICAL tasks COMPLETED** ✅ - All critical blockers resolved, project builds successfully
+- **🔴 ALL WORK BLOCKED** until CRITICAL-7 resolved - Go module dependency issues prevent compilation
+- **CRITICAL-1 through CRITICAL-5 COMPLETED** ✅ - Import fixes, stub implementations, interface fixes  
+- **CRITICAL-6 BLOCKED** 🟡 - Cannot verify project builds due to module dependency issues
 - **INFRASTRUCTURE tasks COMPLETED** ✅ - CI/CD pipeline, pre-commit hooks, and linting established
-- **Next Priority**: Phase 1 (Core Mail Server) verification and Phase 2 (Security Foundation) testing
+- **IMMEDIATE ACTION REQUIRED**: CRITICAL-7 - Fix Go module dependency issues before any other work
+- **After Critical Fixed**: Phase 1 (Core Mail Server) verification and Phase 2 (Security Foundation) testing
 - **Follow existing patterns** - look at SQLite repos for PostgreSQL implementation examples
 - **Test incrementally** - verify each task works before moving on
 - **Document discoveries** - update AGENTS.md if you find new conventions
@@ -260,6 +267,22 @@ func (s *UserService) UpdatePassword(id int64, newPassword string) error {
 2. Or update code to use v1 API: `github.com/emersion/go-smtp` (v1)
 
 **Verification**: `go build ./tests/integration2/`
+
+---
+
+### CRITICAL-7: Fix Go Module Dependency Issues
+
+**Root Cause**: Cached reference to non-existent `github.com/btafoya/gomailserver/internal/clamav@v1.0.0`  
+**Files Affected**: All packages due to transitive dependency resolution  
+**Issue**: Test dependencies and build cache contain invalid module reference  
+**Action Required**:
+1. Clear all Go module cache: `go clean -modcache`
+2. Remove go.sum: `rm go.sum`
+3. Regenerate dependencies: `go mod download && go mod tidy`
+4. Verify build: `go build ./cmd/gomailserver`
+5. Verify Makefile: `make build`
+
+**Verification**: `go build ./...` succeeds without module errors
 
 ---
 
