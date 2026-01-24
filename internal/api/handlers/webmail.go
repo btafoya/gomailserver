@@ -6,8 +6,7 @@ import (
 	"strconv"
 
 	"github.com/btafoya/gomailserver/internal/api/middleware"
-	"github.com/btafoya/gomailserver/internal/domain"
-	"github.com/btafoya/gomailserver/internal/phishing"
+	"github.com/btafoya/gomailserver/internal/security/phishing"
 	"github.com/btafoya/gomailserver/internal/service"
 	"go.uber.org/zap"
 
@@ -16,9 +15,10 @@ import (
 
 // WebmailHandler handles webmail-related HTTP requests
 type WebmailHandler struct {
-	mailboxService *service.MailboxService
-	messageService *service.MessageService
-	logger         *zap.Logger
+	mailboxService  *service.MailboxService
+	messageService  *service.MessageService
+	phishingService *phishing.PhishingDetectionService
+	logger          *zap.Logger
 }
 
 // NewWebmailHandler creates a new webmail handler
@@ -346,7 +346,7 @@ func (h *WebmailHandler) AnalyzePhishing(w http.ResponseWriter, r *http.Request)
 	// Perform AI phishing detection
 	result, err := h.phishingService.AnalyzeMessage(ctx, message)
 	if err != nil {
-		h.logger.Error("phishing analysis failed", zap.Error(err), zap.Int64("message_id", messageID))
+		h.logger.Error("phishing analysis failed", zap.Error(err), zap.Int64("message_id", messageID), zap.Int64("user_id", userID))
 		middleware.RespondError(w, http.StatusInternalServerError, "phishing analysis failed")
 		return
 	}

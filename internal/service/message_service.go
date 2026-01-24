@@ -17,8 +17,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
-	phishing 	phishing "github.com/btafoya/gomailserver/internal/phishing"
 	"github.com/btafoya/gomailserver/internal/repository"
+	"github.com/btafoya/gomailserver/internal/security/phishing"
 )
 
 const (
@@ -30,15 +30,6 @@ const (
 )
 
 // MessageService handles message operations
-type MessageServiceInterface interface {
-	GetByID(id int64) (*domain.Message, error)
-	GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)
-	Delete(id int64) error
-	Update(message *domain.Message) error
-	UpdateFlags(ctx context.Context, messageID, userID int, flags []string, action string) error
-	UpdateTaskCompleted(ctx context.Context, messageID int64, completed bool) error
-	StorePhishingResult(ctx context.Context, messageID int64, result *PhishingResult) error
-}
 
 type MessageService struct {
 	repo           repository.MessageRepository
@@ -59,7 +50,7 @@ func NewMessageService(repo repository.MessageRepository, storagePath string, lo
 }
 
 // StorePhishingResult stores phishing analysis results for audit trail
-func (s *MessageService) StorePhishingResult(ctx context.Context, messageID int64, result *PhishingResult) error {
+func (s *MessageService) StorePhishingResult(ctx context.Context, messageID int64, result *phishing.PhishingResult) error {
 	// Store result in database for audit and reporting
 	// This would integrate with a dedicated phishing_results table
 	return nil

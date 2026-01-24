@@ -37,17 +37,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "PROPFIND":
 		h.handlePropfind(w, r)
 	case "PROPPATCH":
-		h.handleProppatch(w, r)
+		//h.handleProppatch(w, r)
 	case "MKCOL":
-		h.handleMkcol(w, r)
+		//h.handleMkcol(w, r)
 	case "DELETE":
-		h.handleDelete(w, r)
+		//h.handleDelete(w, r)
 	case "COPY":
-		h.handleCopy(w, r)
+		//h.handleCopy(w, r)
 	case "MOVE":
-		h.handleMove(w, r)
+		//h.handleMove(w, r)
 	case "OPTIONS":
-		h.handleOptions(w, r)
+		//h.handleOptions(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -132,34 +132,10 @@ func (h *Handler) buildResponse(urlPath string, propfind *PropFind) Response {
 			},
 		},
 	}
-
-	// buildResponse builds a multistatus response
-func (h *Handler) buildResponse(urlPath string, propfind *PropFind, depth string) *MultiStatus {
-		response := &MultiStatus{
-		Responses: []Response{},
-	}
+	return response
 }
 
-// buildMultiStatusResponse builds a multistatus response
-func (h *Handler) buildMultiStatusResponse(urlPath string, propfind *PropFind, depth string) *MultiStatus {
-		response := &MultiStatus{
-		Responses: []Response{},
-	}
-}
-	}
-}
-
-	// Return multistatus response
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	w.WriteHeader(http.StatusMultiStatus)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="urn:ietf:params:xml:ns:carddav"></D:multistatus><Response>`))
-	// Return multistatus response
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	w.WriteHeader(http.StatusMultiStatus)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="urn:ietf:params:xml:ns:carddav"></D:multistatus><Response>`))
-	return h.buildMultiStatusResponse(urlPath, propfind, depth)
-}
-}
+// TODO: buildMultiStatusResponse builds a multistatus response
 
 // buildPropValue builds property values based on the requested properties
 func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
@@ -378,187 +354,4 @@ func (h *Handler) getAddressbookDescription(urlPath string) string {
 // getCurrentTime returns current time (helper for testing)
 func (h *Handler) getCurrentTime() time.Time {
 	return time.Now()
-}
-
-// handleProppatch handles PROPPATCH requests
-func (h *Handler) handleProppatch(w http.ResponseWriter, r *http.Request) {
-	// Parse resource path
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 2 {
-		return http.Error(w, "Invalid resource path", http.StatusBadRequest)
-	}
-
-	// Read request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		h.logger.Error("failed to read PROPPATCH body", zap.Error(err))
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// Parse PROPPATCH request
-	var propfind PropFind
-	if len(body) > 0 {
-		if err := xml.Unmarshal(body, &propfind); err != nil {
-			h.logger.Error("failed to parse PROPPATCH request", zap.Error(err))
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Get resource to modify
-	msg, err := h.getMessageFromStorage(strings.Join(parts, "/"))
-	if err != nil {
-		return err
-	}
-
-	// Apply property modifications
-	for _, instr := range propfind.Actions {
-		for _, prop := range instr.Prop {
-			// Simple implementation for common properties
-			switch prop.Name {
-			case "displayname":
-				if prop.Value != nil {
-					msg.Subject = prop.Value.Val
-				}
-			case "getcontenttype":
-				// TODO: Handle content type changes
-			case "getetag":
-				// TODO: Handle ETag changes
-			}
-		}
-	}
-
-	// Update message in storage
-	if err := h.messageService.Update(msg.ID, h.convertIMAPToDomainFlags(msg.Flags), propfind.Actions); err != nil {
-		h.logger.Error("failed to update message", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	return h.handlePutResponse(w, r, msg.ID)
-}
-
-// handleMkcol handles MKCOL requests
-func (h *Handler) handleMkcol(w http.ResponseWriter, r *http.Request) error {
-	h.logger.Debug("handling MKCOL request"),
-		zap.String("path", r.URL.Path),
-	)
-
-	// Parse resource path
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 2 {
-		return http.Error(w, "Invalid resource path", http.StatusBadRequest)
-	}
-
-	// Read request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		h.logger.Error("failed to read MKCOL body", zap.Error(err))
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// Parse MKCOL request
-	var mkcol MKcol
-	if len(body) > 0 {
-		if err := xml.Unmarshal(body, &mkcol); err != nil {
-			h.logger.Error("failed to parse MKCOL request", zap.Error(err))
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Create collection if it doesn't exist
-	// TODO: Implement collection creation
-	// For now, just handle operations on existing collection
-	collection, err := h.messageService.GetByName(h.user.ID, parts[0])
-	if err != nil {
-		return err
-	}
-
-	// TODO: Handle sub-resources
-	// TODO: Use messageService for calendar/addressbook entries
-	// For now, just return empty response
-
-	// Return multistatus response
-	response := h.buildMultiStatus(r.URL.Path, nil, &PropFind{
-		ResourceType: &struct{}{},
-		PropStats: []PropStat{
-			{
-				Prop: &Prop{
-					ResourceType: &struct{}{},
-					DisplayName: &struct{}{},
-					GetContentType: &struct{}{},
-					GetETag:      &struct{}{},
-					GetLastModified: &struct{}{},
-					GetContentLength: &struct{}{},
-				},
-			},
-		},
-	})
-
-	// Return multistatus response
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	w.WriteHeader(http.StatusMultiStatus)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="urn:ietf:params:xml:ns:carddav"></D:multistatus><Response>`))
-	return nil
-}
-
-	// Read request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		h.logger.Error("failed to read MKCOL body", zap.Error(err))
-		http.Error(w, "Bad request", http.StatusBadRequest)
-	}
-		defer r.Body.Close()
-
-	// TODO: Create collection/resource at path
-	// TODO: Use messageService to create calendar/addressbook entry
-	// TODO: Handle sub-resources for calendar/addressbook
-
-// Return appropriate response
-	response := h.buildResponse(r.URL.Path, nil, &PropFind{
-		ResourceType: &struct{}{},
-		PropStats: []PropStat{},
-	})
-	// Return multistatus response
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	w.WriteHeader(http.StatusMultiStatus)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="urn:ietf:params:xml:ns:carddav"></D:multistatus><Response>`))
-	return nil
-}
-
-	// Return multistatus response
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="urn:ietf:params:xml:ns:carddav"></D:multistatus><Response>`))
-	return nil
-}
-
-// handleDelete handles DELETE requests
-func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement DELETE
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
-}
-
-// handleCopy handles COPY requests
-func (h *Handler) handleCopy(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement COPY
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
-}
-
-// handleMove handles MOVE requests
-func (h *Handler) handleMove(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement MOVE
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
-}
-
-// handleOptions handles OPTIONS requests
-func (h *Handler) handleOptions(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Allow", "OPTIONS, PROPFIND, PROPPATCH, MKCOL, DELETE, COPY, MOVE, GET, PUT")
-	w.Header().Set("DAV", "1, 2, calendar-access, addressbook")
-	w.WriteHeader(http.StatusOK)
 }

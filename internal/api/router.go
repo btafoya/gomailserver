@@ -14,6 +14,7 @@ import (
 	"github.com/btafoya/gomailserver/internal/repository"
 	repRepository "github.com/btafoya/gomailserver/internal/reputation/repository"
 	repService "github.com/btafoya/gomailserver/internal/reputation/service"
+	"github.com/btafoya/gomailserver/internal/security/phishing"
 	"github.com/btafoya/gomailserver/internal/service"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -45,6 +46,7 @@ type RouterConfig struct {
 	AliasService       *service.AliasService
 	MailboxService     *service.MailboxService
 	MessageService     *service.MessageService
+	PhishingService    *phishing.PhishingDetectionService
 	QueueService       *service.QueueService
 	SetupService       *service.SetupService
 	SettingsService    *service.SettingsService
@@ -382,7 +384,7 @@ func NewRouter(config RouterConfig) *Router {
 			}
 
 			// Webmail API
-			webmailHandler := handlers.NewWebmailHandler(config.MailboxService, config.MessageService, config.Logger)
+			webmailHandler := handlers.NewWebmailHandler(config.MailboxService, config.MessageService, config.PhishingService, config.Logger)
 			r.Route("/webmail", func(r chi.Router) {
 				r.Get("/mailboxes", webmailHandler.ListMailboxes)
 				r.Get("/mailboxes/{id}/messages", webmailHandler.ListMessages)

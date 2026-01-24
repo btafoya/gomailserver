@@ -58,7 +58,7 @@ func (m *Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
 		messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
 	if err != nil {
 		m.logger.Error("failed to get messages for status",
-			zap.Error(err),
+			zap.Error(err))
 			return nil, err
 	}
 
@@ -145,7 +145,7 @@ func (m *Mailbox) SearchMessages(uid bool, criteria *imap.SearchCriteria) ([]uin
 	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
 	if err != nil {
 		m.logger.Error("failed to get messages for search",
-			zap.Error(err),
+			zap.Error(err))
 			return nil, err
 	}
 
@@ -283,7 +283,7 @@ func (m *Mailbox) UpdateMessagesFlags(uid bool, seqSet *imap.SeqSet, operation i
 	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
 	if err != nil {
 		m.logger.Error("failed to get messages for flag update",
-			zap.Error(err),
+			zap.Error(err))
 			return err
 	}
 
@@ -346,7 +346,7 @@ func (m *Mailbox) UpdateMessagesFlags(uid bool, seqSet *imap.SeqSet, operation i
 		// Update message in database
 		if err := m.messageService.UpdateFlags(msg.ID, newFlags); err != nil {
 			m.logger.Error("failed to update message flags",
-				zap.Error(err),
+				zap.Error(err))
 				return err
 		}
 	}
@@ -367,7 +367,7 @@ func (m *Mailbox) CopyMessages(uid bool, seqSet *imap.SeqSet, dest string) error
 	destMailbox, err := m.mailboxService.GetByName(m.user.ID, dest)
 	if err != nil {
 		m.logger.Error("failed to get destination mailbox",
-			zap.Error(err),
+			zap.Error(err))
 			return err
 	}
 
@@ -414,7 +414,7 @@ func (m *Mailbox) CopyMessages(uid bool, seqSet *imap.SeqSet, dest string) error
 		_, err := m.messageService.Store(copyMsg, destMailbox.ID, m.convertDomainToMessageFlags(msg.Flags))
 		if err != nil {
 			m.logger.Error("failed to copy message",
-				zap.Error(err),
+				zap.Error(err))
 				return err
 		}
 	}
@@ -438,7 +438,7 @@ func (m *Mailbox) Expunge() error {
 	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
 	if err != nil {
 		m.logger.Error("failed to get messages for expunge",
-			zap.Error(err),
+			zap.Error(err))
 			return err
 	}
 
@@ -454,7 +454,7 @@ func (m *Mailbox) Expunge() error {
 	for _, msg := range messagesToDelete {
 		if err := m.messageService.Delete(msg.ID); err != nil {
 			m.logger.Error("failed to delete message",
-				zap.Error(err),
+				zap.Error(err))
 				return err
 		}
 	}

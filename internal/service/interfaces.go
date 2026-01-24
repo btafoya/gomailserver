@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/security/phishing"
 )
 
 // UserServiceInterface defines the user service interface
@@ -21,8 +23,12 @@ type UserServiceInterface interface {
 type MessageServiceInterface interface {
 	Store(userID, mailboxID, uid int64, messageData []byte) (*domain.Message, error)
 	GetByID(id int64) (*domain.Message, error)
-	GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)
+	GetByMailbox(mailboxID int64) ([]*domain.Message, error)
 	Delete(id int64) error
+	Update(message *domain.Message) error
+	UpdateFlags(ctx context.Context, messageID, userID int, flags []string, action string) error
+	UpdateTaskCompleted(ctx context.Context, messageID int64, completed bool) error
+	StorePhishingResult(ctx context.Context, messageID int64, result *phishing.PhishingResult) error
 }
 
 // MailboxServiceInterface defines the mailbox service interface

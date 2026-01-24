@@ -2,7 +2,6 @@ package phishing
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,14 +15,14 @@ import (
 const (
 	// Default confidence threshold for phishing detection
 	DefaultConfidenceThreshold = 0.7
-	
+
 	// High-risk indicators that warrant immediate flagging
 	HighRiskScoreThreshold = 8.0
-	
+
 	// ML Model simulation confidence factors
-	BrandConfidenceWeight = 0.3
-	LinkAnalysisWeight = 0.25
-	ContentAnalysisWeight = 0.25
+	BrandConfidenceWeight  = 0.3
+	LinkAnalysisWeight     = 0.25
+	ContentAnalysisWeight  = 0.25
 	MetadataAnalysisWeight = 0.2
 )
 
@@ -49,13 +48,13 @@ type PhishingIndicator struct {
 
 // PhishingResult represents the result of phishing analysis
 type PhishingResult struct {
-	IsPhishing           bool                `json:"is_phishing"`
-	OverallConfidence   float64             `json:"overall_confidence"`
-	PhishingScore      float64             `json:"phishing_score"`
-	RiskLevel          string               `json:"risk_level"` // "low", "medium", "high", "critical"
-	Indicators          []PhishingIndicator   `json:"indicators"`
-	AnalysisTimestamp   time.Time            `json:"analysis_timestamp"`
-	Recommendations    []string             `json:"recommendations"`
+	IsPhishing        bool                `json:"is_phishing"`
+	OverallConfidence float64             `json:"overall_confidence"`
+	PhishingScore     float64             `json:"phishing_score"`
+	RiskLevel         string              `json:"risk_level"` // "low", "medium", "high", "critical"
+	Indicators        []PhishingIndicator `json:"indicators"`
+	AnalysisTimestamp time.Time           `json:"analysis_timestamp"`
+	Recommendations   []string            `json:"recommendations"`
 }
 
 // AnalyzeMessage performs comprehensive phishing detection using AI techniques
@@ -103,13 +102,13 @@ func (s *PhishingDetectionService) AnalyzeMessage(ctx context.Context, message *
 	recommendations := s.generateRecommendations(indicators, riskLevel)
 
 	result := &PhishingResult{
-		IsPhishing:         isPhishing,
-		OverallConfidence:   overallConfidence,
-		PhishingScore:      phishingScore,
-		RiskLevel:          riskLevel,
-		Indicators:          indicators,
-		AnalysisTimestamp:   time.Now(),
-		Recommendations:    recommendations,
+		IsPhishing:        isPhishing,
+		OverallConfidence: overallConfidence,
+		PhishingScore:     phishingScore,
+		RiskLevel:         riskLevel,
+		Indicators:        indicators,
+		AnalysisTimestamp: time.Now(),
+		Recommendations:   recommendations,
 	}
 
 	s.logger.Info("AI phishing analysis completed",
@@ -186,7 +185,7 @@ func (s *PhishingDetectionService) analyzeLinks(message *domain.Message) ([]Phis
 	var confidence float64
 
 	// Extract URLs from message body
-	urls := s.extractURLs(message.Body)
+	urls := s.extractURLs(message.Content)
 	urls = append(urls, s.extractURLsFromHeaders(message.Headers)...)
 
 	for _, url := range urls {
@@ -337,7 +336,7 @@ func (s *PhishingDetectionService) isSuspiciousDisplayName(displayName string) b
 	return len(displayName) > 50 || // Display name too long
 		regexp.MustCompile(`[A-Z]{3,}`).MatchString(displayName) || // Excessive capitalization
 		strings.Contains(displayName, "support") || // Contains "support" (common in phishing)
-		strings.Contains(displayName, "security") || // Contains "security" (common in phishing)
+		strings.Contains(displayName, "security") // Contains "security" (common in phishing)
 }
 
 // extractDisplayName extracts display name from email address
@@ -368,7 +367,7 @@ func (s *PhishingDetectionService) isHighRiskDomain(domain string) bool {
 		`\.tk$`,        // Tokelau
 		`\.ml$`,        // Mali
 		`\.ga$`,        // Gabon
-		`tempmail-`,      // Temporary email services
+		`tempmail-`,    // Temporary email services
 		`10minutemail`, // Disposable email services
 	}
 
@@ -398,8 +397,8 @@ func (s *PhishingDetectionService) isUnusualSender(from string) bool {
 func (s *PhishingDetectionService) extractURLs(content []byte) []string {
 	// URL extraction regex
 	urlRegex := regexp.MustCompile(`https?://[^\s<>"']`)
-	matches := urlRegex.FindAllString(string(content))
-	
+	matches := urlRegex.FindAllString(string(content), -1)
+
 	var urls []string
 	seen := make(map[string]bool)
 	for _, match := range matches {
@@ -408,7 +407,7 @@ func (s *PhishingDetectionService) extractURLs(content []byte) []string {
 			seen[match] = true
 		}
 	}
-	
+
 	return urls
 }
 
@@ -417,26 +416,26 @@ func (s *PhishingDetectionService) extractURLsFromHeaders(headers string) []stri
 	if headers == "" {
 		return nil
 	}
-	
+
 	urlRegex := regexp.MustCompile(`https?://[^\s<>"']`)
-	return urlRegex.FindAllString(headers)
+	return urlRegex.FindAllString(headers, -1)
 }
 
 // isSuspiciousURL performs URL analysis for phishing indicators
 func (s *PhishingDetectionService) isSuspiciousURL(url string) bool {
 	lowerURL := strings.ToLower(url)
-	
+
 	// IP address instead of domain
 	ipRegex := regexp.MustCompile(`^https?://\d+\.\d+\.\d+\.\d+`)
 	if ipRegex.MatchString(lowerURL) {
 		return true
 	}
-	
+
 	// Missing HTTPS
 	if strings.HasPrefix(lowerURL, "http://") && !strings.Contains(lowerURL, "localhost") {
 		return true
 	}
-	
+
 	// Suspicious TLDs
 	suspiciousTLDs := []string{".tk", ".ml", ".ga", ".cf"}
 	for _, tld := range suspiciousTLDs {
@@ -444,15 +443,15 @@ func (s *PhishingDetectionService) isSuspiciousURL(url string) bool {
 			return true
 		}
 	}
-	
+
 	// URL shorteners with suspicious patterns
-	if strings.Contains(lowerURL, "bit.ly") && 
-	   (strings.Contains(lowerURL, "login") || 
-		strings.Contains(lowerURL, "verify") || 
-		strings.Contains(lowerURL, "secure")) {
+	if strings.Contains(lowerURL, "bit.ly") &&
+		(strings.Contains(lowerURL, "login") ||
+			strings.Contains(lowerURL, "verify") ||
+			strings.Contains(lowerURL, "secure")) {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -460,8 +459,8 @@ func (s *PhishingDetectionService) isSuspiciousURL(url string) bool {
 func (s *PhishingDetectionService) isURLMismatch(url string) bool {
 	// This would compare displayed text vs actual href
 	// Simplified implementation for demonstration
-	return strings.Contains(url, "click HERE") || 
-		   strings.Contains(url, "immediate action required")
+	return strings.Contains(url, "click HERE") ||
+		strings.Contains(url, "immediate action required")
 }
 
 // isShortenedURL checks if URL uses known shortening services
@@ -470,14 +469,14 @@ func (s *PhishingDetectionService) isShortenedURL(url string) bool {
 		"bit.ly", "tinyurl.com", "goo.gl", "t.co",
 		"ow.ly", "is.gd", "buff.ly", "adf.ly",
 	}
-	
+
 	lowerURL := strings.ToLower(url)
 	for _, shortener := range shorteners {
 		if strings.Contains(lowerURL, shortener) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -489,14 +488,14 @@ func (s *PhishingDetectionService) containsUrgencyKeywords(text string) bool {
 		"verification required", "account locked", "security breach",
 		"unusual activity", "limited time", "act now",
 	}
-	
+
 	lowerText := strings.ToLower(text)
 	for _, keyword := range keywords {
 		if strings.Contains(lowerText, keyword) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -507,14 +506,14 @@ func (s *PhishingDetectionService) containsGenericGreetings(text string) bool {
 		"dear account holder", "hello user", "hello customer",
 		"attention user", "important notice", "security alert",
 	}
-	
+
 	lowerText := strings.ToLower(text)
 	for _, greeting := range greetings {
 		if strings.Contains(lowerText, greeting) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -522,22 +521,25 @@ func (s *PhishingDetectionService) containsGenericGreetings(text string) bool {
 func (s *PhishingDetectionService) hasPoorGrammar(subject, body string) bool {
 	// Simplified grammar checking (would use ML model in production)
 	text := subject + " " + body
-	
+
+	// Check for common grammatical errors in phishing
 	indicators := []string{
-		// Common grammatical errors in phishing
 		"we have notice", "your account will be", "click here immediate",
 		"dear beneficiary", "congratulations winner", "you have been selected",
-		// Poor sentence structure indicators
-		 regexp.MustCompile(`\b[A-Z]{3,}\s+[A-Z]{3,}`).MatchString(text), // Random capitalization
-		strings.Contains(text, "!!") || // Excessive punctuation
 	}
-	
+
+	// Check for poor sentence structure indicators
+	if regexp.MustCompile(`\b[A-Z]{3,}\s+[A-Z]{3,}`).MatchString(text) || // Random capitalization
+		strings.Contains(text, "!!") { // Excessive punctuation
+		return true
+	}
+
 	for _, indicator := range indicators {
 		if strings.Contains(strings.ToLower(text), indicator) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -550,14 +552,14 @@ func (s *PhishingDetectionService) containsSensitiveRequests(text string) bool {
 		"transaction details", "invoice download", "wire transfer",
 		"personal information", "confidential documents",
 	}
-	
+
 	lowerText := strings.ToLower(text)
 	for _, term := range sensitiveTerms {
 		if strings.Contains(lowerText, term) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -565,25 +567,25 @@ func (s *PhishingDetectionService) containsSensitiveRequests(text string) bool {
 func (s *PhishingDetectionService) detectsBrandImpersonation(subject, body, from string) bool {
 	text := strings.ToLower(subject + " " + body)
 	lowerFrom := strings.ToLower(from)
-	
+
 	brands := []string{
 		"microsoft", "apple", "google", "amazon", "paypal",
 		"facebook", "twitter", "instagram", "linkedin", "bank",
 		"chase", "wells fargo", "bank of america", "citibank",
 	}
-	
+
 	// Check for brand mentions without proper authorization
 	for _, brand := range brands {
 		if strings.Contains(text, brand) &&
-		   !strings.Contains(lowerFrom, brand) && // Sender not from brand domain
-		   (strings.Contains(text, "verification") || 
-			strings.Contains(text, "security") || 
-			strings.Contains(text, "suspend") || 
-			strings.Contains(text, "unusual activity")) {
+			!strings.Contains(lowerFrom, brand) && // Sender not from brand domain
+			(strings.Contains(text, "verification") ||
+				strings.Contains(text, "security") ||
+				strings.Contains(text, "suspend") ||
+				strings.Contains(text, "unusual activity")) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -596,14 +598,14 @@ func (s *PhishingDetectionService) hasSuspiciousHeaders(headers string) bool {
 		// Missing or unusual authentication headers
 		"authentication-results:", "dkim-signature:", "received-spf:",
 	}
-	
+
 	lowerHeaders := strings.ToLower(headers)
 	for _, pattern := range suspiciousPatterns {
 		if strings.Contains(lowerHeaders, pattern) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -622,7 +624,7 @@ func (s *PhishingDetectionService) calculateRiskLevel(score float64, confidence 
 // generateRecommendations creates security recommendations based on analysis
 func (s *PhishingDetectionService) generateRecommendations(indicators []PhishingIndicator, riskLevel string) []string {
 	var recommendations []string
-	
+
 	switch riskLevel {
 	case "critical", "high":
 		recommendations = append(recommendations,
@@ -643,7 +645,7 @@ func (s *PhishingDetectionService) generateRecommendations(indicators []Phishing
 			"Be cautious with urgent requests",
 		)
 	}
-	
+
 	// Add specific recommendations based on indicators
 	for _, indicator := range indicators {
 		switch indicator.Type {
@@ -655,7 +657,7 @@ func (s *PhishingDetectionService) generateRecommendations(indicators []Phishing
 			recommendations = append(recommendations, "Verify brand communication through official channels")
 		}
 	}
-	
+
 	return recommendations
 }
 
