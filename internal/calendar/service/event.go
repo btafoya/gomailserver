@@ -9,6 +9,7 @@ import (
 
 	"github.com/btafoya/gomailserver/internal/calendar/domain"
 	"github.com/emersion/go-ical"
+	"github.com/teambition/rrule-go"
 )
 
 // EventService implements domain.EventService
@@ -175,13 +176,26 @@ func (s *EventService) GetCalendarEvents(calendarID int64) ([]*domain.Event, err
 	return events, nil
 }
 
-// GetEventsInRange retrieves events within a time range
+// GetEventsInRange retrieves events within a time range, expanding recurring events
 func (s *EventService) GetEventsInRange(calendarID int64, start, end time.Time) ([]*domain.Event, error) {
-	events, err := s.eventRepo.GetByTimeRange(calendarID, start, end)
+	// Get all events for the calendar
+	events, err := s.eventRepo.GetByCalendar(calendarID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get events in range: %w", err)
+		return nil, fmt.Errorf("failed to get calendar events: %w", err)
 	}
-	return events, nil
+
+	// Expand recurring events and filter by time range
+	var result []*domain.Event
+	for _, event := range events {
+		expanded, err := s.ExpandRecurrence(event, start, end)
+		if err != nil {
+			// Log error but continue with other events
+			continue
+		}
+		result = append(result, expanded...)
+	}
+
+	return result, nil
 }
 
 // UpdateEvent updates an event from iCalendar data
@@ -282,19 +296,138 @@ func (s *EventService) GenerateETag(event *domain.Event) string {
 	return `"` + hex.EncodeToString(hash[:]) + `"`
 }
 
-// ExpandRecurrence expands recurring events within a time range
+// ExpandRecurrence expands recurring events within a time range using rrule-go
 func (s *EventService) ExpandRecurrence(event *domain.Event, start, end time.Time) ([]*domain.Event, error) {
-	// TODO: Implement recurrence expansion using rrule-go library
-	// For now, just return the original event if it's in range
+	// Non-recurring event: check if it overlaps with the time range
 	if event.RRule == "" {
-		// Non-recurring event
 		if event.StartTime.Before(end) && event.EndTime.After(start) {
 			return []*domain.Event{event}, nil
 		}
 		return []*domain.Event{}, nil
 	}
 
-	// Placeholder for recurrence expansion
-	// This would use github.com/teambition/rrule-go to expand the RRULE
-	return []*domain.Event{event}, nil
+	// Parse the RRULE
+	rule, err := s.parseRRule(event.RRule, event.StartTime)
+	if err != nil {
+		// If we can't parse the RRULE, return the original event if it's in range
+		if event.StartTime.Before(end) && event.EndTime.After(start) {
+			return []*domain.Event{event}, nil
+		}
+		return []*domain.Event{}, nil
+	}
+
+	// Get occurrences in the time range
+	occurrences := rule.Between(start.Add(-time.Hour*24), end.Add(time.Hour*24), true)
+
+	// Limit to a reasonable number of occurrences
+	const maxOccurrences = 100
+	if len(occurrences) > maxOccurrences {
+		occurrences = occurrences[:maxOccurrences]
+	}
+
+	// Calculate event duration
+	duration := event.EndTime.Sub(event.StartTime)
+
+	// Create event instances for each occurrence
+	var expanded []*domain.Event
+	for i, occStart := range occurrences {
+		occEnd := occStart.Add(duration)
+
+		// Check if this occurrence overlaps with the requested range
+		if occStart.Before(end) && occEnd.After(start) {
+			// Create a copy of the event with adjusted times
+			instance := &domain.Event{
+				ID:          event.ID, // Keep original ID for the master event
+				CalendarID:  event.CalendarID,
+				UID:         event.UID,
+				Summary:     event.Summary,
+				Description: event.Description,
+				Location:    event.Location,
+				StartTime:   occStart,
+				EndTime:     occEnd,
+				AllDay:      event.AllDay,
+				Timezone:    event.Timezone,
+				RRule:       event.RRule,
+				Attendees:   event.Attendees,
+				Organizer:   event.Organizer,
+				Status:      event.Status,
+				Sequence:    event.Sequence,
+				ICalData:    s.generateInstanceICalData(event, occStart, occEnd, i),
+				CreatedAt:   event.CreatedAt,
+				UpdatedAt:   event.UpdatedAt,
+			}
+			// Generate unique ETag for this instance
+			instance.ETag = s.generateInstanceETag(event, occStart)
+			expanded = append(expanded, instance)
+		}
+	}
+
+	return expanded, nil
+}
+
+// parseRRule parses an RRULE string into an rrule.RRule
+func (s *EventService) parseRRule(rruleStr string, dtstart time.Time) (*rrule.RRule, error) {
+	// Build the full RRULE string with DTSTART
+	fullRule := fmt.Sprintf("DTSTART:%s\nRRULE:%s",
+		dtstart.UTC().Format("20060102T150405Z"),
+		rruleStr)
+
+	rule, err := rrule.StrToRRule(fullRule)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse RRULE: %w", err)
+	}
+
+	return rule, nil
+}
+
+// generateInstanceICalData generates iCalendar data for a specific occurrence
+func (s *EventService) generateInstanceICalData(master *domain.Event, occStart, occEnd time.Time, instanceNum int) string {
+	// Generate iCalendar data for this specific occurrence
+	var sb strings.Builder
+	sb.WriteString("BEGIN:VCALENDAR\r\n")
+	sb.WriteString("VERSION:2.0\r\n")
+	sb.WriteString("PRODID:-//gomailserver//CalDAV Server//EN\r\n")
+	sb.WriteString("BEGIN:VEVENT\r\n")
+	sb.WriteString(fmt.Sprintf("UID:%s\r\n", master.UID))
+	sb.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", time.Now().UTC().Format("20060102T150405Z")))
+	sb.WriteString(fmt.Sprintf("DTSTART:%s\r\n", occStart.UTC().Format("20060102T150405Z")))
+	sb.WriteString(fmt.Sprintf("DTEND:%s\r\n", occEnd.UTC().Format("20060102T150405Z")))
+	sb.WriteString(fmt.Sprintf("RECURRENCE-ID:%s\r\n", occStart.UTC().Format("20060102T150405Z")))
+
+	if master.Summary != "" {
+		sb.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICalText(master.Summary)))
+	}
+	if master.Description != "" {
+		sb.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICalText(master.Description)))
+	}
+	if master.Location != "" {
+		sb.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICalText(master.Location)))
+	}
+	if master.Status != "" {
+		sb.WriteString(fmt.Sprintf("STATUS:%s\r\n", master.Status))
+	}
+	if master.Organizer != "" {
+		sb.WriteString(fmt.Sprintf("ORGANIZER:%s\r\n", master.Organizer))
+	}
+
+	sb.WriteString("END:VEVENT\r\n")
+	sb.WriteString("END:VCALENDAR\r\n")
+
+	return sb.String()
+}
+
+// generateInstanceETag generates a unique ETag for a recurring event instance
+func (s *EventService) generateInstanceETag(event *domain.Event, occStart time.Time) string {
+	data := fmt.Sprintf("%s-%s-%s", event.UID, occStart.Format(time.RFC3339), event.UpdatedAt.Format(time.RFC3339))
+	hash := sha256.Sum256([]byte(data))
+	return `"` + hex.EncodeToString(hash[:16]) + `"`
+}
+
+// escapeICalText escapes special characters in iCalendar text values
+func escapeICalText(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, ";", "\\;")
+	s = strings.ReplaceAll(s, ",", "\\,")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	return s
 }

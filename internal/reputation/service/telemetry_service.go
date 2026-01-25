@@ -12,9 +12,10 @@ import (
 
 // TelemetryService handles telemetry data collection and aggregation
 type TelemetryService struct {
-	eventsRepo repository.EventsRepository
-	scoresRepo repository.ScoresRepository
-	logger     *zap.Logger
+	eventsRepo           repository.EventsRepository
+	scoresRepo           repository.ScoresRepository
+	historicalScoresRepo repository.HistoricalScoresRepository
+	logger               *zap.Logger
 }
 
 // NewTelemetryService creates a new telemetry service
@@ -28,6 +29,11 @@ func NewTelemetryService(
 		scoresRepo: scoresRepo,
 		logger:     logger,
 	}
+}
+
+// SetHistoricalScoresRepo sets the historical scores repository for trend tracking
+func (s *TelemetryService) SetHistoricalScoresRepo(repo repository.HistoricalScoresRepository) {
+	s.historicalScoresRepo = repo
 }
 
 // RecordDelivery records a successful email delivery
@@ -221,6 +227,25 @@ func (s *TelemetryService) CalculateReputationScore(ctx context.Context, domainN
 		return nil, fmt.Errorf("failed to update reputation score: %w", err)
 	}
 
+	// Record historical score if repository is available
+	if s.historicalScoresRepo != nil {
+		historicalScore := &domain.HistoricalScore{
+			Domain:          domainName,
+			ReputationScore: reputationScore,
+			ComplaintRate:   complaintRate,
+			BounceRate:      bounceRate,
+			DeliveryRate:    deliveryRate,
+			RecordedAt:      now,
+		}
+		if err := s.historicalScoresRepo.RecordScore(ctx, historicalScore); err != nil {
+			// Log but don't fail the main operation
+			s.logger.Warn("Failed to record historical score",
+				zap.String("domain", domainName),
+				zap.Error(err),
+			)
+		}
+	}
+
 	s.logger.Info("Calculated reputation score",
 		zap.String("domain", domainName),
 		zap.Int("score", reputationScore),
@@ -241,6 +266,14 @@ func (s *TelemetryService) CleanupOldData(ctx context.Context) error {
 	if err := s.eventsRepo.CleanupOldEvents(ctx, cutoff); err != nil {
 		s.logger.Error("Failed to cleanup old events", zap.Error(err))
 		return fmt.Errorf("failed to cleanup old data: %w", err)
+	}
+
+	// Cleanup historical scores if repository is available
+	if s.historicalScoresRepo != nil {
+		if err := s.historicalScoresRepo.CleanupOldScores(ctx, cutoff); err != nil {
+			s.logger.Error("Failed to cleanup old historical scores", zap.Error(err))
+			// Don't fail the whole operation, just log
+		}
 	}
 
 	s.logger.Info("Cleaned up old telemetry data",

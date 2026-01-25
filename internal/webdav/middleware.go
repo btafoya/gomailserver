@@ -13,7 +13,11 @@ import (
 
 type contextKey string
 
-const UserIDKey contextKey = "user_id"
+const (
+	UserIDKey    contextKey = "user_id"
+	UsernameKey  contextKey = "username"
+	UserEmailKey contextKey = "user_email"
+)
 
 // BasicAuthMiddleware provides HTTP Basic Authentication for WebDAV endpoints
 func BasicAuthMiddleware(userRepo repository.UserRepository, logger *zap.Logger) func(http.Handler) http.Handler {
@@ -88,8 +92,15 @@ func BasicAuthMiddleware(userRepo repository.UserRepository, logger *zap.Logger)
 				zap.String("email", user.Email),
 			)
 
-			// Add user ID to request context
+			// Add user info to request context
+			// Extract username from email (part before @)
+			usernameFromEmail := user.Email
+			if atIdx := strings.Index(user.Email, "@"); atIdx > 0 {
+				usernameFromEmail = user.Email[:atIdx]
+			}
 			ctx := context.WithValue(r.Context(), UserIDKey, user.ID)
+			ctx = context.WithValue(ctx, UsernameKey, usernameFromEmail)
+			ctx = context.WithValue(ctx, UserEmailKey, user.Email)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

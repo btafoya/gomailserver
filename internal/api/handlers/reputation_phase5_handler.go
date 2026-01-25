@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -278,8 +279,80 @@ func (h *ReputationPhase5Handler) ExportDMARCReport(w http.ResponseWriter, r *ht
 	case "csv":
 		w.Header().Set("Content-Type", "text/csv")
 		w.Header().Set("Content-Disposition", "attachment; filename=dmarc-report-"+strconv.FormatInt(id, 10)+".csv")
-		// TODO: Implement CSV export
-		middleware.RespondError(w, http.StatusNotImplemented, "CSV export not yet implemented")
+
+		writer := csv.NewWriter(w)
+		defer writer.Flush()
+
+		// Write CSV header
+		header := []string{
+			"Source IP",
+			"Count",
+			"Disposition",
+			"SPF Domain",
+			"SPF Result",
+			"DKIM Domain",
+			"DKIM Result",
+			"Header From",
+			"Report ID",
+			"Domain",
+			"Organization",
+			"Begin Time",
+			"End Time",
+		}
+		if err := writer.Write(header); err != nil {
+			h.logger.Error("Failed to write CSV header", zap.Error(err))
+			return
+		}
+
+		// Format timestamps
+		beginTime := time.Unix(report.BeginTime, 0).UTC().Format(time.RFC3339)
+		endTime := time.Unix(report.EndTime, 0).UTC().Format(time.RFC3339)
+
+		// Write records
+		if report.Records != nil {
+			for _, record := range report.Records {
+				row := []string{
+					record.SourceIP,
+					strconv.Itoa(record.Count),
+					record.Disposition,
+					record.EnvelopeFrom,
+					record.SPFResult,
+					"", // DKIM domain not available in record
+					record.DKIMResult,
+					record.HeaderFrom,
+					report.ReportID,
+					report.Domain,
+					report.Organization,
+					beginTime,
+					endTime,
+				}
+				if err := writer.Write(row); err != nil {
+					h.logger.Error("Failed to write CSV row", zap.Error(err))
+					return
+				}
+			}
+		} else {
+			// Write a single summary row if no records
+			row := []string{
+				"", // Source IP
+				strconv.Itoa(report.TotalMessages),
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				report.ReportID,
+				report.Domain,
+				report.Organization,
+				beginTime,
+				endTime,
+			}
+			if err := writer.Write(row); err != nil {
+				h.logger.Error("Failed to write CSV row", zap.Error(err))
+				return
+			}
+		}
 	default:
 		middleware.RespondError(w, http.StatusBadRequest, "Unsupported export format")
 	}

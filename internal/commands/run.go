@@ -235,6 +235,9 @@ func run(cmd *cobra.Command, args []string) error {
 		logger,
 	)
 
+	// Wire up historical scores repository for trend tracking
+	reputationDB.TelemetryService.SetHistoricalScoresRepo(reputationDB.HistoricalScoresRepo)
+
 	// Create reputation scheduler with Phase 3 services
 	reputationScheduler := reputation.NewScheduler(
 		reputationDB.TelemetryService,
@@ -242,6 +245,9 @@ func run(cmd *cobra.Command, args []string) error {
 		warmUpSvc,
 		logger,
 	)
+
+	// Set data providers for scheduler to fetch domains and IPs from database
+	reputationScheduler.SetDataProviders(reputationDB.ScoresRepo, reputationDB.SendingIPRepo)
 
 	logger.Debug("reputation management services initialized")
 
@@ -267,6 +273,28 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Create SMTP server
 	smtpServer := smtp.NewServer(&cfg.SMTP, tlsCfg, smtpBackend, logger)
+
+	// Create SMTP delivery worker for queue processing
+	deliveryConfig := &smtp.Config{
+		Hostname:  cfg.Server.Hostname,
+		DNSServer: "8.8.8.8:53", // Default to Google DNS for MX lookups
+		TLSMode:   "starttls",   // Default to STARTTLS for outbound delivery
+	}
+	deliveryWorker := smtp.NewDeliveryWorker(
+		queueSvc,
+		domainRepo,
+		messageSvc,
+		mailboxSvc,
+		userSvc,
+		reputationDB.TelemetryService,
+		logger,
+		deliveryConfig,
+	)
+
+	// Wire the delivery worker to the queue service
+	service.SetDeliveryProcessor(deliveryWorker)
+
+	logger.Debug("SMTP delivery worker initialized")
 
 	// Create IMAP backend with security services
 	imapBackend := imap.NewBackend(
@@ -335,6 +363,25 @@ func run(cmd *cobra.Command, args []string) error {
 	if err := reputationScheduler.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start reputation scheduler: %w", err)
 	}
+
+	// Start queue processing goroutine
+	go func() {
+		ticker := time.NewTicker(30 * time.Second) // Process queue every 30 seconds
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("queue processor shutting down")
+				return
+			case <-ticker.C:
+				if err := deliveryWorker.ProcessQueue(ctx); err != nil {
+					logger.Error("queue processing error", zap.Error(err))
+				}
+			}
+		}
+	}()
+	logger.Info("queue processor started")
 
 	// Start SMTP server
 	if err := smtpServer.Start(ctx); err != nil {

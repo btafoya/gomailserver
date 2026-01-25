@@ -171,3 +171,108 @@ func (r *queueRepository) Delete(id int64) error {
 	}
 	return nil
 }
+
+// List retrieves queue items with pagination
+func (r *queueRepository) List(offset, limit int) ([]*domain.QueueItem, error) {
+	query := `
+		SELECT
+			id, sender, recipients, message_id, message_path,
+			retry_count, max_retries, next_retry, status,
+			error_message, created_at, updated_at
+		FROM smtp_queue
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list queue items: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*domain.QueueItem, 0)
+	for rows.Next() {
+		item := &domain.QueueItem{}
+		var nextRetry sql.NullTime
+
+		err := rows.Scan(
+			&item.ID, &item.Sender, &item.Recipients, &item.MessageID, &item.MessagePath,
+			&item.RetryCount, &item.MaxRetries, &nextRetry, &item.Status,
+			&item.ErrorMessage, &item.CreatedAt, &item.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan queue item: %w", err)
+		}
+
+		if nextRetry.Valid {
+			item.NextRetry = &nextRetry.Time
+		}
+
+		items = append(items, item)
+	}
+
+	return items, rows.Err()
+}
+
+// ListByStatus retrieves queue items by status with pagination
+func (r *queueRepository) ListByStatus(status string, offset, limit int) ([]*domain.QueueItem, error) {
+	query := `
+		SELECT
+			id, sender, recipients, message_id, message_path,
+			retry_count, max_retries, next_retry, status,
+			error_message, created_at, updated_at
+		FROM smtp_queue
+		WHERE status = ?
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.Query(query, status, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list queue items by status: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*domain.QueueItem, 0)
+	for rows.Next() {
+		item := &domain.QueueItem{}
+		var nextRetry sql.NullTime
+
+		err := rows.Scan(
+			&item.ID, &item.Sender, &item.Recipients, &item.MessageID, &item.MessagePath,
+			&item.RetryCount, &item.MaxRetries, &nextRetry, &item.Status,
+			&item.ErrorMessage, &item.CreatedAt, &item.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan queue item: %w", err)
+		}
+
+		if nextRetry.Valid {
+			item.NextRetry = &nextRetry.Time
+		}
+
+		items = append(items, item)
+	}
+
+	return items, rows.Err()
+}
+
+// Count returns total number of queue items
+func (r *queueRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM smtp_queue").Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count queue items: %w", err)
+	}
+	return count, nil
+}
+
+// CountByStatus returns total number of queue items with given status
+func (r *queueRepository) CountByStatus(status string) (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM smtp_queue WHERE status = ?", status).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count queue items by status: %w", err)
+	}
+	return count, nil
+}

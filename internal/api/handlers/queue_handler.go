@@ -42,26 +42,69 @@ type QueueItemResponse struct {
 	UpdatedAt    string   `json:"updated_at"`
 }
 
-// List retrieves all queued messages
+// QueueListResponse represents a paginated list of queue items
+type QueueListResponse struct {
+	Items      []*QueueItemResponse `json:"items"`
+	Page       int                  `json:"page"`
+	PageSize   int                  `json:"page_size"`
+	TotalPages int                  `json:"total_pages"`
+	TotalCount int64                `json:"total_count"`
+}
+
+// List retrieves all queued messages with pagination and status filtering
 func (h *QueueHandler) List(w http.ResponseWriter, r *http.Request) {
-	// Get query parameters for filtering
+	ctx := r.Context()
+
+	// Parse query parameters
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
 	status := r.URL.Query().Get("status")
 
-	// TODO: Add pagination support
+	// Set defaults
+	page := 1
+	pageSize := 50
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	offset := (page - 1) * pageSize
+
 	var items []*domain.QueueItem
+	var totalCount int64
 	var err error
 
 	if status != "" {
-		// TODO: Filter by status
-		items, err = h.service.GetPendingItems(r.Context())
+		// Filter by status
+		items, err = h.service.ListByStatus(ctx, status, offset, pageSize)
+		if err != nil {
+			h.logger.Error("Failed to list queue items by status", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve queue items")
+			return
+		}
+		totalCount, err = h.service.CountByStatus(ctx, status)
 	} else {
 		// Get all queue items
-		items, err = h.service.GetPendingItems(r.Context())
+		items, err = h.service.List(ctx, offset, pageSize)
+		if err != nil {
+			h.logger.Error("Failed to list queue items", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve queue items")
+			return
+		}
+		totalCount, err = h.service.Count(ctx)
 	}
 
 	if err != nil {
-		h.logger.Error("Failed to list queue items", zap.Error(err))
-		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve queue items")
+		h.logger.Error("Failed to count queue items", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to count queue items")
 		return
 	}
 
@@ -71,7 +114,21 @@ func (h *QueueHandler) List(w http.ResponseWriter, r *http.Request) {
 		responses[i] = queueItemToResponse(item)
 	}
 
-	middleware.RespondSuccess(w, responses, "Queue items retrieved successfully")
+	// Calculate total pages
+	totalPages := int(totalCount / int64(pageSize))
+	if totalCount%int64(pageSize) > 0 {
+		totalPages++
+	}
+
+	response := QueueListResponse{
+		Items:      responses,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+		TotalCount: totalCount,
+	}
+
+	middleware.RespondSuccess(w, response, "Queue items retrieved successfully")
 }
 
 // Get retrieves a specific queue item

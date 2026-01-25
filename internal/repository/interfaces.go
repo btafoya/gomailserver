@@ -17,6 +17,10 @@ type UserRepository interface {
 	Delete(id int64) error
 	List(domainID int64, offset, limit int) ([]*domain.User, error)
 	ListAll() ([]*domain.User, error)
+	// Pagination methods
+	ListPaginated(offset, limit int) ([]*domain.User, error)
+	Count() (int64, error)
+	CountByDomain(domainID int64) (int64, error)
 }
 
 // MessageRepository defines message data access interface
@@ -62,6 +66,10 @@ type AliasRepository interface {
 	Delete(id int64) error
 	ListAll() ([]*domain.Alias, error)
 	ListByDomain(domainID int64) ([]*domain.Alias, error)
+	// Pagination methods
+	List(offset, limit int) ([]*domain.Alias, error)
+	Count() (int64, error)
+	CountByDomain(domainID int64) (int64, error)
 }
 
 // QueueRepository defines queue data access interface
@@ -72,6 +80,11 @@ type QueueRepository interface {
 	UpdateStatus(id int64, status string, errorMsg string) error
 	UpdateRetry(id int64, retryCount int, nextRetry time.Time) error
 	Delete(id int64) error
+	// Pagination and filtering methods
+	List(offset, limit int) ([]*domain.QueueItem, error)
+	ListByStatus(status string, offset, limit int) ([]*domain.QueueItem, error)
+	Count() (int64, error)
+	CountByStatus(status string) (int64, error)
 }
 
 // GreylistRepository defines greylist data access interface

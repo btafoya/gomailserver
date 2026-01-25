@@ -68,6 +68,12 @@ func GetMigrations() []Migration {
 			Up:          migrationV8Up,
 			Down:        migrationV8Down,
 		},
+		{
+			Version:     9,
+			Description: "Add CalDAV tasks (VTODO) table for task management",
+			Up:          migrationV9Up,
+			Down:        migrationV9Down,
+		},
 	}
 }
 

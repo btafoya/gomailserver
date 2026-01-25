@@ -26,6 +26,9 @@ import (
 type DeliveryWorker struct {
 	queueService     *service.QueueService
 	domainRepo       repository.DomainRepository
+	messageService   service.MessageServiceInterface
+	mailboxService   service.MailboxServiceInterface
+	userService      service.UserServiceInterface
 	telemetryService *repService.TelemetryService
 	logger           *zap.Logger
 	config           *Config
@@ -47,6 +50,9 @@ type Config struct {
 func NewDeliveryWorker(
 	queueService *service.QueueService,
 	domainRepo repository.DomainRepository,
+	messageService service.MessageServiceInterface,
+	mailboxService service.MailboxServiceInterface,
+	userService service.UserServiceInterface,
 	telemetryService *repService.TelemetryService,
 	logger *zap.Logger,
 	config *Config,
@@ -54,6 +60,9 @@ func NewDeliveryWorker(
 	return &DeliveryWorker{
 		queueService:     queueService,
 		domainRepo:       domainRepo,
+		messageService:   messageService,
+		mailboxService:   mailboxService,
+		userService:      userService,
 		telemetryService: telemetryService,
 		logger:           logger,
 		config:           config,
@@ -182,10 +191,53 @@ func (w *DeliveryWorker) deliverLocal(ctx context.Context, recipient string, msg
 		zap.String("recipient", recipient),
 	)
 
-	// For local delivery, we can use the MessageService directly
-	// This would store the message directly in the recipient's mailbox
-	// TODO: Implement local delivery using MessageService
-	return fmt.Errorf("local delivery not yet implemented")
+	// Get the recipient user
+	user, err := w.userService.GetByEmail(recipient)
+	if err != nil {
+		return fmt.Errorf("failed to get recipient user: %w", err)
+	}
+
+	// Check if user is active
+	if user.Status != "active" {
+		return fmt.Errorf("recipient user is not active: %s", user.Status)
+	}
+
+	// Get the user's INBOX mailbox
+	inbox, err := w.mailboxService.GetByName(user.ID, "INBOX")
+	if err != nil {
+		return fmt.Errorf("failed to get INBOX for user: %w", err)
+	}
+
+	// Convert message to bytes
+	var buf bytes.Buffer
+	if err := msg.WriteTo(&buf); err != nil {
+		return fmt.Errorf("failed to serialize message: %w", err)
+	}
+	messageData := buf.Bytes()
+
+	// Check quota before storing
+	if user.Quota > 0 {
+		newUsedQuota := user.UsedQuota + int64(len(messageData))
+		if newUsedQuota > user.Quota {
+			return fmt.Errorf("recipient mailbox quota exceeded")
+		}
+	}
+
+	// Store the message in the user's INBOX
+	storedMsg, err := w.messageService.Store(user.ID, inbox.ID, inbox.UIDNext, messageData)
+	if err != nil {
+		return fmt.Errorf("failed to store message: %w", err)
+	}
+
+	w.logger.Info("message delivered locally",
+		zap.String("recipient", recipient),
+		zap.Int64("message_id", storedMsg.ID),
+		zap.Int64("user_id", user.ID),
+		zap.Int64("mailbox_id", inbox.ID),
+		zap.Int64("size", int64(len(messageData))),
+	)
+
+	return nil
 }
 
 // deliverRemote handles delivery to external domains
@@ -402,10 +454,33 @@ func (w *DeliveryWorker) parseRecipients(recipientsJSON string) []string {
 }
 
 // isLocalDomain checks if domain is configured as local
-func (w *DeliveryWorker) isLocalDomain(domain string) bool {
-	// TODO: Check against configured local domains
-	// For now, return false
-	return false
+func (w *DeliveryWorker) isLocalDomain(domainName string) bool {
+	// Check if domain exists in our domain repository
+	dom, err := w.domainRepo.GetByName(domainName)
+	if err != nil {
+		// Domain not found or error - treat as remote
+		w.logger.Debug("domain not found locally",
+			zap.String("domain", domainName),
+			zap.Error(err),
+		)
+		return false
+	}
+
+	// Check if domain is active
+	if dom.Status != "active" {
+		w.logger.Debug("domain exists but not active",
+			zap.String("domain", domainName),
+			zap.String("status", dom.Status),
+		)
+		return false
+	}
+
+	// Domain exists and is active - it's local
+	w.logger.Debug("domain is local",
+		zap.String("domain", domainName),
+		zap.Int64("domain_id", dom.ID),
+	)
+	return true
 }
 
 // handleSuccess marks a queue item as successfully delivered

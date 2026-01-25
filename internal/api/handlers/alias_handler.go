@@ -45,13 +45,71 @@ type AliasResponse struct {
 	CreatedAt    string   `json:"created_at"`
 }
 
-// List retrieves all aliases
+// AliasListResponse represents a paginated list of aliases
+type AliasListResponse struct {
+	Aliases    []*AliasResponse `json:"aliases"`
+	Page       int              `json:"page"`
+	PageSize   int              `json:"page_size"`
+	TotalPages int              `json:"total_pages"`
+	TotalCount int64            `json:"total_count"`
+}
+
+// List retrieves aliases with pagination and optional filtering
 func (h *AliasHandler) List(w http.ResponseWriter, r *http.Request) {
-	// TODO: Add pagination and filtering support
-	aliases, err := h.service.ListAll(r.Context())
+	// Parse query parameters
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+	domainIDStr := r.URL.Query().Get("domain_id")
+
+	// Set defaults
+	page := 1
+	pageSize := 50
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	offset := (page - 1) * pageSize
+
+	var aliases []*domain.Alias
+	var totalCount int64
+	var err error
+
+	// Filter by domain if specified
+	if domainIDStr != "" {
+		domainID, parseErr := strconv.ParseInt(domainIDStr, 10, 64)
+		if parseErr != nil {
+			middleware.RespondError(w, http.StatusBadRequest, "Invalid domain_id")
+			return
+		}
+		aliases, err = h.service.ListByDomain(r.Context(), domainID)
+		if err != nil {
+			h.logger.Error("Failed to list aliases by domain", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve aliases")
+			return
+		}
+		totalCount, err = h.service.CountByDomain(r.Context(), domainID)
+	} else {
+		aliases, err = h.service.List(r.Context(), offset, pageSize)
+		if err != nil {
+			h.logger.Error("Failed to list aliases", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve aliases")
+			return
+		}
+		totalCount, err = h.service.Count(r.Context())
+	}
+
 	if err != nil {
-		h.logger.Error("Failed to list aliases", zap.Error(err))
-		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve aliases")
+		h.logger.Error("Failed to count aliases", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to count aliases")
 		return
 	}
 
@@ -61,7 +119,21 @@ func (h *AliasHandler) List(w http.ResponseWriter, r *http.Request) {
 		responses[i] = aliasToResponse(a)
 	}
 
-	middleware.RespondSuccess(w, responses, "Aliases retrieved successfully")
+	// Calculate total pages
+	totalPages := int(totalCount / int64(pageSize))
+	if totalCount%int64(pageSize) > 0 {
+		totalPages++
+	}
+
+	response := AliasListResponse{
+		Aliases:    responses,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+		TotalCount: totalCount,
+	}
+
+	middleware.RespondSuccess(w, response, "Aliases retrieved successfully")
 }
 
 // Create creates a new alias

@@ -37,7 +37,10 @@ func (m *mockUserRepository) List(domainID int64, offset, limit int) ([]*domain.
 }
 func (m *mockUserRepository) UpdateQuota(userID, usedQuota int64) error      { return nil }
 func (m *mockUserRepository) UpdatePassword(userID int64, passwordHash string) error { return nil }
-func (m *mockUserRepository) ListAll() ([]*domain.User, error)                         { return nil, nil }
+func (m *mockUserRepository) ListAll() ([]*domain.User, error)               { return nil, nil }
+func (m *mockUserRepository) ListPaginated(offset, limit int) ([]*domain.User, error) { return nil, nil }
+func (m *mockUserRepository) Count() (int64, error)                          { return 0, nil }
+func (m *mockUserRepository) CountByDomain(domainID int64) (int64, error)    { return 0, nil }
 
 func TestBasicAuthMiddleware(t *testing.T) {
 	logger := zap.NewNop()

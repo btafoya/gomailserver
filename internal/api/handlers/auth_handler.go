@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/btafoya/gomailserver/internal/api/middleware"
+	"github.com/btafoya/gomailserver/internal/security/totp"
 	"github.com/btafoya/gomailserver/internal/service"
 	"go.uber.org/zap"
 )
@@ -88,8 +89,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			middleware.RespondError(w, http.StatusUnauthorized, "TOTP code required")
 			return
 		}
-		// TODO: Validate TOTP code using security/totp package
-		// For now, we'll skip TOTP validation
+		// Validate TOTP code
+		totpService := totp.NewTOTPService("gomailserver")
+		if !totpService.Validate(user.TOTPSecret, req.TOTPCode) {
+			h.logger.Warn("TOTP validation failed",
+				zap.String("email", req.Email),
+			)
+			middleware.RespondError(w, http.StatusUnauthorized, "Invalid TOTP code")
+			return
+		}
 	}
 
 	// Get role from user model
@@ -178,9 +186,11 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate new access token
-	role := "user"
-	// TODO: Check admin status
+	// Generate new access token with correct role
+	role := user.Role
+	if role == "" {
+		role = "user" // default for users without role set
+	}
 	newToken, err := middleware.GenerateJWT(user.ID, user.Email, role, &user.DomainID, h.jwtSecret)
 	if err != nil {
 		h.logger.Error("Failed to generate new JWT", zap.Error(err))

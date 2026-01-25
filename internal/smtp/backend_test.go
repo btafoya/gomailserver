@@ -19,6 +19,7 @@ import (
 // mockUserService for SMTP backend tests
 type mockUserService struct {
 	authenticateFunc func(string, string) (*domain.User, error)
+	getByEmailFunc   func(string) (*domain.User, error)
 }
 
 func (m *mockUserService) Create(user *domain.User, password string) error {
@@ -33,11 +34,26 @@ func (m *mockUserService) Authenticate(email, password string) (*domain.User, er
 }
 
 func (m *mockUserService) GetByEmail(email string) (*domain.User, error) {
-	return nil, nil
+	if m.getByEmailFunc != nil {
+		return m.getByEmailFunc(email)
+	}
+	// Default: return an active user with no quota limit
+	return &domain.User{
+		ID:        1,
+		Email:     email,
+		Status:    "active",
+		Quota:     0, // No quota limit
+		UsedQuota: 0,
+	}, nil
 }
 
 func (m *mockUserService) GetByID(id int64) (*domain.User, error) {
-	return nil, nil
+	return &domain.User{
+		ID:        id,
+		Status:    "active",
+		Quota:     0,
+		UsedQuota: 0,
+	}, nil
 }
 
 func (m *mockUserService) Update(user *domain.User) error {

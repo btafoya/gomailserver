@@ -219,7 +219,7 @@ func NewRouter(config RouterConfig) *Router {
 			})
 
 			// Log retrieval
-			logHandler := handlers.NewLogHandler(config.Logger)
+			logHandler := handlers.NewLogHandler(config.AuditService, config.Logger)
 			r.Get("/logs", logHandler.List)
 
 			// Settings management (admin only)

@@ -131,6 +131,26 @@ func (s *QueueService) GetByID(ctx context.Context, id int64) (*domain.QueueItem
 	return s.repo.GetByID(id)
 }
 
+// List retrieves queue items with pagination
+func (s *QueueService) List(ctx context.Context, offset, limit int) ([]*domain.QueueItem, error) {
+	return s.repo.List(offset, limit)
+}
+
+// ListByStatus retrieves queue items by status with pagination
+func (s *QueueService) ListByStatus(ctx context.Context, status string, offset, limit int) ([]*domain.QueueItem, error) {
+	return s.repo.ListByStatus(status, offset, limit)
+}
+
+// Count returns total number of queue items
+func (s *QueueService) Count(ctx context.Context) (int64, error) {
+	return s.repo.Count()
+}
+
+// CountByStatus returns total number of queue items with given status
+func (s *QueueService) CountByStatus(ctx context.Context, status string) (int64, error) {
+	return s.repo.CountByStatus(status)
+}
+
 // RetryItem resets a queue item for retry
 func (s *QueueService) RetryItem(ctx context.Context, id int64) error {
 	item, err := s.repo.GetByID(id)
@@ -254,9 +274,23 @@ func (s *QueueService) CalculateNextRetry(retryCount int, failedAt time.Time) ti
 	return failedAt.Add(delays[retryCount])
 }
 
-// ProcessQueue processes pending queue items
-// This method would require an SMTP client implementation to actually send the messages.
-// The queue infrastructure is ready but needs SMTP delivery integration.
+// DeliveryProcessor interface defines the contract for queue delivery
+// This is implemented by smtp.DeliveryWorker
+type DeliveryProcessor interface {
+	ProcessQueue(ctx context.Context) error
+}
+
+// deliveryProcessor holds the reference to the delivery worker
+// This is set externally after construction to avoid circular dependencies
+var deliveryProcessor DeliveryProcessor
+
+// SetDeliveryProcessor sets the delivery processor for queue processing
+// This should be called during application initialization
+func SetDeliveryProcessor(processor DeliveryProcessor) {
+	deliveryProcessor = processor
+}
+
+// ProcessQueue processes pending queue items using the configured delivery processor
 func (s *QueueService) ProcessQueue() error {
 	items, err := s.repo.GetPending()
 	if err != nil {
@@ -268,14 +302,34 @@ func (s *QueueService) ProcessQueue() error {
 		zap.Int("pending_count", len(items)),
 	)
 
-	// TODO: Implement SMTP client integration for actual message delivery
-	// For each item:
-	//   - Read message from MessagePath
-	//   - Connect to recipient MX servers
-	//   - Attempt SMTP delivery
-	//   - On success: MarkDelivered(item.ID)
-	//   - On failure: IncrementRetry or MarkFailed based on retry count
-	//   - Handle retry scheduling with exponential backoff
+	// If no delivery processor is configured, log and return
+	if deliveryProcessor == nil {
+		s.logger.Warn("no delivery processor configured, skipping queue processing")
+		return nil
+	}
 
-	return nil
+	// Delegate to the delivery processor
+	ctx := context.Background()
+	return deliveryProcessor.ProcessQueue(ctx)
+}
+
+// ProcessQueueWithContext processes pending queue items with context
+func (s *QueueService) ProcessQueueWithContext(ctx context.Context) error {
+	items, err := s.repo.GetPending()
+	if err != nil {
+		s.logger.Error("failed to get pending queue items", zap.Error(err))
+		return err
+	}
+
+	s.logger.Info("queue processing check",
+		zap.Int("pending_count", len(items)),
+	)
+
+	// If no delivery processor is configured, log and return
+	if deliveryProcessor == nil {
+		s.logger.Warn("no delivery processor configured, skipping queue processing")
+		return nil
+	}
+
+	return deliveryProcessor.ProcessQueue(ctx)
 }

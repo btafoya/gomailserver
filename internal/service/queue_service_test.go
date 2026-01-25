@@ -76,6 +76,22 @@ func (m *mockQueueRepository) Delete(id int64) error {
 	return nil
 }
 
+func (m *mockQueueRepository) List(offset, limit int) ([]*domain.QueueItem, error) {
+	return []*domain.QueueItem{}, nil
+}
+
+func (m *mockQueueRepository) ListByStatus(status string, offset, limit int) ([]*domain.QueueItem, error) {
+	return []*domain.QueueItem{}, nil
+}
+
+func (m *mockQueueRepository) Count() (int64, error) {
+	return 0, nil
+}
+
+func (m *mockQueueRepository) CountByStatus(status string) (int64, error) {
+	return 0, nil
+}
+
 func TestQueueService_Enqueue(t *testing.T) {
 	logger := zap.NewNop()
 	tmpDir := t.TempDir()

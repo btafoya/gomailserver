@@ -132,3 +132,23 @@ type WarmUpStatus struct {
 	VolumePercent float64
 	Completed     bool
 }
+
+// HistoricalScore represents a historical snapshot of a domain's reputation score
+type HistoricalScore struct {
+	ID              int64
+	Domain          string
+	ReputationScore int
+	ComplaintRate   float64
+	BounceRate      float64
+	DeliveryRate    float64
+	RecordedAt      int64
+}
+
+// SendingIPConfig represents a configured sending IP address
+type SendingIPConfig struct {
+	IPAddress   string
+	Domain      string
+	Description string
+	Active      bool
+	CreatedAt   int64
+}

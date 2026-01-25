@@ -1,6 +1,7 @@
 package caldav
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/btafoya/gomailserver/internal/calendar/domain"
+	"github.com/btafoya/gomailserver/internal/webdav"
 )
 
 // Simple mock implementations for testing
@@ -107,6 +109,54 @@ func (m *MockCalendarService) GenerateSyncToken(id int64) (string, error) {
 		return "", fmt.Errorf("mock error")
 	}
 	return fmt.Sprintf("sync-token-%d", id), nil
+}
+
+func (m *MockCalendarService) GetSharedCalendars(userID int64) ([]*domain.Calendar, error) {
+	if m.shouldError {
+		return nil, fmt.Errorf("mock error")
+	}
+	return []*domain.Calendar{}, nil
+}
+
+func (m *MockCalendarService) GetAll() ([]*domain.Calendar, error) {
+	if m.shouldError {
+		return nil, fmt.Errorf("mock error")
+	}
+	return m.calendars, nil
+}
+
+func (m *MockCalendarService) ShareCalendar(calendarID int64, readUsers, writeUsers, adminUsers []int64, readAll bool) error {
+	if m.shouldError {
+		return fmt.Errorf("mock error")
+	}
+	return nil
+}
+
+func (m *MockCalendarService) UnshareCalendar(calendarID int64, userID int64) error {
+	if m.shouldError {
+		return fmt.Errorf("mock error")
+	}
+	return nil
+}
+
+func (m *MockCalendarService) HasReadAccess(userID, calendarID int64) bool {
+	return true
+}
+
+func (m *MockCalendarService) HasWriteAccess(userID, calendarID int64) bool {
+	return true
+}
+
+func (m *MockCalendarService) HasAdminAccess(userID, calendarID int64) bool {
+	return true
+}
+
+// addUserContext adds user authentication context to a request
+func addUserContext(req *http.Request, userID int64) *http.Request {
+	ctx := context.WithValue(req.Context(), webdav.UserIDKey, userID)
+	ctx = context.WithValue(ctx, webdav.UsernameKey, "testuser")
+	ctx = context.WithValue(ctx, webdav.UserEmailKey, "testuser@example.com")
+	return req.WithContext(ctx)
 }
 
 type MockEventService struct {
@@ -213,8 +263,9 @@ func TestCalDAVHandler_MkCalendar(t *testing.T) {
 
 	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
-	// Create test request
+	// Create test request with user context
 	req := httptest.NewRequest("MKCALENDAR", "/caldav/calendars/123/Test%20Calendar", strings.NewReader(""))
+	req = addUserContext(req, 123)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -268,6 +319,7 @@ func TestCalDAVHandler_ReportCalendarQuery(t *testing.T) {
 	</C:calendar-query>`
 
 	req := httptest.NewRequest("REPORT", "/caldav/calendars/123/Test%20Calendar", strings.NewReader(reportBody))
+	req = addUserContext(req, 123)
 	req.Header.Set("Content-Type", "application/xml; charset=utf-8")
 	w := httptest.NewRecorder()
 
@@ -307,6 +359,7 @@ func TestCalDAVHandler_ReportFreeBusyQuery(t *testing.T) {
 	</C:free-busy-query>`
 
 	req := httptest.NewRequest("REPORT", "/caldav/calendars/123/Test%20Calendar", strings.NewReader(reportBody))
+	req = addUserContext(req, 123)
 	req.Header.Set("Content-Type", "application/xml; charset=utf-8")
 	w := httptest.NewRecorder()
 
@@ -334,6 +387,7 @@ func TestCalDAVHandler_InvalidPath(t *testing.T) {
 
 	// Test invalid path (too short)
 	req := httptest.NewRequest("MKCALENDAR", "/caldav/calendars/123", strings.NewReader(""))
+	req = addUserContext(req, 123)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -364,6 +418,7 @@ func TestCalDAVHandler_CalendarNotFound(t *testing.T) {
 	</C:calendar-query>`
 
 	req := httptest.NewRequest("REPORT", "/caldav/calendars/123/NonExistent", strings.NewReader(reportBody))
+	req = addUserContext(req, 123)
 	req.Header.Set("Content-Type", "application/xml; charset=utf-8")
 	w := httptest.NewRecorder()
 

@@ -272,6 +272,21 @@ func (h *DomainHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	middleware.RespondNoContent(w)
 }
 
+// DKIMGenerateRequest represents a DKIM key generation request
+type DKIMGenerateRequest struct {
+	KeyType string `json:"key_type,omitempty"` // "rsa" or "ed25519", defaults to "rsa"
+	KeySize int    `json:"key_size,omitempty"` // For RSA: 1024, 2048, 4096; defaults to 2048
+}
+
+// DKIMGenerateResponse represents a DKIM key generation response
+type DKIMGenerateResponse struct {
+	Selector   string `json:"selector"`
+	PublicKey  string `json:"public_key"`
+	DNSRecord  string `json:"dns_record"`
+	DNSName    string `json:"dns_name"`
+	DomainName string `json:"domain_name"`
+}
+
 // GenerateDKIM generates DKIM keys for a domain
 func (h *DomainHandler) GenerateDKIM(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -281,24 +296,69 @@ func (h *DomainHandler) GenerateDKIM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get domain
-	domain, err := h.service.GetByID(r.Context(), id)
+	// Parse request body for key type and size options
+	var req DKIMGenerateRequest
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			middleware.RespondError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+	}
+
+	// Default values
+	if req.KeyType == "" {
+		req.KeyType = "rsa"
+	}
+	if req.KeySize <= 0 {
+		req.KeySize = 2048
+	}
+
+	// Validate key type
+	if req.KeyType != "rsa" && req.KeyType != "ed25519" {
+		middleware.RespondError(w, http.StatusBadRequest, "Invalid key type. Use 'rsa' or 'ed25519'")
+		return
+	}
+
+	// Validate key size for RSA
+	if req.KeyType == "rsa" && req.KeySize < 1024 {
+		middleware.RespondError(w, http.StatusBadRequest, "RSA key size must be at least 1024 bits")
+		return
+	}
+
+	// Get domain to validate it exists and get the name
+	dom, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
 		middleware.RespondError(w, http.StatusNotFound, "Domain not found")
 		return
 	}
 
-	// TODO: Use security/dkim package to generate keys
-	// For now, return a placeholder response
-	h.logger.Info("DKIM key generation requested",
+	// Generate DKIM keys
+	result, err := h.service.GenerateDKIMKeys(r.Context(), id, req.KeyType, req.KeySize)
+	if err != nil {
+		h.logger.Error("Failed to generate DKIM keys",
+			zap.Int64("id", id),
+			zap.Error(err),
+		)
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to generate DKIM keys")
+		return
+	}
+
+	h.logger.Info("DKIM keys generated",
 		zap.Int64("id", id),
-		zap.String("domain", domain.Name),
+		zap.String("domain", dom.Name),
+		zap.String("selector", result.Selector),
+		zap.String("key_type", req.KeyType),
 	)
 
-	middleware.RespondSuccess(w, map[string]string{
-		"message": "DKIM key generation will be implemented in the security package",
-		"domain":  domain.Name,
-	}, "DKIM generation endpoint ready")
+	response := DKIMGenerateResponse{
+		Selector:   result.Selector,
+		PublicKey:  result.PublicKey,
+		DNSRecord:  result.DNSRecord,
+		DNSName:    result.DNSName,
+		DomainName: dom.Name,
+	}
+
+	middleware.RespondSuccess(w, response, "DKIM keys generated successfully")
 }
 
 // domainToResponse converts a domain model to API response format

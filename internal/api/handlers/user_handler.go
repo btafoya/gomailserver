@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -68,24 +69,105 @@ type PasswordResetRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
-// List retrieves all users
+// UserListResponse represents a paginated list of users
+type UserListResponse struct {
+	Users      []*UserResponse `json:"users"`
+	Page       int             `json:"page"`
+	PageSize   int             `json:"page_size"`
+	TotalPages int             `json:"total_pages"`
+	TotalCount int64           `json:"total_count"`
+}
+
+// List retrieves users with pagination and optional domain filtering
 func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
-	// TODO: Add pagination support with query parameters
-	// For now, retrieve all users
-	users, err := h.service.ListAll()
+	ctx := r.Context()
+
+	// Parse query parameters
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+	domainIDStr := r.URL.Query().Get("domain_id")
+
+	// Set defaults
+	page := 1
+	pageSize := 50
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	offset := (page - 1) * pageSize
+
+	var users []*domain.User
+	var totalCount int64
+	var err error
+
+	// Filter by domain if specified
+	if domainIDStr != "" {
+		domainID, parseErr := strconv.ParseInt(domainIDStr, 10, 64)
+		if parseErr != nil {
+			middleware.RespondError(w, http.StatusBadRequest, "Invalid domain_id")
+			return
+		}
+		users, err = h.service.ListPaginated(ctx, offset, pageSize)
+		if err != nil {
+			h.logger.Error("Failed to list users", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve users")
+			return
+		}
+		// Filter in memory for domain (or use dedicated method if we add it later)
+		filteredUsers := make([]*domain.User, 0)
+		for _, u := range users {
+			if u.DomainID == domainID {
+				filteredUsers = append(filteredUsers, u)
+			}
+		}
+		users = filteredUsers
+		totalCount, err = h.service.CountByDomain(ctx, domainID)
+	} else {
+		users, err = h.service.ListPaginated(ctx, offset, pageSize)
+		if err != nil {
+			h.logger.Error("Failed to list users", zap.Error(err))
+			middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve users")
+			return
+		}
+		totalCount, err = h.service.Count(ctx)
+	}
+
 	if err != nil {
-		h.logger.Error("Failed to list users", zap.Error(err))
-		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve users")
+		h.logger.Error("Failed to count users", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to count users")
 		return
 	}
 
-	// Convert to response format
+	// Convert to response format with domain name lookup
 	responses := make([]*UserResponse, len(users))
 	for i, u := range users {
-		responses[i] = h.userToResponse(u)
+		responses[i] = h.userToResponseWithDomain(ctx, u)
 	}
 
-	middleware.RespondSuccess(w, responses, "Users retrieved successfully")
+	// Calculate total pages
+	totalPages := int(totalCount / int64(pageSize))
+	if totalCount%int64(pageSize) > 0 {
+		totalPages++
+	}
+
+	response := UserListResponse{
+		Users:      responses,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+		TotalCount: totalCount,
+	}
+
+	middleware.RespondSuccess(w, response, "Users retrieved successfully")
 }
 
 // Create creates a new user
@@ -314,9 +396,18 @@ func (h *UserHandler) userToResponse(u *domain.User) *UserResponse {
 		response.LastLogin = u.LastLogin.Format("2006-01-02T15:04:05Z07:00")
 	}
 
-	// Get domain name if possible
-	// Note: This would require access to domain service, skipping for now
-	// TODO: Add domain name lookup
+	return response
+}
+
+// userToResponseWithDomain converts a user model to API response format with domain name lookup
+func (h *UserHandler) userToResponseWithDomain(ctx context.Context, u *domain.User) *UserResponse {
+	response := h.userToResponse(u)
+
+	// Lookup domain name
+	dom, err := h.service.GetDomainByID(ctx, u.DomainID)
+	if err == nil && dom != nil {
+		response.DomainName = dom.Name
+	}
 
 	return response
 }

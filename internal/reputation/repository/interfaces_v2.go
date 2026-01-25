@@ -240,3 +240,50 @@ type AlertsRepository interface {
 	// GetRecentAlerts returns recent alerts across all domains
 	GetRecentAlerts(ctx context.Context, limit int) ([]*domain.ReputationAlert, error)
 }
+
+// Historical Scores Repository
+
+type HistoricalScoresRepository interface {
+	// RecordScore stores a historical score snapshot
+	RecordScore(ctx context.Context, score *domain.HistoricalScore) error
+
+	// GetScoresInRange retrieves historical scores for a domain within a time range
+	GetScoresInRange(ctx context.Context, domainName string, startTime, endTime int64) ([]*domain.HistoricalScore, error)
+
+	// GetLatestScores retrieves the most recent N historical scores for a domain
+	GetLatestScores(ctx context.Context, domainName string, limit int) ([]*domain.HistoricalScore, error)
+
+	// GetScoreAt retrieves the score closest to a specific timestamp
+	GetScoreAt(ctx context.Context, domainName string, timestamp int64) (*domain.HistoricalScore, error)
+
+	// GetDailyAverages retrieves daily average scores for trend analysis
+	GetDailyAverages(ctx context.Context, domainName string, days int) ([]*domain.HistoricalScore, error)
+
+	// CleanupOldScores removes historical scores older than the specified timestamp
+	CleanupOldScores(ctx context.Context, olderThan int64) error
+}
+
+// Sending IP Configuration Repository
+
+type SendingIPRepository interface {
+	// Create stores a new sending IP configuration
+	Create(ctx context.Context, ipConfig *domain.SendingIPConfig) error
+
+	// GetByIP retrieves configuration for an IP address
+	GetByIP(ctx context.Context, ipAddress string) (*domain.SendingIPConfig, error)
+
+	// ListAll retrieves all configured sending IPs
+	ListAll(ctx context.Context) ([]*domain.SendingIPConfig, error)
+
+	// ListActive retrieves all active sending IPs
+	ListActive(ctx context.Context) ([]*domain.SendingIPConfig, error)
+
+	// ListByDomain retrieves sending IPs associated with a domain
+	ListByDomain(ctx context.Context, domainName string) ([]*domain.SendingIPConfig, error)
+
+	// Update updates a sending IP configuration
+	Update(ctx context.Context, ipConfig *domain.SendingIPConfig) error
+
+	// Delete removes a sending IP configuration
+	Delete(ctx context.Context, ipAddress string) error
+}

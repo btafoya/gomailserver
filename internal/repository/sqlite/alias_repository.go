@@ -179,3 +179,54 @@ func (r *aliasRepository) ListByDomain(domainID int64) ([]*domain.Alias, error) 
 
 	return aliases, rows.Err()
 }
+
+// List retrieves aliases with pagination
+func (r *aliasRepository) List(offset, limit int) ([]*domain.Alias, error) {
+	query := `
+		SELECT id, alias_email, domain_id, destination_emails, status, created_at
+		FROM aliases
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list aliases: %w", err)
+	}
+	defer rows.Close()
+
+	aliases := make([]*domain.Alias, 0)
+	for rows.Next() {
+		alias := &domain.Alias{}
+		err := rows.Scan(
+			&alias.ID, &alias.AliasEmail, &alias.DomainID, &alias.DestinationEmails,
+			&alias.Status, &alias.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan alias: %w", err)
+		}
+		aliases = append(aliases, alias)
+	}
+
+	return aliases, rows.Err()
+}
+
+// Count returns total number of aliases
+func (r *aliasRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM aliases").Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count aliases: %w", err)
+	}
+	return count, nil
+}
+
+// CountByDomain returns total number of aliases for a domain
+func (r *aliasRepository) CountByDomain(domainID int64) (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM aliases WHERE domain_id = ?", domainID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count aliases by domain: %w", err)
+	}
+	return count, nil
+}

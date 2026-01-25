@@ -4,9 +4,22 @@ import (
 	"context"
 	"time"
 
+	"github.com/btafoya/gomailserver/internal/reputation/repository"
 	"github.com/btafoya/gomailserver/internal/reputation/service"
 	"go.uber.org/zap"
 )
+
+// DomainProvider provides a list of active domains for reputation tracking
+type DomainProvider interface {
+	// GetActiveDomains returns all active domain names for reputation tracking
+	GetActiveDomains(ctx context.Context) ([]string, error)
+}
+
+// IPProvider provides a list of sending IP addresses for reputation tracking
+type IPProvider interface {
+	// GetActiveIPs returns all active sending IP addresses
+	GetActiveIPs(ctx context.Context) ([]string, error)
+}
 
 // Scheduler handles periodic reputation management tasks
 type Scheduler struct {
@@ -21,6 +34,11 @@ type Scheduler struct {
 	predictionsSvc      *service.PredictionsService
 	providerLimitsSvc   *service.ProviderRateLimitsService
 	alertsSvc           *service.AlertsService
+	// Data providers
+	scoresRepo          repository.ScoresRepository
+	sendingIPRepo       repository.SendingIPRepository
+	domainProvider      DomainProvider
+	ipProvider          IPProvider
 	logger              *zap.Logger
 	stopChan            chan struct{}
 }
@@ -39,6 +57,85 @@ func NewScheduler(
 		logger:            logger,
 		stopChan:          make(chan struct{}),
 	}
+}
+
+// SetDataProviders sets the domain and IP providers for scheduled tasks
+func (s *Scheduler) SetDataProviders(
+	scoresRepo repository.ScoresRepository,
+	sendingIPRepo repository.SendingIPRepository,
+) {
+	s.scoresRepo = scoresRepo
+	s.sendingIPRepo = sendingIPRepo
+}
+
+// SetDomainProvider sets a custom domain provider
+func (s *Scheduler) SetDomainProvider(provider DomainProvider) {
+	s.domainProvider = provider
+}
+
+// SetIPProvider sets a custom IP provider
+func (s *Scheduler) SetIPProvider(provider IPProvider) {
+	s.ipProvider = provider
+}
+
+// getActiveDomains retrieves active domains from the configured provider or repository
+func (s *Scheduler) getActiveDomains(ctx context.Context) []string {
+	// First try the custom domain provider if set
+	if s.domainProvider != nil {
+		domains, err := s.domainProvider.GetActiveDomains(ctx)
+		if err != nil {
+			s.logger.Error("failed to get domains from provider", zap.Error(err))
+		} else if len(domains) > 0 {
+			return domains
+		}
+	}
+
+	// Fall back to scores repository (all domains with reputation scores)
+	if s.scoresRepo != nil {
+		scores, err := s.scoresRepo.ListAllScores(ctx)
+		if err != nil {
+			s.logger.Error("failed to get domains from scores repo", zap.Error(err))
+			return []string{}
+		}
+
+		domains := make([]string, 0, len(scores))
+		for _, score := range scores {
+			domains = append(domains, score.Domain)
+		}
+		return domains
+	}
+
+	return []string{}
+}
+
+// getActiveIPs retrieves active sending IPs from the configured provider or repository
+func (s *Scheduler) getActiveIPs(ctx context.Context) []string {
+	// First try the custom IP provider if set
+	if s.ipProvider != nil {
+		ips, err := s.ipProvider.GetActiveIPs(ctx)
+		if err != nil {
+			s.logger.Error("failed to get IPs from provider", zap.Error(err))
+		} else if len(ips) > 0 {
+			return ips
+		}
+	}
+
+	// Fall back to sending IP repository
+	if s.sendingIPRepo != nil {
+		configs, err := s.sendingIPRepo.ListActive(ctx)
+		if err != nil {
+			s.logger.Error("failed to get IPs from sending IP repo", zap.Error(err))
+			return []string{}
+		}
+
+		ips := make([]string, 0, len(configs))
+		for _, config := range configs {
+			ips = append(ips, config.IPAddress)
+		}
+		return ips
+	}
+
+	return []string{}
 }
 
 // SetPhase5Services sets Phase 5 services for advanced automation
@@ -460,8 +557,13 @@ func (s *Scheduler) syncGmailPostmaster(ctx context.Context) {
 	s.logger.Debug("syncing Gmail Postmaster metrics")
 
 	start := time.Now()
-	// Note: In production, domains list would come from configuration or database
-	domains := []string{} // TODO: Get from config
+	// Get domains from configured provider or repository
+	domains := s.getActiveDomains(ctx)
+	if len(domains) == 0 {
+		s.logger.Debug("no domains configured for Gmail Postmaster sync")
+		return
+	}
+
 	err := s.gmailPostmasterSvc.SyncAll(ctx, domains)
 	duration := time.Since(start)
 
@@ -508,8 +610,13 @@ func (s *Scheduler) syncMicrosoftSNDS(ctx context.Context) {
 	s.logger.Debug("syncing Microsoft SNDS metrics")
 
 	start := time.Now()
-	// Note: In production, IP addresses would come from configuration or database
-	ipAddresses := []string{} // TODO: Get from config
+	// Get IP addresses from configured provider or repository
+	ipAddresses := s.getActiveIPs(ctx)
+	if len(ipAddresses) == 0 {
+		s.logger.Debug("no IP addresses configured for Microsoft SNDS sync")
+		return
+	}
+
 	err := s.microsoftSNDSSvc.SyncAll(ctx, ipAddresses)
 	duration := time.Since(start)
 
@@ -601,8 +708,12 @@ func (s *Scheduler) analyzeDMARCReports(ctx context.Context) {
 	s.logger.Debug("analyzing DMARC reports")
 
 	start := time.Now()
-	// Note: In production, domains list would come from configuration or database
-	domains := []string{} // TODO: Get from config
+	// Get domains from configured provider or repository
+	domains := s.getActiveDomains(ctx)
+	if len(domains) == 0 {
+		s.logger.Debug("no domains configured for DMARC analysis")
+		return
+	}
 
 	for _, domainName := range domains {
 		_, err := s.dmarcAnalyzerSvc.AnalyzeDomain(ctx, domainName, 7) // Analyze last 7 days
@@ -666,8 +777,12 @@ func (s *Scheduler) generatePredictions(ctx context.Context) {
 	s.logger.Info("generating reputation predictions")
 
 	start := time.Now()
-	// Note: In production, domains list would come from configuration or database
-	domains := []string{} // TODO: Get from config
+	// Get domains from configured provider or repository
+	domains := s.getActiveDomains(ctx)
+	if len(domains) == 0 {
+		s.logger.Debug("no domains configured for predictions generation")
+		return
+	}
 
 	// Generate predictions for 24h, 48h, and 72h horizons
 	horizons := []int{24, 48, 72}

@@ -95,6 +95,35 @@ INSERT INTO retention_policy (id, retention_days, last_cleanup)
 VALUES (1, 90, strftime('%s', 'now'));
 `
 
+const migrationReputationV2Up = `
+-- Historical reputation scores for trend analysis
+CREATE TABLE IF NOT EXISTS historical_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT NOT NULL,
+    reputation_score INTEGER NOT NULL,
+    complaint_rate REAL NOT NULL,
+    bounce_rate REAL NOT NULL,
+    delivery_rate REAL NOT NULL,
+    recorded_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_historical_scores_domain ON historical_scores(domain);
+CREATE INDEX IF NOT EXISTS idx_historical_scores_recorded_at ON historical_scores(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_historical_scores_domain_time ON historical_scores(domain, recorded_at);
+
+-- Sending IP configurations for scheduler
+CREATE TABLE IF NOT EXISTS sending_ip_configs (
+    ip_address TEXT PRIMARY KEY,
+    domain TEXT NOT NULL,
+    description TEXT,
+    active BOOLEAN DEFAULT 1,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sending_ip_domain ON sending_ip_configs(domain);
+CREATE INDEX IF NOT EXISTS idx_sending_ip_active ON sending_ip_configs(active);
+`
+
 // Database represents the reputation database connection and repositories
 type Database struct {
 	DB                       *sql.DB
@@ -102,6 +131,8 @@ type Database struct {
 	ScoresRepo               repository.ScoresRepository
 	WarmUpRepo               repository.WarmUpRepository
 	CircuitBreakerRepo       repository.CircuitBreakerRepository
+	HistoricalScoresRepo     repository.HistoricalScoresRepository
+	SendingIPRepo            repository.SendingIPRepository
 	TelemetryService         *service.TelemetryService
 	AuditorService           *service.AuditorService
 	logger                   *zap.Logger
@@ -152,6 +183,8 @@ func InitDatabase(cfg Config, logger *zap.Logger) (*Database, error) {
 	scoresRepo := sqlite.NewScoresRepository(db)
 	warmUpRepo := sqlite.NewWarmUpRepository(db)
 	circuitBreakerRepo := sqlite.NewCircuitBreakerRepository(db)
+	historicalScoresRepo := sqlite.NewHistoricalScoresRepository(db)
+	sendingIPRepo := sqlite.NewSendingIPRepository(db)
 
 	// Initialize services
 	telemetryService := service.NewTelemetryService(eventsRepo, scoresRepo, logger)
@@ -161,13 +194,15 @@ func InitDatabase(cfg Config, logger *zap.Logger) (*Database, error) {
 	)
 
 	return &Database{
-		DB:                 db,
-		EventsRepo:         eventsRepo,
-		ScoresRepo:         scoresRepo,
-		WarmUpRepo:         warmUpRepo,
-		CircuitBreakerRepo: circuitBreakerRepo,
-		TelemetryService:   telemetryService,
-		logger:             logger,
+		DB:                   db,
+		EventsRepo:           eventsRepo,
+		ScoresRepo:           scoresRepo,
+		WarmUpRepo:           warmUpRepo,
+		CircuitBreakerRepo:   circuitBreakerRepo,
+		HistoricalScoresRepo: historicalScoresRepo,
+		SendingIPRepo:        sendingIPRepo,
+		TelemetryService:     telemetryService,
+		logger:               logger,
 	}, nil
 }
 
@@ -245,6 +280,24 @@ func runMigrations(db *sql.DB) error {
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to check migration status: %w", err)
+	}
+
+	// Check if migration v2 has been applied (historical scores and sending IPs)
+	err = db.QueryRowContext(ctx, "SELECT version FROM schema_migrations WHERE version = 2").Scan(&version)
+	if err == sql.ErrNoRows {
+		// Apply migration v2
+		if _, err := db.ExecContext(ctx, migrationReputationV2Up); err != nil {
+			return fmt.Errorf("failed to apply migration v2: %w", err)
+		}
+
+		// Record migration
+		_, err = db.ExecContext(ctx, "INSERT INTO schema_migrations (version, applied_at) VALUES (2, ?)",
+			time.Now().Unix())
+		if err != nil {
+			return fmt.Errorf("failed to record migration v2: %w", err)
+		}
+	} else if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check migration v2 status: %w", err)
 	}
 
 	return nil

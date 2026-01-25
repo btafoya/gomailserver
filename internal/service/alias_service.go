@@ -55,6 +55,21 @@ func (s *AliasService) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(id)
 }
 
+// List retrieves aliases with pagination
+func (s *AliasService) List(ctx context.Context, offset, limit int) ([]*domain.Alias, error) {
+	return s.repo.List(offset, limit)
+}
+
+// Count returns the total number of aliases
+func (s *AliasService) Count(ctx context.Context) (int64, error) {
+	return s.repo.Count()
+}
+
+// CountByDomain returns the total number of aliases for a domain
+func (s *AliasService) CountByDomain(ctx context.Context, domainID int64) (int64, error) {
+	return s.repo.CountByDomain(domainID)
+}
+
 // Helper methods for working with JSON destinations
 
 // SetDestinations converts a slice of email addresses to JSON format for storage

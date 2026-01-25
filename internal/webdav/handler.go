@@ -1,6 +1,7 @@
 package webdav
 
 import (
+	"context"
 	"encoding/xml"
 	"io"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 type Handler struct {
 	logger   *zap.Logger
 	basePath string
+	storage  Storage
 }
 
 // NewHandler creates a new WebDAV handler
@@ -22,7 +24,38 @@ func NewHandler(logger *zap.Logger, basePath string) *Handler {
 	return &Handler{
 		logger:   logger,
 		basePath: basePath,
+		storage:  nil, // Will use mock data if storage not set
 	}
+}
+
+// NewHandlerWithStorage creates a new WebDAV handler with storage backend
+func NewHandlerWithStorage(logger *zap.Logger, basePath string, storage Storage) *Handler {
+	return &Handler{
+		logger:   logger,
+		basePath: basePath,
+		storage:  storage,
+	}
+}
+
+// SetStorage sets the storage backend
+func (h *Handler) SetStorage(storage Storage) {
+	h.storage = storage
+}
+
+// GetUserIDFromContext extracts user ID from context
+func GetUserIDFromContext(ctx context.Context) (int64, bool) {
+	if userID, ok := ctx.Value(UserIDKey).(int64); ok {
+		return userID, true
+	}
+	return 0, false
+}
+
+// GetUsernameFromContext extracts username from context
+func GetUsernameFromContext(ctx context.Context) (string, bool) {
+	if username, ok := ctx.Value(UsernameKey).(string); ok {
+		return username, true
+	}
+	return "", false
 }
 
 // ServeHTTP implements http.Handler interface
@@ -88,7 +121,7 @@ func (h *Handler) handlePropfind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build multistatus response
-	multistatus := h.buildMultiStatus(r.URL.Path, &propfind, depth)
+	multistatus := h.buildMultiStatus(r.URL.Path, &propfind, depth, r.Context())
 
 	// Marshal response
 	xmlData, err := xml.MarshalIndent(multistatus, "", "  ")
@@ -170,8 +203,20 @@ func (h *Handler) handleMkcol(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.Info("Creating collection", zap.String("path", r.URL.Path))
+	// Use storage if available
+	if h.storage != nil {
+		if h.storage.Exists(r.URL.Path) {
+			http.Error(w, "Resource already exists", http.StatusMethodNotAllowed)
+			return
+		}
+		if err := h.storage.CreateCollection(r.URL.Path); err != nil {
+			h.logger.Error("failed to create collection", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
 
+	h.logger.Info("Creating collection", zap.String("path", r.URL.Path))
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -197,8 +242,20 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.logger.Info("Deleting resource", zap.String("path", r.URL.Path))
+	// Use storage if available
+	if h.storage != nil {
+		if !h.storage.Exists(r.URL.Path) {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		if err := h.storage.DeleteResource(r.URL.Path); err != nil {
+			h.logger.Error("failed to delete resource", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
 
+	h.logger.Info("Deleting resource", zap.String("path", r.URL.Path))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -209,7 +266,34 @@ func (h *Handler) handleCopy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	overwrite := r.Header.Get("Overwrite") == "T"
+	overwrite := r.Header.Get("Overwrite") != "F"
+
+	// Parse destination URL to get path
+	destPath := h.parseDestinationPath(destination)
+
+	// Use storage if available
+	if h.storage != nil {
+		if !h.storage.Exists(r.URL.Path) {
+			http.Error(w, "Source not found", http.StatusNotFound)
+			return
+		}
+		destExists := h.storage.Exists(destPath)
+		if destExists && !overwrite {
+			http.Error(w, "Destination exists", http.StatusPreconditionFailed)
+			return
+		}
+		if err := h.storage.CopyResource(r.URL.Path, destPath, overwrite); err != nil {
+			h.logger.Error("failed to copy resource", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if destExists {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+		}
+		return
+	}
 
 	h.logger.Info("Copying resource",
 		zap.String("source", r.URL.Path),
@@ -231,7 +315,34 @@ func (h *Handler) handleMove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	overwrite := r.Header.Get("Overwrite") == "T"
+	overwrite := r.Header.Get("Overwrite") != "F"
+
+	// Parse destination URL to get path
+	destPath := h.parseDestinationPath(destination)
+
+	// Use storage if available
+	if h.storage != nil {
+		if !h.storage.Exists(r.URL.Path) {
+			http.Error(w, "Source not found", http.StatusNotFound)
+			return
+		}
+		destExists := h.storage.Exists(destPath)
+		if destExists && !overwrite {
+			http.Error(w, "Destination exists", http.StatusPreconditionFailed)
+			return
+		}
+		if err := h.storage.MoveResource(r.URL.Path, destPath, overwrite); err != nil {
+			h.logger.Error("failed to move resource", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if destExists {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+		}
+		return
+	}
 
 	h.logger.Info("Moving resource",
 		zap.String("source", r.URL.Path),
@@ -282,6 +393,41 @@ func (h *Handler) handleOptions(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleHeadGet(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("HEAD/GET request", zap.String("method", r.Method), zap.String("path", r.URL.Path))
 
+	// Use storage if available
+	if h.storage != nil {
+		resourceInfo, err := h.storage.GetResourceInfo(r.URL.Path)
+		if err != nil {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		if resourceInfo.IsCollection {
+			http.Error(w, "Method not allowed for collections", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", resourceInfo.ContentType)
+		w.Header().Set("Content-Length", string(rune(resourceInfo.ContentLen)))
+		w.Header().Set("ETag", resourceInfo.ETag)
+		w.Header().Set("Last-Modified", FormatHTTPDate(resourceInfo.ModTime))
+
+		if r.Method == "HEAD" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		content, err := h.storage.ReadResource(r.URL.Path)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		defer content.Close()
+
+		w.WriteHeader(http.StatusOK)
+		io.Copy(w, content)
+		return
+	}
+
 	if r.Method == "HEAD" {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -304,6 +450,17 @@ func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path == "" || r.URL.Path == "/" {
 		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Use storage if available
+	if h.storage != nil {
+		if err := h.storage.WriteResource(r.URL.Path, r.Body); err != nil {
+			h.logger.Error("failed to write resource", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
 		return
 	}
 
@@ -334,8 +491,21 @@ func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// parseDestinationPath extracts the path from a Destination header URL
+func (h *Handler) parseDestinationPath(destination string) string {
+	// Handle full URLs like "http://host/path"
+	if strings.Contains(destination, "://") {
+		idx := strings.Index(destination, "://")
+		rest := destination[idx+3:]
+		if slashIdx := strings.Index(rest, "/"); slashIdx >= 0 {
+			return rest[slashIdx:]
+		}
+	}
+	return destination
+}
+
 // buildMultiStatus builds a multistatus response for PROPFIND
-func (h *Handler) buildMultiStatus(urlPath string, propfind *PropFind, depth string) *MultiStatus {
+func (h *Handler) buildMultiStatus(urlPath string, propfind *PropFind, depth string, ctx context.Context) *MultiStatus {
 	multistatus := &MultiStatus{
 		Responses: []Response{},
 	}
@@ -344,18 +514,38 @@ func (h *Handler) buildMultiStatus(urlPath string, propfind *PropFind, depth str
 	cleanPath := path.Clean(urlPath)
 
 	// Add response for requested resource
-	response := h.buildResponse(cleanPath, propfind)
+	response := h.buildResponse(cleanPath, propfind, ctx)
 	multistatus.Responses = append(multistatus.Responses, response)
 
 	// Handle depth
 	if depth == "1" || depth == "infinity" {
-		h.addCollectionChildren(multistatus, cleanPath)
+		h.addCollectionChildren(multistatus, cleanPath, propfind, ctx, depth == "infinity")
 	}
 
 	return multistatus
 }
 
-func (h *Handler) addCollectionChildren(multistatus *MultiStatus, parentPath string) {
+func (h *Handler) addCollectionChildren(multistatus *MultiStatus, parentPath string, propfind *PropFind, ctx context.Context, recursive bool) {
+	// Use storage if available
+	if h.storage != nil {
+		children, err := h.storage.ListChildren(parentPath)
+		if err != nil {
+			h.logger.Warn("failed to list children", zap.String("path", parentPath), zap.Error(err))
+			return
+		}
+
+		for _, child := range children {
+			response := h.buildResponse(child.Path, propfind, ctx)
+			multistatus.Responses = append(multistatus.Responses, response)
+
+			if recursive && child.IsCollection {
+				h.addCollectionChildren(multistatus, child.Path, propfind, ctx, true)
+			}
+		}
+		return
+	}
+
+	// Fallback to mock data
 	resourceType := h.getResourceType(parentPath)
 	isCollection := resourceType == "collection" || resourceType == "calendar" || resourceType == "addressbook"
 
@@ -384,7 +574,7 @@ func (h *Handler) addCollectionChildren(multistatus *MultiStatus, parentPath str
 			Href: childPath,
 			PropStats: []PropStat{
 				{
-					Prop:   h.buildPropValue(childPath, &PropFind{AllProp: &struct{}{}}),
+					Prop:   h.buildPropValue(childPath, &PropFind{AllProp: &struct{}{}}, ctx),
 					Status: "HTTP/1.1 200 OK",
 				},
 			},
@@ -394,12 +584,12 @@ func (h *Handler) addCollectionChildren(multistatus *MultiStatus, parentPath str
 }
 
 // buildResponse builds a response for a single resource
-func (h *Handler) buildResponse(urlPath string, propfind *PropFind) Response {
+func (h *Handler) buildResponse(urlPath string, propfind *PropFind, ctx context.Context) Response {
 	response := Response{
 		Href: urlPath,
 		PropStats: []PropStat{
 			{
-				Prop:   h.buildPropValue(urlPath, propfind),
+				Prop:   h.buildPropValue(urlPath, propfind, ctx),
 				Status: "HTTP/1.1 200 OK",
 			},
 		},
@@ -407,10 +597,8 @@ func (h *Handler) buildResponse(urlPath string, propfind *PropFind) Response {
 	return response
 }
 
-// TODO: buildMultiStatusResponse builds a multistatus response
-
 // buildPropValue builds property values based on the requested properties
-func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
+func (h *Handler) buildPropValue(urlPath string, propfind *PropFind, ctx context.Context) PropValue {
 	propValue := PropValue{}
 
 	// Determine what properties to return
@@ -441,9 +629,26 @@ func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
 		return propValue
 	}
 
-	// Determine resource type based on path
-	resourceType := h.getResourceType(urlPath)
-	isCollection := resourceType == "collection" || resourceType == "calendar" || resourceType == "addressbook" || resourceType == "principal"
+	// Get resource info from storage if available
+	var resourceInfo *ResourceInfo
+	if h.storage != nil {
+		var err error
+		resourceInfo, err = h.storage.GetResourceInfo(urlPath)
+		if err != nil {
+			h.logger.Warn("failed to get resource info", zap.String("path", urlPath), zap.Error(err))
+		}
+	}
+
+	// Determine resource type based on path or storage info
+	var resourceType string
+	var isCollection bool
+	if resourceInfo != nil {
+		resourceType = resourceInfo.ResourceKind
+		isCollection = resourceInfo.IsCollection
+	} else {
+		resourceType = h.getResourceType(urlPath)
+		isCollection = resourceType == "collection" || resourceType == "calendar" || resourceType == "addressbook" || resourceType == "principal"
+	}
 
 	// Build property values
 	if prop.ResourceType != nil {
@@ -469,47 +674,78 @@ func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
 	}
 
 	if prop.GetContentType != nil && !isCollection {
-		contentType := "application/octet-stream"
-		if strings.HasSuffix(urlPath, ".ics") {
-			contentType = "text/calendar; charset=utf-8"
-		} else if strings.HasSuffix(urlPath, ".vcf") {
-			contentType = "text/vcard; charset=utf-8"
+		var contentType string
+		if resourceInfo != nil {
+			contentType = resourceInfo.ContentType
+		} else {
+			contentType = "application/octet-stream"
+			if strings.HasSuffix(urlPath, ".ics") {
+				contentType = "text/calendar; charset=utf-8"
+			} else if strings.HasSuffix(urlPath, ".vcf") {
+				contentType = "text/vcard; charset=utf-8"
+			}
 		}
 		propValue.GetContentType = &contentType
 	}
 
 	if prop.GetETag != nil {
-		etag := h.generateETag(urlPath)
+		var etag string
+		if resourceInfo != nil {
+			etag = resourceInfo.ETag
+		} else {
+			etag = h.generateETag(urlPath)
+		}
 		propValue.GetETag = &etag
 	}
 
 	if prop.GetLastModified != nil {
-		// TODO: Get actual modification time from storage
-		lastModified := FormatHTTPDate(h.getCurrentTime())
+		var lastModified string
+		if resourceInfo != nil {
+			lastModified = FormatHTTPDate(resourceInfo.ModTime)
+		} else {
+			lastModified = FormatHTTPDate(time.Now())
+		}
 		propValue.GetLastModified = &lastModified
 	}
 
 	if prop.GetContentLength != nil && !isCollection {
-		// TODO: Get actual content length from storage
-		var length int64 = 0
+		var length int64
+		if resourceInfo != nil {
+			length = resourceInfo.ContentLen
+		}
 		propValue.GetContentLength = &length
 	}
 
 	if prop.CreationDate != nil {
-		// TODO: Get actual creation time from storage
-		creationDate := FormatISO8601(h.getCurrentTime())
+		var creationDate string
+		if resourceInfo != nil {
+			creationDate = FormatISO8601(resourceInfo.CreateTime)
+		} else {
+			creationDate = FormatISO8601(time.Now())
+		}
 		propValue.CreationDate = &creationDate
 	}
 
 	if prop.CurrentUserPrincipal != nil {
-		// TODO: Get actual user principal from authentication context
-		propValue.CurrentUserPrincipal = &Href{Href: "/principals/users/admin"}
+		// Get user principal from context
+		var principalPath string
+		if username, ok := GetUsernameFromContext(ctx); ok {
+			principalPath = "/principals/users/" + username
+		} else {
+			principalPath = "/principals/users/admin"
+		}
+		propValue.CurrentUserPrincipal = &Href{Href: principalPath}
 	}
 
 	// CalDAV specific properties
 	if prop.CalendarHomeSet != nil {
-		// TODO: Get actual calendar home set from user context
-		propValue.CalendarHomeSet = &Href{Href: "/caldav/calendars/admin"}
+		var calendarHomePath string
+		if username, ok := GetUsernameFromContext(ctx); ok {
+			calendarHomePath = "/caldav/calendars/" + username
+		} else {
+			calendarHomePath = "/caldav/calendars/admin"
+		}
+		propValue.CalendarHomeSet = &Href{Href: calendarHomePath}
 	}
 
 	if prop.CalendarDescription != nil {
@@ -543,8 +779,13 @@ func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
 
 	// CardDAV specific properties
 	if prop.AddressbookHomeSet != nil {
-		// TODO: Get actual addressbook home set from user context
-		propValue.AddressbookHomeSet = &Href{Href: "/carddav/addressbooks/admin"}
+		var addressbookHomePath string
+		if username, ok := GetUsernameFromContext(ctx); ok {
+			addressbookHomePath = "/carddav/addressbooks/" + username
+		} else {
+			addressbookHomePath = "/carddav/addressbooks/admin"
+		}
+		propValue.AddressbookHomeSet = &Href{Href: addressbookHomePath}
 	}
 
 	if prop.AddressbookDescription != nil {
@@ -568,7 +809,6 @@ func (h *Handler) buildPropValue(urlPath string, propfind *PropFind) PropValue {
 
 // getResourceType determines the resource type based on the path
 func (h *Handler) getResourceType(urlPath string) string {
-	// TODO: Implement actual resource type detection from storage
 	if strings.HasPrefix(urlPath, "/principals/") {
 		return "principal"
 	}

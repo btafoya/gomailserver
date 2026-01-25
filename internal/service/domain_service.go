@@ -6,6 +6,7 @@ import (
 
 	"github.com/btafoya/gomailserver/internal/domain"
 	"github.com/btafoya/gomailserver/internal/repository"
+	"github.com/btafoya/gomailserver/internal/security/dkim"
 	"go.uber.org/zap"
 )
 
@@ -234,6 +235,68 @@ func (s *DomainService) GetDKIMConfig(domainName string) (*domain.DKIMConfig, er
 		Selector:   dom.DKIMSelector,
 		PrivateKey: []byte(dom.DKIMPrivateKey),
 		PublicKey:  dom.DKIMPublicKey,
+	}, nil
+}
+
+// DKIMKeyResult contains the generated DKIM keys and DNS record
+type DKIMKeyResult struct {
+	Selector   string `json:"selector"`
+	PrivateKey string `json:"private_key"`
+	PublicKey  string `json:"public_key"`
+	DNSRecord  string `json:"dns_record"`
+	DNSName    string `json:"dns_name"`
+}
+
+// GenerateDKIMKeys generates new DKIM keys for a domain
+func (s *DomainService) GenerateDKIMKeys(ctx context.Context, id int64, keyType string, keySize int) (*DKIMKeyResult, error) {
+	// Get the domain
+	dom, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("domain not found: %w", err)
+	}
+
+	var keyPair *dkim.KeyPair
+
+	// Generate keys based on type
+	switch keyType {
+	case "ed25519":
+		keyPair, err = dkim.GenerateEd25519KeyPair()
+	case "rsa":
+		fallthrough
+	default:
+		if keySize <= 0 {
+			keySize = 2048
+		}
+		keyPair, err = dkim.GenerateRSAKeyPair(keySize)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate DKIM keys: %w", err)
+	}
+
+	// Update domain with new keys
+	dom.DKIMSelector = keyPair.Selector
+	dom.DKIMPrivateKey = keyPair.PrivateKey
+	dom.DKIMPublicKey = keyPair.PublicKey
+	dom.DKIMSigningEnabled = true
+
+	if err := s.repo.Update(dom); err != nil {
+		return nil, fmt.Errorf("failed to update domain with DKIM keys: %w", err)
+	}
+
+	s.logger.Info("DKIM keys generated",
+		zap.Int64("domain_id", id),
+		zap.String("domain", dom.Name),
+		zap.String("selector", keyPair.Selector),
+		zap.String("key_type", keyType),
+	)
+
+	return &DKIMKeyResult{
+		Selector:   keyPair.Selector,
+		PrivateKey: keyPair.PrivateKey,
+		PublicKey:  keyPair.PublicKey,
+		DNSRecord:  keyPair.DNSRecord(),
+		DNSName:    fmt.Sprintf("%s._domainkey.%s", keyPair.Selector, dom.Name),
 	}, nil
 }
 

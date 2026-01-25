@@ -255,3 +255,65 @@ func (r *userRepository) ListAll() ([]*domain.User, error) {
 
 	return users, rows.Err()
 }
+
+func (r *userRepository) ListPaginated(offset, limit int) ([]*domain.User, error) {
+	query := `
+		SELECT
+			id, email, domain_id, password_hash, full_name, display_name, role,
+			quota, used_quota, status, auth_method, totp_secret, totp_enabled,
+			forward_to, auto_reply_enabled, auto_reply_subject, auto_reply_body,
+			spam_threshold, language, last_login, created_at, updated_at
+		FROM users
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users paginated: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]*domain.User, 0)
+	for rows.Next() {
+		user := &domain.User{}
+		var lastLogin sql.NullTime
+
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.DomainID, &user.PasswordHash, &user.FullName, &user.DisplayName, &user.Role,
+			&user.Quota, &user.UsedQuota, &user.Status, &user.AuthMethod, &user.TOTPSecret, &user.TOTPEnabled,
+			&user.ForwardTo, &user.AutoReplyEnabled, &user.AutoReplySubject, &user.AutoReplyBody,
+			&user.SpamThreshold, &user.Language, &lastLogin, &user.CreatedAt, &user.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		if lastLogin.Valid {
+			user.LastLogin = &lastLogin.Time
+		}
+
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}
+
+func (r *userRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+	return count, nil
+}
+
+func (r *userRepository) CountByDomain(domainID int64) (int64, error) {
+	var count int64
+	err := r.db.QueryRow("SELECT COUNT(*) FROM users WHERE domain_id = $1", domainID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users by domain: %w", err)
+	}
+	return count, nil
+}

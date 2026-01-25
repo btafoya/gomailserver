@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	ics "github.com/arran4/golang-ical"
 	calendarService "github.com/btafoya/gomailserver/internal/calendar/service"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
 	"go.uber.org/zap"
@@ -216,9 +217,7 @@ func (h *WebmailCalendarHandler) CreateEvent(w http.ResponseWriter, r *http.Requ
 		timezone = calendar.Timezone
 	}
 
-	// Build iCalendar data
-	// TODO: Use proper iCalendar library to generate RFC 5545 compliant data
-	// For now, create basic iCalendar structure
+	// Build iCalendar data using RFC 5545 compliant library (github.com/arran4/golang-ical)
 	icalData := h.buildICalendarData(req.Summary, req.Description, req.Location, req.StartTime, req.EndTime, req.AllDay, timezone, req.Attendees)
 
 	// Create event
@@ -332,50 +331,46 @@ func (h *WebmailCalendarHandler) ProcessInvitation(w http.ResponseWriter, r *htt
 // buildICalendarData builds basic iCalendar data
 // TODO: Replace with proper iCalendar library (e.g., github.com/arran4/golang-ical)
 func (h *WebmailCalendarHandler) buildICalendarData(summary, description, location string, start, end time.Time, allDay bool, timezone string, attendees []string) string {
-	// Generate UID
-	uid := time.Now().Format("20060102T150405") + "@gomailserver"
+	// Create a new calendar using the golang-ical library
+	cal := ics.NewCalendar()
+	cal.SetMethod(ics.MethodPublish)
+	cal.SetProductId("-//gomailserver//NONSGML v1.0//EN")
 
-	// Format dates
-	var dtstart, dtend string
-	if allDay {
-		dtstart = start.Format("20060102")
-		dtend = end.Format("20060102")
-	} else {
-		dtstart = start.Format("20060102T150405Z")
-		dtend = end.Format("20060102T150405Z")
-	}
+	// Create a new event
+	event := cal.AddEvent(time.Now().Format("20060102T150405") + "@gomailserver")
 
-	// Build iCalendar
-	ical := "BEGIN:VCALENDAR\r\n"
-	ical += "VERSION:2.0\r\n"
-	ical += "PRODID:-//gomailserver//NONSGML v1.0//EN\r\n"
-	ical += "BEGIN:VEVENT\r\n"
-	ical += "UID:" + uid + "\r\n"
-	if allDay {
-		ical += "DTSTART;VALUE=DATE:" + dtstart + "\r\n"
-		ical += "DTEND;VALUE=DATE:" + dtend + "\r\n"
-	} else {
-		ical += "DTSTART:" + dtstart + "\r\n"
-		ical += "DTEND:" + dtend + "\r\n"
-		if timezone != "" {
-			ical += "TZID:" + timezone + "\r\n"
-		}
-	}
-	ical += "SUMMARY:" + summary + "\r\n"
+	// Set summary
+	event.SetSummary(summary)
+
+	// Set description if provided
 	if description != "" {
-		ical += "DESCRIPTION:" + description + "\r\n"
+		event.SetDescription(description)
 	}
-	if location != "" {
-		ical += "LOCATION:" + location + "\r\n"
-	}
-	for _, attendee := range attendees {
-		ical += "ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:" + attendee + "\r\n"
-	}
-	ical += "DTSTAMP:" + time.Now().Format("20060102T150405Z") + "\r\n"
-	ical += "CREATED:" + time.Now().Format("20060102T150405Z") + "\r\n"
-	ical += "LAST-MODIFIED:" + time.Now().Format("20060102T150405Z") + "\r\n"
-	ical += "END:VEVENT\r\n"
-	ical += "END:VCALENDAR\r\n"
 
-	return ical
+	// Set location if provided
+	if location != "" {
+		event.SetLocation(location)
+	}
+
+	// Set start and end times
+	if allDay {
+		event.SetAllDayStartAt(start)
+		event.SetAllDayEndAt(end)
+	} else {
+		event.SetStartAt(start)
+		event.SetEndAt(end)
+	}
+
+	// Set timestamps
+	now := time.Now().UTC()
+	event.SetDtStampTime(now)
+	event.SetCreatedTime(now)
+	event.SetModifiedAt(now)
+
+	// Add attendees
+	for _, attendee := range attendees {
+		event.AddAttendee("mailto:" + attendee)
+	}
+
+	return cal.Serialize()
 }

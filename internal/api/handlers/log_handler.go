@@ -3,20 +3,24 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/btafoya/gomailserver/internal/api/middleware"
+	"github.com/btafoya/gomailserver/internal/service"
 	"go.uber.org/zap"
 )
 
 // LogHandler handles log retrieval endpoints
 type LogHandler struct {
-	logger *zap.Logger
+	auditService *service.AuditService
+	logger       *zap.Logger
 }
 
 // NewLogHandler creates a new log handler
-func NewLogHandler(logger *zap.Logger) *LogHandler {
+func NewLogHandler(auditService *service.AuditService, logger *zap.Logger) *LogHandler {
 	return &LogHandler{
-		logger: logger,
+		auditService: auditService,
+		logger:       logger,
 	}
 }
 
@@ -47,8 +51,8 @@ func (h *LogHandler) List(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
 	level := r.URL.Query().Get("level")
-	service := r.URL.Query().Get("service")
-	userEmail := r.URL.Query().Get("user_email")
+	resourceType := r.URL.Query().Get("service")
+	action := r.URL.Query().Get("action")
 	startDate := r.URL.Query().Get("start_date")
 	endDate := r.URL.Query().Get("end_date")
 
@@ -68,24 +72,84 @@ func (h *LogHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: Implement actual log retrieval from database
-	// For now, return empty logs with filter information logged
-	h.logger.Info("Logs requested",
+	// Build filter
+	filter := service.AuditLogFilter{
+		Severity:     level,
+		ResourceType: resourceType,
+		Action:       action,
+		Limit:        pageSize,
+		Offset:       (page - 1) * pageSize,
+	}
+
+	// Parse date filters
+	if startDate != "" {
+		if t, err := time.Parse("2006-01-02", startDate); err == nil {
+			filter.StartTime = t
+		} else if t, err := time.Parse(time.RFC3339, startDate); err == nil {
+			filter.StartTime = t
+		}
+	}
+
+	if endDate != "" {
+		if t, err := time.Parse("2006-01-02", endDate); err == nil {
+			filter.EndTime = t.Add(24 * time.Hour) // Include the end date
+		} else if t, err := time.Parse(time.RFC3339, endDate); err == nil {
+			filter.EndTime = t
+		}
+	}
+
+	h.logger.Debug("Logs requested",
 		zap.Int("page", page),
 		zap.Int("page_size", pageSize),
 		zap.String("level", level),
-		zap.String("service", service),
-		zap.String("user_email", userEmail),
-		zap.String("start_date", startDate),
-		zap.String("end_date", endDate),
+		zap.String("resource_type", resourceType),
+		zap.String("action", action),
 	)
 
+	// Retrieve logs from database
+	logs, err := h.auditService.GetLogs(r.Context(), filter)
+	if err != nil {
+		h.logger.Error("Failed to retrieve logs", zap.Error(err))
+		middleware.RespondError(w, http.StatusInternalServerError, "Failed to retrieve logs")
+		return
+	}
+
+	// Convert to response format
+	entries := make([]LogEntry, 0, len(logs))
+	for _, log := range logs {
+		entry := LogEntry{
+			Timestamp: log.Timestamp.Format(time.RFC3339),
+			Level:     log.Severity,
+			Service:   log.ResourceType,
+			IPAddress: log.IPAddress,
+			Action:    log.Action,
+			Message:   log.Details,
+		}
+		if log.Username != "" {
+			entry.UserEmail = log.Username
+		}
+		if log.Success {
+			entry.Result = "success"
+		} else {
+			entry.Result = "failure"
+		}
+		entries = append(entries, entry)
+	}
+
+	// Calculate total (for proper pagination, we'd need a count query)
+	totalCount := len(entries)
+	if totalCount == pageSize {
+		// There might be more, but we don't know exactly how many
+		totalCount = page * pageSize
+	}
+	totalPages := (totalCount + pageSize - 1) / pageSize
+
 	response := LogsResponse{
-		Logs:       []LogEntry{},
+		Logs:       entries,
 		Page:       page,
 		PageSize:   pageSize,
-		TotalPages: 0,
-		TotalCount: 0,
+		TotalPages: totalPages,
+		TotalCount: totalCount,
 	}
 
 	middleware.RespondSuccess(w, response, "Logs retrieved successfully")

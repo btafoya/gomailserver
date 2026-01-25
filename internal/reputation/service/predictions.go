@@ -14,10 +14,11 @@ import (
 // PredictionsService generates reputation predictions using trend analysis
 
 type PredictionsService struct {
-	predictionsRepo repository.PredictionsRepository
-	eventsRepo      repository.EventsRepository
-	scoresRepo      repository.ScoresRepository
-	logger          *zap.Logger
+	predictionsRepo      repository.PredictionsRepository
+	eventsRepo           repository.EventsRepository
+	scoresRepo           repository.ScoresRepository
+	historicalScoresRepo repository.HistoricalScoresRepository
+	logger               *zap.Logger
 }
 
 func NewPredictionsService(
@@ -32,6 +33,11 @@ func NewPredictionsService(
 		scoresRepo:      scoresRepo,
 		logger:          logger,
 	}
+}
+
+// SetHistoricalScoresRepo sets the historical scores repository for trend analysis
+func (s *PredictionsService) SetHistoricalScoresRepo(repo repository.HistoricalScoresRepository) {
+	s.historicalScoresRepo = repo
 }
 
 // GeneratePrediction generates a reputation prediction for a domain
@@ -122,18 +128,69 @@ func (s *PredictionsService) GeneratePrediction(ctx context.Context, domainName 
 	return prediction, nil
 }
 
-// calculateScoreTrend calculates the score change trend
+// calculateScoreTrend calculates the score change trend using historical data
 func (s *PredictionsService) calculateScoreTrend(ctx context.Context, domainName string) float64 {
 	// Get current score
-	_, err := s.scoresRepo.GetReputationScore(ctx, domainName)
+	currentScore, err := s.scoresRepo.GetReputationScore(ctx, domainName)
 	if err != nil {
 		return 0
 	}
 
-	// Get score from 24 hours ago (simplified - would need historical scores table in real implementation)
-	// For now, return 0 (no trend)
-	// TODO: Implement historical score tracking for better trend analysis
+	// If historical scores repository is available, use it for accurate trend analysis
+	if s.historicalScoresRepo != nil {
+		now := time.Now()
+		// Get score from approximately 24 hours ago
+		historicalScore, err := s.historicalScoresRepo.GetScoreAt(ctx, domainName, now.Add(-24*time.Hour).Unix())
+		if err != nil {
+			s.logger.Debug("failed to get historical score for trend",
+				zap.String("domain", domainName),
+				zap.Error(err),
+			)
+		} else if historicalScore != nil {
+			// Calculate daily change in score
+			return float64(currentScore.ReputationScore - historicalScore.ReputationScore)
+		}
+
+		// Try to get daily averages for more robust trend calculation
+		dailyAverages, err := s.historicalScoresRepo.GetDailyAverages(ctx, domainName, 7)
+		if err == nil && len(dailyAverages) >= 2 {
+			// Calculate linear regression trend
+			trend := s.calculateLinearTrend(dailyAverages)
+			return trend
+		}
+	}
+
+	// Fallback: no historical data available, assume no trend
 	return 0
+}
+
+// calculateLinearTrend calculates a linear trend from historical scores
+func (s *PredictionsService) calculateLinearTrend(scores []*domain.HistoricalScore) float64 {
+	n := len(scores)
+	if n < 2 {
+		return 0
+	}
+
+	// Simple linear regression to find score change per day
+	var sumX, sumY, sumXY, sumX2 float64
+	for i, score := range scores {
+		x := float64(i)
+		y := float64(score.ReputationScore)
+		sumX += x
+		sumY += y
+		sumXY += x * y
+		sumX2 += x * x
+	}
+
+	nFloat := float64(n)
+	denominator := nFloat*sumX2 - sumX*sumX
+	if denominator == 0 {
+		return 0
+	}
+
+	// Slope represents the daily change in score
+	slope := (nFloat*sumXY - sumX*sumY) / denominator
+	return slope
 }
 
 // calculateComplaintTrend calculates complaint rate trend

@@ -172,3 +172,18 @@ func (s *UserService) UpdatePassword(userID int64, newPassword string) error {
 func (s *UserService) GetDomainByID(ctx context.Context, domainID int64) (*domain.Domain, error) {
 	return s.repos.Domain.GetByID(domainID)
 }
+
+// ListPaginated retrieves users with pagination
+func (s *UserService) ListPaginated(ctx context.Context, offset, limit int) ([]*domain.User, error) {
+	return s.repos.User.ListPaginated(offset, limit)
+}
+
+// Count returns the total number of users
+func (s *UserService) Count(ctx context.Context) (int64, error) {
+	return s.repos.User.Count()
+}
+
+// CountByDomain returns the total number of users for a domain
+func (s *UserService) CountByDomain(ctx context.Context, domainID int64) (int64, error) {
+	return s.repos.User.CountByDomain(domainID)
+}
