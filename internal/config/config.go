@@ -116,6 +116,15 @@ type WebDAVConfig struct {
 type SecurityConfig struct {
 	ClamAV       ClamAVConfig       `mapstructure:"clamav" yaml:"clamav"`
 	SpamAssassin SpamAssassinConfig `mapstructure:"spamassassin" yaml:"spamassassin"`
+	DNS          DNSConfig          `mapstructure:"dns" yaml:"dns"`
+}
+
+// DNSConfig holds DNS resolver configuration for DANE, MTA-STS, and other DNS lookups
+type DNSConfig struct {
+	Resolver        string `mapstructure:"resolver" yaml:"resolver" env:"DNS_RESOLVER" default:"1.1.1.1:53"`
+	FallbackServers []string `mapstructure:"fallback_servers" yaml:"fallback_servers" env:"DNS_FALLBACK_SERVERS"`
+	Timeout         int    `mapstructure:"timeout" yaml:"timeout" env:"DNS_TIMEOUT" default:"5"`
+	UseTCP          bool   `mapstructure:"use_tcp" yaml:"use_tcp" env:"DNS_USE_TCP" default:"false"`
 }
 
 // ClamAVConfig holds ClamAV connection configuration
@@ -231,6 +240,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("security.spamassassin.host", "localhost")
 	v.SetDefault("security.spamassassin.port", 783)
 	v.SetDefault("security.spamassassin.timeout", 30)
+
+	// DNS resolver configuration for DANE, MTA-STS, etc.
+	v.SetDefault("security.dns.resolver", "1.1.1.1:53")
+	v.SetDefault("security.dns.fallback_servers", []string{"8.8.8.8:53", "9.9.9.9:53"})
+	v.SetDefault("security.dns.timeout", 5)
+	v.SetDefault("security.dns.use_tcp", false)
 
 	// TLS/ACME
 	v.SetDefault("tls.acme.enabled", false)

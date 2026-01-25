@@ -17,22 +17,84 @@ import (
 	"go.uber.org/zap"
 )
 
-// DANEService handles DANE TLSA record lookups and caching
-type DANEService struct {
-	db         *database.DB
-	logger     *zap.Logger
-	dnsClient  *dns.Client
-	resolver   string
+// DANEServiceConfig holds DNS configuration for the DANE service
+type DANEServiceConfig struct {
+	Resolver        string
+	FallbackServers []string
+	Timeout         int
+	UseTCP          bool
 }
 
-// NewDANEService creates a new DANE service
-func NewDANEService(db *database.DB, logger *zap.Logger) *DANEService {
-	return &DANEService{
-		db:        db,
-		logger:    logger,
-		dnsClient: &dns.Client{},
-		resolver:  "1.1.1.1:53", // Default to Cloudflare DNS - TODO Add to admin as configurable.
+// DefaultDANEServiceConfig returns the default DNS configuration
+func DefaultDANEServiceConfig() *DANEServiceConfig {
+	return &DANEServiceConfig{
+		Resolver:        "1.1.1.1:53",
+		FallbackServers: []string{"8.8.8.8:53", "9.9.9.9:53"},
+		Timeout:         5,
+		UseTCP:          false,
 	}
+}
+
+// DANEService handles DANE TLSA record lookups and caching
+type DANEService struct {
+	db              *database.DB
+	logger          *zap.Logger
+	dnsClient       *dns.Client
+	resolver        string
+	fallbackServers []string
+}
+
+// NewDANEService creates a new DANE service with default configuration
+func NewDANEService(db *database.DB, logger *zap.Logger) *DANEService {
+	return NewDANEServiceWithConfig(db, logger, nil)
+}
+
+// NewDANEServiceWithConfig creates a new DANE service with custom configuration
+func NewDANEServiceWithConfig(db *database.DB, logger *zap.Logger, cfg *DANEServiceConfig) *DANEService {
+	if cfg == nil {
+		cfg = DefaultDANEServiceConfig()
+	}
+
+	// Normalize resolver address
+	resolver := normalizeResolverAddress(cfg.Resolver)
+
+	// Normalize fallback servers
+	fallbacks := make([]string, 0, len(cfg.FallbackServers))
+	for _, server := range cfg.FallbackServers {
+		fallbacks = append(fallbacks, normalizeResolverAddress(server))
+	}
+
+	client := &dns.Client{
+		Timeout: time.Duration(cfg.Timeout) * time.Second,
+	}
+	if cfg.UseTCP {
+		client.Net = "tcp"
+	}
+
+	logger.Info("DANE service initialized",
+		zap.String("resolver", resolver),
+		zap.Strings("fallback_servers", fallbacks),
+		zap.Int("timeout_seconds", cfg.Timeout),
+		zap.Bool("use_tcp", cfg.UseTCP),
+	)
+
+	return &DANEService{
+		db:              db,
+		logger:          logger,
+		dnsClient:       client,
+		resolver:        resolver,
+		fallbackServers: fallbacks,
+	}
+}
+
+// normalizeResolverAddress ensures the resolver has a port
+func normalizeResolverAddress(resolver string) string {
+	host, port, err := net.SplitHostPort(resolver)
+	if err != nil {
+		// No port specified, add default DNS port
+		return net.JoinHostPort(resolver, "53")
+	}
+	return net.JoinHostPort(host, port)
 }
 
 // LookupTLSA performs a DANE TLSA DNS lookup with caching
@@ -78,9 +140,26 @@ func (s *DANEService) fetchTLSARecords(ctx context.Context, domainName string, p
 	msg.SetQuestion(queryName, dns.TypeTLSA)
 	msg.SetEdns0(4096, true) // Request DNSSEC
 
-	resp, _, err := s.dnsClient.Exchange(msg, s.resolver)
-	if err != nil {
-		return nil, fmt.Errorf("DNS query failed: %w", err)
+	// Try primary resolver, then fallbacks
+	resolvers := append([]string{s.resolver}, s.fallbackServers...)
+	var lastErr error
+	var resp *dns.Msg
+
+	for _, resolver := range resolvers {
+		var err error
+		resp, _, err = s.dnsClient.Exchange(msg, resolver)
+		if err == nil {
+			break
+		}
+		lastErr = err
+		s.logger.Debug("DNS query failed, trying next resolver",
+			zap.String("resolver", resolver),
+			zap.Error(err),
+		)
+	}
+
+	if resp == nil {
+		return nil, fmt.Errorf("DNS query failed on all resolvers: %w", lastErr)
 	}
 
 	if resp.Rcode != dns.RcodeSuccess {

@@ -2,7 +2,7 @@
 
 **Generated:** 2026-01-24
 **Last Updated:** 2026-01-25
-**Total TODOs Found:** 54 (39 Completed)
+**Total TODOs Found:** 54 (41 Completed)
 
 ## Summary by Category
 
@@ -15,7 +15,7 @@
 | **🟢 Reputation System** | 5 | ✅ Completed |
 | **🟢 Authentication** | 2 | ✅ Fixed |
 | **🟢 Queue/Delivery** | 3 | ✅ Fixed |
-| Configuration | 3 | ⚠️ Pending |
+| **🟢 Configuration** | 2 | ✅ Fixed |
 
 ---
 
@@ -466,21 +466,32 @@ import (
 
 ---
 
-## Configuration TODOs
+## 🟢 FIXED: Configuration TODOs
 
 ### 30. DANE DNS Resolver
-**File:** `internal/service/dane_service.go:34`  
-**Status:** ⚠️ Hardcoded  
-**Description:** DNS resolver hardcoded to Cloudflare  
-**Impact:** No configurability  
-**Resolution:** Add to admin configuration
+**File:** `internal/service/dane_service.go`, `internal/config/config.go`
+**Status:** ✅ Completed
+**Description:** DNS resolver now configurable via config file
+**Impact:** Full DNS resolver configurability for production
+**Resolution:** ✅ Implemented:
+- Added `DNSConfig` struct to SecurityConfig with resolver, fallback servers, timeout, and TCP options
+- Created `DANEServiceConfig` struct for service initialization
+- Added `NewDANEServiceWithConfig()` constructor accepting configuration
+- Implemented fallback DNS server support in `fetchTLSARecords()`
+- Default resolvers: Cloudflare (1.1.1.1), Google (8.8.8.8), Quad9 (9.9.9.9)
+- Configurable via YAML or environment variables (DNS_RESOLVER, DNS_FALLBACK_SERVERS, DNS_TIMEOUT, DNS_USE_TCP)
 
 ### 31. Message Date Parsing
-**File:** `internal/service/message_service.go:119`  
-**Status:** ⚠️ Simplified  
-**Description:** Uses current time instead of parsing Date header  
-**Impact:** Incorrect message timestamps  
-**Resolution:** Implement RFC 2822 date parsing
+**File:** `internal/service/message_service.go:320-364`
+**Status:** ✅ Completed
+**Description:** RFC 2822/5322 date parsing from Date header
+**Impact:** Correct message timestamps from email headers
+**Resolution:** ✅ Implemented:
+- Added `parseDateHeader()` method with comprehensive date format support
+- Supports RFC 1123, RFC 2822/5322, ISO 8601, and common variants
+- Uses Go's `net/mail.ParseDate()` as fallback for maximum compatibility
+- Graceful fallback to current time with warning log on parse failure
+- Handles timezone names, numeric offsets, and parenthetical timezone notes
 
 ---
 
@@ -553,6 +564,7 @@ import (
 | **Security** | **🟢 Good** | TOTP and admin checks implemented |
 | **Reputation** | **🟢 Good** | Historical tracking and scheduler config complete |
 | **WebDAV/CalDAV** | **🟢 Good** | Full CalDAV support with recurrence and VTODO |
+| **Configuration** | **🟢 Good** | DNS resolver and date parsing now configurable |
 | Performance | **🟢 Good** | Pagination implemented across APIs |
 | Testing | **Medium** | Some test file issues remain |
 
@@ -568,6 +580,8 @@ import (
 - **Production Ready:** ✅ Complete (Phases 0-3)
 
 ### Recent Changes (2026-01-25)
+- **DNS Resolver Configuration** - Added configurable DNS resolver with fallback server support
+- **Message Date Parsing** - RFC 2822/5322 date parsing from email Date headers
 - **SMTP Local Delivery** - Messages now delivered to local recipients' INBOX
 - **Local Domain Check** - DeliveryWorker queries domain repository
 - **Queue Integration** - DeliveryWorker wired to QueueService via DeliveryProcessor interface
@@ -590,6 +604,7 @@ import (
 - **Queue/Delivery** - Full integration with background processing
 - **WebDAV/CalDAV** - All 6 items fully implemented with production-ready features
 - **Reputation System** - Scheduler config and historical tracking complete
+- **Configuration** - All 2 items completed (DNS resolver, date parsing)
 - **All critical items completed** - System is production-ready
 
 ### Architecture Notes

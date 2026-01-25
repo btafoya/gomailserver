@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	netmail "net/mail"
 	"os"
 	"path/filepath"
 	"strings"
@@ -115,9 +116,8 @@ func (s *MessageService) Store(userID, mailboxID, uid int64, messageData []byte)
 	// Generate thread ID from message headers
 	threadID := s.generateThreadID(messageID, inReplyTo)
 
-	// Parse internal date (use current time for now)
-	// TODO: Parse RFC 2822 date from Date header
-	internalDate := time.Now()
+	// Parse internal date from Date header (RFC 2822/5322)
+	internalDate := s.parseDateHeader(mailReader.Header.Get("Date"))
 
 	// Determine storage strategy
 	var storageType string
@@ -315,6 +315,52 @@ func (s *MessageService) normalizeMessageID(msgID string) string {
 	// Hash the message ID for consistent length
 	hash := sha256.Sum256([]byte(msgID))
 	return hex.EncodeToString(hash[:16])
+}
+
+// parseDateHeader parses an RFC 2822/5322 date header and returns the time
+// Falls back to current time if parsing fails
+func (s *MessageService) parseDateHeader(dateStr string) time.Time {
+	if dateStr == "" {
+		return time.Now()
+	}
+
+	// RFC 5322 date formats (common variations)
+	// The mail package's Header.Date() handles most formats, but we'll also
+	// try some additional common formats seen in the wild
+	formats := []string{
+		time.RFC1123Z,                          // "Mon, 02 Jan 2006 15:04:05 -0700"
+		time.RFC1123,                           // "Mon, 02 Jan 2006 15:04:05 MST"
+		"Mon, 2 Jan 2006 15:04:05 -0700",       // RFC 2822/5322 standard
+		"Mon, 2 Jan 2006 15:04:05 MST",         // With timezone name
+		"2 Jan 2006 15:04:05 -0700",            // Without day name
+		"2 Jan 2006 15:04:05 MST",              // Without day name, with TZ name
+		"Mon, 02 Jan 2006 15:04:05 -0700 (MST)", // With timezone in parentheses
+		"Mon, 2 Jan 2006 15:04:05 -0700 (MST)", // Variant
+		time.RFC3339,                           // ISO 8601 format
+		"2006-01-02T15:04:05Z07:00",            // ISO 8601 variant
+		"2006-01-02 15:04:05",                  // Simple datetime
+	}
+
+	// Trim whitespace
+	dateStr = strings.TrimSpace(dateStr)
+
+	// Try each format
+	for _, format := range formats {
+		if t, err := time.Parse(format, dateStr); err == nil {
+			return t
+		}
+	}
+
+	// Try Go's net/mail.ParseDate which is specifically for RFC 5322
+	if t, err := netmail.ParseDate(dateStr); err == nil {
+		return t
+	}
+
+	// Log warning and fall back to current time
+	s.logger.Warn("failed to parse Date header, using current time",
+		zap.String("date_header", dateStr),
+	)
+	return time.Now()
 }
 
 // UpdateTaskCompleted handles task completion status updates
