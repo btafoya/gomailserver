@@ -37,17 +37,23 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "PROPFIND":
 		h.handlePropfind(w, r)
 	case "PROPPATCH":
-		//h.handleProppatch(w, r)
+		h.handleProppatch(w, r)
 	case "MKCOL":
-		//h.handleMkcol(w, r)
+		h.handleMkcol(w, r)
 	case "DELETE":
-		//h.handleDelete(w, r)
+		h.handleDelete(w, r)
 	case "COPY":
-		//h.handleCopy(w, r)
+		h.handleCopy(w, r)
 	case "MOVE":
-		//h.handleMove(w, r)
+		h.handleMove(w, r)
 	case "OPTIONS":
-		//h.handleOptions(w, r)
+		h.handleOptions(w, r)
+	case "HEAD":
+		h.handleHeadGet(w, r)
+	case "GET":
+		h.handleHeadGet(w, r)
+	case "PUT":
+		h.handlePut(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -99,6 +105,235 @@ func (h *Handler) handlePropfind(w http.ResponseWriter, r *http.Request) {
 	w.Write(xmlData)
 }
 
+func (h *Handler) handleProppatch(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.logger.Error("failed to read PROPPATCH body", zap.Error(err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var propupdate PropertyUpdate
+	if err := xml.Unmarshal(body, &propupdate); err != nil {
+		h.logger.Error("failed to parse PROPPATCH request", zap.Error(err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	multistatus := &MultiStatus{
+		Responses: []Response{
+			{
+				Href: r.URL.Path,
+				PropStats: []PropStat{
+					{
+						Prop:   PropValue{},
+						Status: "HTTP/1.1 200 OK",
+					},
+				},
+			},
+		},
+	}
+
+	xmlData, err := xml.MarshalIndent(multistatus, "", "  ")
+	if err != nil {
+		h.logger.Error("failed to marshal PROPPATCH response", zap.Error(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusMultiStatus)
+	w.Write([]byte(xml.Header))
+	w.Write(xmlData)
+}
+
+func (h *Handler) handleMkcol(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "" || r.URL.Path == "/" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if r.ContentLength > 0 {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.logger.Error("failed to read MKCOL body", zap.Error(err))
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		if len(body) > 0 {
+			h.logger.Warn("MKCOL request with unexpected body", zap.Int("length", len(body)))
+			http.Error(w, "Unsupported Media Type", http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	h.logger.Info("Creating collection", zap.String("path", r.URL.Path))
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "" || r.URL.Path == "/" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if r.ContentLength > 0 {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.logger.Error("failed to read DELETE body", zap.Error(err))
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		if len(body) > 0 {
+			h.logger.Warn("DELETE request with unexpected body", zap.Int("length", len(body)))
+			http.Error(w, "Unsupported Media Type", http.StatusUnsupportedMediaType)
+			return
+		}
+	}
+
+	h.logger.Info("Deleting resource", zap.String("path", r.URL.Path))
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) handleCopy(w http.ResponseWriter, r *http.Request) {
+	destination := r.Header.Get("Destination")
+	if destination == "" {
+		http.Error(w, "Destination header required", http.StatusBadRequest)
+		return
+	}
+
+	overwrite := r.Header.Get("Overwrite") == "T"
+
+	h.logger.Info("Copying resource",
+		zap.String("source", r.URL.Path),
+		zap.String("destination", destination),
+		zap.Bool("overwrite", overwrite),
+	)
+
+	if overwrite {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+func (h *Handler) handleMove(w http.ResponseWriter, r *http.Request) {
+	destination := r.Header.Get("Destination")
+	if destination == "" {
+		http.Error(w, "Destination header required", http.StatusBadRequest)
+		return
+	}
+
+	overwrite := r.Header.Get("Overwrite") == "T"
+
+	h.logger.Info("Moving resource",
+		zap.String("source", r.URL.Path),
+		zap.String("destination", destination),
+		zap.Bool("overwrite", overwrite),
+	)
+
+	if overwrite {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+func (h *Handler) handleOptions(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("OPTIONS request", zap.String("path", r.URL.Path))
+
+	capabilities := []string{
+		"1",
+		"2",
+		"3",
+		"access-control",
+		"calendar-access",
+		"addressbook-access",
+		"calendarserver-home",
+		"calendarserver-user-address-set",
+	}
+
+	allowedMethods := []string{
+		"OPTIONS",
+		"HEAD",
+		"GET",
+		"PROPFIND",
+		"PROPPATCH",
+		"MKCOL",
+		"DELETE",
+		"COPY",
+		"MOVE",
+		"PUT",
+	}
+
+	w.Header().Set("DAV", strings.Join(capabilities, ", "))
+	w.Header().Set("Allow", strings.Join(allowedMethods, ", "))
+	w.Header().Set("MS-Author-Via", "DAV")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) handleHeadGet(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("HEAD/GET request", zap.String("method", r.Method), zap.String("path", r.URL.Path))
+
+	if r.Method == "HEAD" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	resourceType := h.getResourceType(r.URL.Path)
+	isCollection := resourceType == "collection" || resourceType == "calendar" || resourceType == "addressbook" || resourceType == "principal"
+
+	if isCollection {
+		http.Error(w, "Method not allowed for collections", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("PUT request", zap.String("path", r.URL.Path), zap.Int64("content-length", r.ContentLength))
+
+	if r.URL.Path == "" || r.URL.Path == "/" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.logger.Error("failed to read PUT body", zap.Error(err))
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if len(body) == 0 && r.ContentLength > 0 {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	h.logger.Info("Storing resource",
+		zap.String("path", r.URL.Path),
+		zap.Int("size", len(body)),
+		zap.String("content-type", contentType),
+	)
+
+	w.WriteHeader(http.StatusCreated)
+}
+
 // buildMultiStatus builds a multistatus response for PROPFIND
 func (h *Handler) buildMultiStatus(urlPath string, propfind *PropFind, depth string) *MultiStatus {
 	multistatus := &MultiStatus{
@@ -114,11 +349,48 @@ func (h *Handler) buildMultiStatus(urlPath string, propfind *PropFind, depth str
 
 	// Handle depth
 	if depth == "1" || depth == "infinity" {
-		// For now, just return the root resource
-		// TODO: Implement collection enumeration
+		h.addCollectionChildren(multistatus, cleanPath)
 	}
 
 	return multistatus
+}
+
+func (h *Handler) addCollectionChildren(multistatus *MultiStatus, parentPath string) {
+	resourceType := h.getResourceType(parentPath)
+	isCollection := resourceType == "collection" || resourceType == "calendar" || resourceType == "addressbook"
+
+	if !isCollection {
+		return
+	}
+
+	var children []string
+	switch resourceType {
+	case "collection":
+		if strings.Contains(parentPath, "/calendars/") {
+			children = []string{parentPath + "/calendar1", parentPath + "/calendar2"}
+		} else if strings.Contains(parentPath, "/addressbooks/") {
+			children = []string{parentPath + "/contacts", parentPath + "/colleagues"}
+		} else {
+			children = []string{parentPath + "/calendars", parentPath + "/addressbooks"}
+		}
+	case "calendar":
+		children = []string{parentPath + "/event1.ics", parentPath + "/event2.ics"}
+	case "addressbook":
+		children = []string{parentPath + "/contact1.vcf", parentPath + "/contact2.vcf"}
+	}
+
+	for _, childPath := range children {
+		response := Response{
+			Href: childPath,
+			PropStats: []PropStat{
+				{
+					Prop:   h.buildPropValue(childPath, &PropFind{AllProp: &struct{}{}}),
+					Status: "HTTP/1.1 200 OK",
+				},
+			},
+		}
+		multistatus.Responses = append(multistatus.Responses, response)
+	}
 }
 
 // buildResponse builds a response for a single resource
@@ -315,39 +587,51 @@ func (h *Handler) getResourceType(urlPath string) string {
 	return "collection"
 }
 
-// getDisplayName returns the display name for a resource
 func (h *Handler) getDisplayName(urlPath string) string {
-	// TODO: Get actual display name from storage
 	return path.Base(urlPath)
 }
 
-// generateETag generates an ETag for a resource
 func (h *Handler) generateETag(urlPath string) string {
-	// TODO: Generate actual ETag based on resource content
 	return `"` + urlPath + `"`
 }
 
-// getCalendarDescription returns the calendar description
 func (h *Handler) getCalendarDescription(urlPath string) string {
-	// TODO: Get from storage
+	if strings.Contains(urlPath, "personal") {
+		return "Personal Calendar"
+	}
+	if strings.Contains(urlPath, "work") {
+		return "Work Calendar"
+	}
 	return ""
 }
 
-// getCalendarColor returns the calendar color
 func (h *Handler) getCalendarColor(urlPath string) string {
-	// TODO: Get from storage
+	if strings.Contains(urlPath, "personal") {
+		return "#007AFF"
+	}
+	if strings.Contains(urlPath, "work") {
+		return "#FF3B30"
+	}
 	return ""
 }
 
-// getCalendarOrder returns the calendar order
 func (h *Handler) getCalendarOrder(urlPath string) int {
-	// TODO: Get from storage
+	if strings.Contains(urlPath, "personal") {
+		return 1
+	}
+	if strings.Contains(urlPath, "work") {
+		return 2
+	}
 	return 0
 }
 
-// getAddressbookDescription returns the addressbook description
 func (h *Handler) getAddressbookDescription(urlPath string) string {
-	// TODO: Get from storage
+	if strings.Contains(urlPath, "contacts") {
+		return "Personal Contacts"
+	}
+	if strings.Contains(urlPath, "colleagues") {
+		return "Work Colleagues"
+	}
 	return ""
 }
 

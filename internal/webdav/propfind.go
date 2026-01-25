@@ -24,17 +24,17 @@ type Prop struct {
 	CreationDate         *struct{} `xml:"DAV: creationdate"`
 	CurrentUserPrincipal *struct{} `xml:"DAV: current-user-principal"`
 	// CalDAV specific
-	CalendarData       *CalendarDataRequest `xml:"urn:ietf:params:xml:ns:caldav calendar-data"`
-	CalendarHomeSet    *struct{}            `xml:"urn:ietf:params:xml:ns:caldav calendar-home-set"`
-	CalendarDescription *struct{}           `xml:"urn:ietf:params:xml:ns:caldav calendar-description"`
-	CalendarColor      *struct{}            `xml:"http://apple.com/ns/ical/ calendar-color"`
-	CalendarOrder      *struct{}            `xml:"http://apple.com/ns/ical/ calendar-order"`
-	SupportedCalendarComponentSet *struct{} `xml:"urn:ietf:params:xml:ns:caldav supported-calendar-component-set"`
+	CalendarData                  *CalendarDataRequest `xml:"urn:ietf:params:xml:ns:caldav calendar-data"`
+	CalendarHomeSet               *struct{}            `xml:"urn:ietf:params:xml:ns:caldav calendar-home-set"`
+	CalendarDescription           *struct{}            `xml:"urn:ietf:params:xml:ns:caldav calendar-description"`
+	CalendarColor                 *struct{}            `xml:"http://apple.com/ns/ical/ calendar-color"`
+	CalendarOrder                 *struct{}            `xml:"http://apple.com/ns/ical/ calendar-order"`
+	SupportedCalendarComponentSet *struct{}            `xml:"urn:ietf:params:xml:ns:caldav supported-calendar-component-set"`
 	// CardDAV specific
-	AddressData        *AddressDataRequest `xml:"urn:ietf:params:xml:ns:carddav address-data"`
-	AddressbookHomeSet *struct{}           `xml:"urn:ietf:params:xml:ns:carddav addressbook-home-set"`
-	AddressbookDescription *struct{}       `xml:"urn:ietf:params:xml:ns:carddav addressbook-description"`
-	SupportedAddressData *struct{}         `xml:"urn:ietf:params:xml:ns:carddav supported-address-data"`
+	AddressData            *AddressDataRequest `xml:"urn:ietf:params:xml:ns:carddav address-data"`
+	AddressbookHomeSet     *struct{}           `xml:"urn:ietf:params:xml:ns:carddav addressbook-home-set"`
+	AddressbookDescription *struct{}           `xml:"urn:ietf:params:xml:ns:carddav addressbook-description"`
+	SupportedAddressData   *struct{}           `xml:"urn:ietf:params:xml:ns:carddav supported-address-data"`
 }
 
 // CalendarDataRequest represents a calendar-data property request
@@ -81,25 +81,25 @@ type PropValue struct {
 	CreationDate         *string       `xml:"DAV: creationdate,omitempty"`
 	CurrentUserPrincipal *Href         `xml:"DAV: current-user-principal,omitempty"`
 	// CalDAV specific
-	CalendarData       *string           `xml:"urn:ietf:params:xml:ns:caldav calendar-data,omitempty"`
-	CalendarHomeSet    *Href             `xml:"urn:ietf:params:xml:ns:caldav calendar-home-set,omitempty"`
-	CalendarDescription *string          `xml:"urn:ietf:params:xml:ns:caldav calendar-description,omitempty"`
-	CalendarColor      *string           `xml:"http://apple.com/ns/ical/ calendar-color,omitempty"`
-	CalendarOrder      *int              `xml:"http://apple.com/ns/ical/ calendar-order,omitempty"`
+	CalendarData                  *string                        `xml:"urn:ietf:params:xml:ns:caldav calendar-data,omitempty"`
+	CalendarHomeSet               *Href                          `xml:"urn:ietf:params:xml:ns:caldav calendar-home-set,omitempty"`
+	CalendarDescription           *string                        `xml:"urn:ietf:params:xml:ns:caldav calendar-description,omitempty"`
+	CalendarColor                 *string                        `xml:"http://apple.com/ns/ical/ calendar-color,omitempty"`
+	CalendarOrder                 *int                           `xml:"http://apple.com/ns/ical/ calendar-order,omitempty"`
 	SupportedCalendarComponentSet *SupportedCalendarComponentSet `xml:"urn:ietf:params:xml:ns:caldav supported-calendar-component-set,omitempty"`
 	// CardDAV specific
-	AddressData        *string `xml:"urn:ietf:params:xml:ns:carddav address-data,omitempty"`
-	AddressbookHomeSet *Href   `xml:"urn:ietf:params:xml:ns:carddav addressbook-home-set,omitempty"`
-	AddressbookDescription *string `xml:"urn:ietf:params:xml:ns:carddav addressbook-description,omitempty"`
-	SupportedAddressData *SupportedAddressData `xml:"urn:ietf:params:xml:ns:carddav supported-address-data,omitempty"`
+	AddressData            *string               `xml:"urn:ietf:params:xml:ns:carddav address-data,omitempty"`
+	AddressbookHomeSet     *Href                 `xml:"urn:ietf:params:xml:ns:carddav addressbook-home-set,omitempty"`
+	AddressbookDescription *string               `xml:"urn:ietf:params:xml:ns:carddav addressbook-description,omitempty"`
+	SupportedAddressData   *SupportedAddressData `xml:"urn:ietf:params:xml:ns:carddav supported-address-data,omitempty"`
 }
 
 // ResourceType represents the type of a WebDAV resource
 type ResourceType struct {
-	Collection          *struct{} `xml:"DAV: collection,omitempty"`
-	Calendar            *struct{} `xml:"urn:ietf:params:xml:ns:caldav calendar,omitempty"`
-	Addressbook         *struct{} `xml:"urn:ietf:params:xml:ns:carddav addressbook,omitempty"`
-	Principal           *struct{} `xml:"DAV: principal,omitempty"`
+	Collection  *struct{} `xml:"DAV: collection,omitempty"`
+	Calendar    *struct{} `xml:"urn:ietf:params:xml:ns:caldav calendar,omitempty"`
+	Addressbook *struct{} `xml:"urn:ietf:params:xml:ns:carddav addressbook,omitempty"`
+	Principal   *struct{} `xml:"DAV: principal,omitempty"`
 }
 
 // Href represents a reference to a resource
@@ -126,6 +126,22 @@ type SupportedAddressData struct {
 type AddressDataType struct {
 	ContentType string `xml:"content-type,attr"`
 	Version     string `xml:"version,attr"`
+}
+
+type PropertyUpdate struct {
+	XMLName xml.Name `xml:"DAV: propertyupdate"`
+	Set     []Set    `xml:"set"`
+	Remove  []Remove `xml:"remove"`
+}
+
+type Set struct {
+	XMLName xml.Name `xml:"DAV: set"`
+	Prop    Prop     `xml:"prop"`
+}
+
+type Remove struct {
+	XMLName xml.Name `xml:"DAV: remove"`
+	Prop    Prop     `xml:"prop"`
 }
 
 // Error represents a WebDAV error
