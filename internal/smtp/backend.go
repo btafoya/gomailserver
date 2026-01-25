@@ -393,16 +393,91 @@ func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 
 // Rcpt is called when the client sends RCPT TO
 func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
-	// TODO: Validate recipient exists
-	// TODO: Check quota
-	// TODO: Check greylisting
-	// TODO: Check rate limiting
+	// 1. Validate recipient exists and is active
+	recipientUser, err := s.backend.userService.GetByEmail(to)
+	if err != nil {
+		s.logger.Warn("recipient validation failed - user not found",
+			zap.String("recipient", to),
+			zap.String("from", s.from),
+			zap.Error(err),
+		)
+		return &smtp.SMTPError{
+			Code:         550,
+			EnhancedCode: smtp.EnhancedCode{5, 1, 1},
+			Message:      "User unknown",
+		}
+	}
+
+	if recipientUser.Status != "active" {
+		s.logger.Warn("recipient validation failed - user disabled",
+			zap.String("recipient", to),
+			zap.String("status", recipientUser.Status),
+		)
+		return &smtp.SMTPError{
+			Code:         550,
+			EnhancedCode: smtp.EnhancedCode{5, 1, 1},
+			Message:      "User disabled",
+		}
+	}
+
+	// 2. Check quota
+	if recipientUser.Quota > 0 && recipientUser.UsedQuota >= recipientUser.Quota {
+		s.logger.Warn("recipient validation failed - quota exceeded",
+			zap.String("recipient", to),
+			zap.Int64("used", recipientUser.UsedQuota),
+			zap.Int64("quota", recipientUser.Quota),
+		)
+		return &smtp.SMTPError{
+			Code:         552,
+			EnhancedCode: smtp.EnhancedCode{5, 2, 2},
+			Message:      "Mailbox full",
+		}
+	}
+
+	// 3. Check greylisting for inbound relay (non-authenticated sessions)
+	if !s.authenticated {
+		recipientDomain := extractDomain(to)
+		if recipientDomain != "" {
+			domainConfig, err := s.backend.domainRepo.GetByName(recipientDomain)
+			if err != nil {
+				s.logger.Warn("failed to load domain config for greylisting",
+					zap.String("domain", recipientDomain),
+					zap.Error(err),
+				)
+				domainConfig = nil
+			}
+
+			if domainConfig != nil && s.backend.greylister != nil && domainConfig.GreylistEnabled {
+				remoteIP := extractIP(s.remoteAddr)
+				result, err := s.backend.greylister.Check(remoteIP, s.from, to)
+				if err != nil {
+					s.logger.Error("greylist check failed", zap.Error(err))
+				} else if result.Action == "defer" {
+					s.logger.Info("recipient greylisted - temporary rejection",
+						zap.String("from", s.from),
+						zap.String("to", to),
+						zap.String("remote_ip", remoteIP),
+						zap.Duration("wait_time", result.WaitTime),
+					)
+					return &smtp.SMTPError{
+						Code:         451,
+						EnhancedCode: smtp.EnhancedCode{4, 7, 1},
+						Message:      "Greylisted - please try again later",
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Check recipient rate limiting (already done in MAIL FROM for auth users)
+	// Additional per-recipient rate limiting can be added here if needed
 
 	s.to = append(s.to, to)
 	s.logger.Debug("RCPT TO",
 		zap.String("to", to),
 		zap.String("from", s.from),
 		zap.String("remote_addr", s.remoteAddr),
+		zap.String("recipient_user_id", fmt.Sprintf("%d", recipientUser.ID)),
 	)
 
 	return nil
