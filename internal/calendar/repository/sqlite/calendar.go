@@ -182,3 +182,44 @@ func (r *CalendarRepository) UpdateSyncToken(id int64, token string) error {
 	_, err := r.db.Exec(query, token, time.Now(), id)
 	return err
 }
+
+// GetAll retrieves all calendars (for sharing operations)
+func (r *CalendarRepository) GetAll() ([]*domain.Calendar, error) {
+	query := `
+		SELECT id, user_id, name, display_name, color, description, timezone, sync_token, created_at, updated_at
+		FROM calendars
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var calendars []*domain.Calendar
+	for rows.Next() {
+		calendar := &domain.Calendar{}
+		err := rows.Scan(
+			&calendar.ID,
+			&calendar.UserID,
+			&calendar.Name,
+			&calendar.DisplayName,
+			&calendar.Color,
+			&calendar.Description,
+			&calendar.Timezone,
+			&calendar.SyncToken,
+			&calendar.CreatedAt,
+			&calendar.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		calendars = append(calendars, calendar)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return calendars, nil
+}

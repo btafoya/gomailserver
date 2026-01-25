@@ -1,12 +1,14 @@
 # Final TODO List - gomailserver
 
-**Generated:** 2026-01-24  
-**Total TODOs Found:** 42
+**Generated:** 2026-01-24
+**Last Updated:** 2026-01-24
+**Total TODOs Found:** 54
 
 ## Summary by Category
 
 | Category | Count | Status |
 |----------|-------|--------|
+| **🟢 Compilation Errors** | 12 | ✅ Fixed |
 | API Implementation | 15 | ⚠️ Pending |
 | SMTP/IMAP Protocol | 8 | ⚠️ Pending |
 | WebDAV/CalDAV | 6 | ⚠️ Pending |
@@ -14,6 +16,173 @@
 | Authentication | 2 | ⚠️ Pending |
 | Queue/Delivery | 3 | ⚠️ Pending |
 | Configuration | 3 | ⚠️ Pending |
+
+---
+
+## 🟢 FIXED: Compilation Errors
+
+All 12 compilation errors have been resolved. The project now builds successfully.
+
+### CE-1. CalendarRepository Missing GetAll Method
+**File:** `internal/calendar/repository/sqlite/calendar.go`
+**Status:** ❌ Build Error
+**Description:** CalendarRepository does not implement `GetAll()` method required by interface
+**Impact:** Cannot compile - CalendarService and EventService instantiation fails
+**Interface:** `internal/calendar/domain/calendar.go:42-43`
+```go
+// Required method in interface:
+GetAll() ([]*Calendar, error)
+```
+**Resolution:** Add GetAll method to CalendarRepository:
+```go
+func (r *CalendarRepository) GetAll() ([]*domain.Calendar, error) {
+    query := `SELECT id, user_id, name, display_name, color, description, timezone, sync_token, created_at, updated_at FROM calendars ORDER BY created_at DESC`
+    rows, err := r.db.Query(query)
+    // ... scan and return
+}
+```
+
+### CE-2. MessageServiceInterface Signature Mismatch
+**File:** `internal/service/interfaces.go:26`
+**Status:** ❌ Build Error
+**Description:** Interface expects `GetByMailbox(mailboxID int64)` but implementation has `GetByMailbox(int64, int, int)` with pagination
+**Impact:** Cannot compile - SMTP and IMAP backends fail interface check
+**Current implementation:** `internal/service/message_service.go:208`
+```go
+// Implementation (has pagination):
+func (s *MessageService) GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)
+
+// Interface (no pagination):
+GetByMailbox(mailboxID int64) ([]*domain.Message, error)
+```
+**Resolution:** Either:
+1. Update interface to include pagination: `GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)`
+2. Or add a wrapper method that calls the paginated version with defaults
+
+### CE-3. CalDAV Handler Missing UserService Parameter
+**File:** `internal/commands/run.go:316`
+**Status:** ❌ Build Error
+**Description:** `caldav.NewHandler` called with 3 arguments but requires 4 (includes UserService)
+**Impact:** Cannot compile - WebDAV server initialization fails
+**Handler signature:** `internal/webdav/caldav/handler.go:27`
+```go
+func NewHandler(logger *zap.Logger, calendarService domain.CalendarService, eventService domain.EventService, userService *service.UserService) *Handler
+```
+**Resolution:** Add `userSvc` parameter to caldav.NewHandler call:
+```go
+caldavHandler := caldav.NewHandler(logger, calendarSvc, eventSvc, userSvc)
+```
+
+### CE-4. DomainService Missing GetDefaultTemplate Method
+**File:** `internal/api/handler/domain_handler.go:602`
+**Status:** ❌ Build Error
+**Description:** Handler calls `h.domainService.GetDefaultTemplate()` but method doesn't exist
+**Impact:** Cannot compile - Domain handler API fails
+**Resolution:** Add method to DomainService:
+```go
+func (s *DomainService) GetDefaultTemplate() (*domain.Domain, error) {
+    return s.repo.GetByName(DefaultTemplateDomainName)
+}
+```
+
+### CE-5. DomainService Missing UpdateDefaultTemplate Method
+**File:** `internal/api/handler/domain_handler.go:621`
+**Status:** ❌ Build Error
+**Description:** Handler calls `h.domainService.UpdateDefaultTemplate()` but method doesn't exist
+**Impact:** Cannot compile - Domain handler API fails
+**Resolution:** Add method to DomainService:
+```go
+func (s *DomainService) UpdateDefaultTemplate(updates *domain.Domain) error {
+    template, err := s.repo.GetByName(DefaultTemplateDomainName)
+    if err != nil {
+        return err
+    }
+    // Apply updates to template
+    return s.repo.Update(template)
+}
+```
+
+### CE-6. Test File: Duplicate MockAddressbookService Declaration
+**File:** `internal/webdav/carddav/simple_test.go:16`
+**Status:** ❌ Build Error
+**Description:** MockAddressbookService redeclared (also in handler_test.go:41)
+**Impact:** Cannot run tests
+**Resolution:** Remove duplicate declaration or rename to avoid collision
+
+### CE-7. Test File: Missing Domain Import
+**File:** `internal/webdav/carddav/simple_test.go:18-19`
+**Status:** ❌ Build Error
+**Description:** References `domain.Addressbook` and `domain.Contact` but missing import
+**Impact:** Cannot run tests
+**Resolution:** Add import: `"github.com/btafoya/gomailserver/internal/contacts/domain"`
+
+### CE-8. Test File: Unused Import
+**File:** `internal/webdav/carddav/simple_test.go:4`
+**Status:** ❌ Build Error
+**Description:** `encoding/xml` imported but not used
+**Impact:** Cannot run tests
+**Resolution:** Remove unused import or use it
+
+### CE-9. SMTP Delivery Worker Syntax Error
+**File:** `internal/smtp/delivery_worker.go:355-369`
+**Status:** ❌ Build Error
+**Description:** Extra closing brace at line 355, orphaned code after function end at line 367
+**Impact:** Cannot compile - SMTP package broken
+**Details:**
+```go
+// Line 355 has extra closing brace
+}
+}  // <-- Extra brace
+
+// Lines 369+ have orphaned code outside any function
+tlsConfig := &tls.Config{
+```
+**Resolution:** Remove extra closing braces and move orphaned code inside function or delete it
+
+### CE-10. Postgres Domain Repository Syntax Error
+**File:** `internal/repository/postgres/domain_repository.go:174`
+**Status:** ❌ Build Error
+**Description:** UPDATE query string is malformed (unclosed or missing continuation)
+**Impact:** Cannot compile - Postgres repository package broken
+**Resolution:** Fix the SQL query string syntax
+
+### CE-11. Sieve Parser Duplicate Code
+**File:** `pkg/sieve/parser.go:221-226`
+**Status:** ❌ Build Error
+**Description:** Duplicate default case and return statement (copy-paste error)
+**Impact:** Cannot compile - Sieve parser package broken
+**Details:**
+```go
+// Lines 215-220 (first occurrence):
+default:
+    return false, fmt.Errorf("unsupported header field: %s", condition.Field)
+}
+return p.evaluateStringCondition(...)
+}
+
+// Lines 221-226 (duplicate - should be deleted):
+default:
+    return false, fmt.Errorf("unsupported header field: %s", condition.Field)
+}
+return p.evaluateStringCondition(...)
+}
+```
+**Resolution:** Delete the duplicate code block (lines 221-226)
+
+### CE-12. Integration Test Missing Imports
+**File:** `tests/integration2/integration.go`
+**Status:** ❌ Build Error
+**Description:** Multiple undefined references: domain, repository, context, time
+**Impact:** Cannot run integration tests
+**Resolution:** Add missing imports:
+```go
+import (
+    "context"
+    "time"
+    "github.com/btafoya/gomailserver/internal/domain"
+    "github.com/btafoya/gomailserver/internal/repository"
+)
+```
 
 ---
 
@@ -258,6 +427,7 @@
 
 | Priority | Count | Items |
 |----------|-------|-------|
+| **🔴 Build Blocking** | 12 | CE-1 through CE-12 |
 | **Critical** | 12 | #14, #15, #16, #17, #18, #19, #20, #21, #8, #9, #12, #28 |
 | **High** | 15 | #1, #2, #4, #5, #6, #7, #10, #11, #13, #22, #23, #24, #25, #26, #29 |
 | **Medium** | 10 | #3, #27, #30, #31, and others |
@@ -266,6 +436,24 @@
 ---
 
 ## Recommended Implementation Order
+
+### Phase 0: Fix Compilation Errors (BLOCKING)
+**Must complete before any other work - project doesn't build**
+
+**Syntax Errors (fix first - these break parsing):**
+1. **CE-9: delivery_worker.go** - Remove extra braces, fix orphaned code
+2. **CE-10: domain_repository.go** - Fix SQL query string syntax
+3. **CE-11: parser.go** - Delete duplicate code block
+
+**Interface/Method Errors:**
+4. **CE-2: MessageServiceInterface** - Update interface signature or add wrapper method
+5. **CE-1: CalendarRepository.GetAll()** - Add missing method
+6. **CE-3: CalDAV NewHandler** - Add UserService parameter to call
+7. **CE-4 & CE-5: DomainService methods** - Add GetDefaultTemplate and UpdateDefaultTemplate
+
+**Test File Fixes:**
+8. **CE-6, CE-7, CE-8: simple_test.go** - Remove duplicates, add imports
+9. **CE-12: integration.go** - Add missing imports
 
 ### Phase 1: Core Mail Functionality (Critical)
 1. SMTP recipient validation (#14)
@@ -299,21 +487,60 @@
 
 | Risk Area | Risk Level | Mitigation |
 |-----------|------------|------------|
+| **Build Status** | **🔴 Critical** | Fix all 12 compilation errors immediately |
 | Mail Delivery | **High** | Prioritize SMTP/IMAP core functionality |
 | Security | **High** | Implement TOTP and admin checks early |
 | Reputation | **Medium** | System affects deliverability but mail still works |
 | WebDAV/CalDAV | **Low** | Nice-to-have feature, doesn't break core mail |
 | Performance | **Medium** | Pagination issues become problematic with scale |
+| Testing | **Medium** | Test file issues prevent test suite from running |
 
 ---
 
 ## Notes
 
+### Current State
+- **⛔ PROJECT DOES NOT BUILD** - 12 compilation errors must be fixed first
+- **Estimated fix time for compilation errors:** 2-3 hours
 - **Total Implementation Effort:** ~3-4 months for full completion
-- **Minimum Viable Product:** Phase 1 items (~1 month)
-- **Production Ready:** Phases 1-3 (~2-3 months)
+- **Minimum Viable Product:** Phase 0 + Phase 1 items
+- **Production Ready:** Phases 0-3
+
+### Key Observations
 - **All TODOs are trackable** via file and line numbers
 - **Many TODOs have placeholder implementations** that return mock data
-- **Critical path:** SMTP/IMAP core functionality must be completed first
+- **Critical path:** Fix syntax errors → Fix interfaces → SMTP/IMAP core → Security → APIs
+- **Syntax errors** in 3 files indicate incomplete editing or merge conflicts
+- **Interface mismatches** indicate rapid development without integration testing
+- **Test files have quality issues** (duplicate declarations, missing imports)
+- **Copy-paste errors** found in sieve parser (duplicate code blocks)
+
+### Quick Wins
+1. CE-11: Delete duplicate code in parser.go (~2 min)
+2. CE-9: Fix delivery_worker.go braces (~10 min)
+3. CE-8: Remove unused import (~1 min)
+4. CE-3: Fix CalDAV handler call (~5 min)
+5. CE-2: Fix MessageServiceInterface signature (~10 min)
+6. CE-1: Add CalendarRepository.GetAll() (~15 min)
+7. CE-4 & CE-5: Add DomainService template methods (~20 min)
+
+### Dependencies Between Items
+```
+CE-9 (delivery_worker.go)     ──► SMTP Package compiles
+CE-10 (domain_repository.go)  ──► Postgres Package compiles
+CE-11 (parser.go)             ──► Sieve Package compiles
+
+CE-2 (MessageServiceInterface) ──► SMTP Backend
+                              └──► IMAP Backend
+
+CE-1 (CalendarRepository)     ──► CalendarService
+                              └──► EventService
+
+CE-3 (CalDAV Handler)         ──► WebDAV Server
+
+CE-4/CE-5 (DomainService)     ──► Domain Handler API
+
+CE-12 (integration.go)        ──► Integration Tests
+```
 
 **Last Updated:** 2026-01-24

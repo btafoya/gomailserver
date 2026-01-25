@@ -211,7 +211,7 @@ func TestCalDAVHandler_MkCalendar(t *testing.T) {
 	mockCalendarService := &MockCalendarService{shouldError: false}
 	mockEventService := &MockEventService{shouldError: false}
 
-	handler := NewHandler(logger, mockCalendarService, mockEventService)
+	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
 	// Create test request
 	req := httptest.NewRequest("MKCALENDAR", "/caldav/calendars/123/Test%20Calendar", strings.NewReader(""))
@@ -254,7 +254,7 @@ func TestCalDAVHandler_ReportCalendarQuery(t *testing.T) {
 	}
 	mockEventService.events = []*domain.Event{testEvent}
 
-	handler := NewHandler(logger, mockCalendarService, mockEventService)
+	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
 	// Create test request
 	reportBody := `<C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -296,7 +296,7 @@ func TestCalDAVHandler_ReportFreeBusyQuery(t *testing.T) {
 	}
 	mockCalendarService.calendars = []*domain.Calendar{testCalendar}
 
-	handler := NewHandler(logger, mockCalendarService, mockEventService)
+	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
 	// Create test request
 	reportBody := `<C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -330,7 +330,7 @@ func TestCalDAVHandler_InvalidPath(t *testing.T) {
 	mockCalendarService := &MockCalendarService{shouldError: false}
 	mockEventService := &MockEventService{shouldError: false}
 
-	handler := NewHandler(logger, mockCalendarService, mockEventService)
+	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
 	// Test invalid path (too short)
 	req := httptest.NewRequest("MKCALENDAR", "/caldav/calendars/123", strings.NewReader(""))
@@ -353,7 +353,7 @@ func TestCalDAVHandler_CalendarNotFound(t *testing.T) {
 	mockCalendarService := &MockCalendarService{shouldError: false}
 	mockEventService := &MockEventService{shouldError: false}
 
-	handler := NewHandler(logger, mockCalendarService, mockEventService)
+	handler := NewHandler(logger, mockCalendarService, mockEventService, nil)
 
 	// Create test request - no calendars set in mock
 	reportBody := `<C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav">

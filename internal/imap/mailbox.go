@@ -61,7 +61,7 @@ func (m *Mailbox) Status(items []imap.StatusItem) (*imap.MailboxStatus, error) {
 	status.UidValidity = uint32(m.mailbox.UIDValidity)
 	status.UidNext = uint32(m.mailbox.UIDNext)
 
-	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		m.logger.Error("failed to get messages for status",
 			zap.Error(err))
@@ -133,7 +133,7 @@ func (m *Mailbox) ListMessages(uid bool, seqSet *imap.SeqSet, items []imap.Fetch
 	)
 
 	// Fetch all messages from the mailbox
-	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		m.logger.Error("failed to get messages",
 			zap.Error(err))
@@ -419,7 +419,7 @@ func (m *Mailbox) SearchMessages(uid bool, criteria *imap.SearchCriteria) ([]uin
 	)
 
 	// Get all messages for searching
-	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		m.logger.Error("failed to get messages for search",
 			zap.Error(err))
@@ -611,7 +611,7 @@ func (m *Mailbox) UpdateMessagesFlags(uid bool, seqSet *imap.SeqSet, operation i
 	)
 
 	// Get messages to update
-	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		m.logger.Error("failed to get messages for flag update",
 			zap.Error(err))
@@ -679,7 +679,7 @@ func (m *Mailbox) CopyMessages(uid bool, seqSet *imap.SeqSet, dest string) error
 	}
 
 	// Get all messages from source mailbox
-	allMessages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	allMessages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		return err
 	}
@@ -786,7 +786,7 @@ func (m *Mailbox) Expunge() error {
 	)
 
 	// Get messages to delete
-	messages, err := m.messageService.GetByMailbox(m.mailbox.ID)
+	messages, err := m.messageService.GetByMailbox(m.mailbox.ID, 0, 10000)
 	if err != nil {
 		m.logger.Error("failed to get messages for expunge",
 			zap.Error(err))

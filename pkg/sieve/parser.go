@@ -1,7 +1,6 @@
 package sieve
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -135,7 +134,7 @@ func (p *Parser) parseIfStatement(line string) (Filter, error) {
 	}
 
 	return Filter{
-		ID:         fmt.Sprintf("filter_%d", len(parsedFilters)),
+		ID:         fmt.Sprintf("filter_%d", 0),
 		Conditions: []Condition{condition},
 		Actions:    []Action{action},
 		Script:     line,
@@ -218,19 +217,13 @@ func (p *Parser) evaluateHeaderCondition(condition Condition, message *domain.Me
 
 	return p.evaluateStringCondition(condition.Operator, headerValue, condition.Value)
 }
-	default:
-		return false, fmt.Errorf("unsupported header field: %s", condition.Field)
-	}
-
-	return p.evaluateStringCondition(condition.Operator, headerValue, condition.Value)
-}
 
 // evaluateAddressCondition evaluates address-based conditions
 func (p *Parser) evaluateAddressCondition(condition Condition, message *domain.Message, addressType string) (bool, error) {
 	var address string
 	switch addressType {
 	case "from":
-		address = message.Sender
+		address = message.From
 	default:
 		return false, fmt.Errorf("unsupported address type: %s", addressType)
 	}
@@ -245,7 +238,7 @@ func (p *Parser) evaluateTextCondition(condition Condition, message *domain.Mess
 	case "subject":
 		text = message.Subject
 	case "body":
-		text = message.Body
+		text = string(message.Content)
 	default:
 		return false, fmt.Errorf("unsupported text field: %s", fieldType)
 	}
@@ -255,7 +248,7 @@ func (p *Parser) evaluateTextCondition(condition Condition, message *domain.Mess
 
 // evaluateSizeCondition evaluates size-based conditions
 func (p *Parser) evaluateSizeCondition(condition Condition, message *domain.Message) (bool, error) {
-	size := len(message.Body)
+	size := len(message.Content)
 
 	var targetSize int
 	_, err := fmt.Sscanf(condition.Value, "%d", &targetSize)

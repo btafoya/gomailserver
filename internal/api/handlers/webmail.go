@@ -289,7 +289,7 @@ func (h *WebmailHandler) UpdateFlags(w http.ResponseWriter, r *http.Request) {
 // CompleteTask handles POST /api/v1/webmail/messages/:id/complete
 func (h *WebmailHandler) CompleteTask(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userID, ok := middleware.GetUserID(r)
+	_, ok := middleware.GetUserID(r)
 	if !ok {
 		middleware.RespondError(w, http.StatusUnauthorized, "user not authenticated")
 		return
@@ -310,7 +310,7 @@ func (h *WebmailHandler) CompleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.messageService.UpdateTaskCompleted(ctx, int(messageID), int(userID), req.Completed)
+	err = h.messageService.UpdateTaskCompleted(ctx, messageID, req.Completed)
 	if err != nil {
 		h.logger.Error("failed to update task completion", zap.Error(err), zap.Int64("message_id", messageID))
 		middleware.RespondError(w, http.StatusInternalServerError, "failed to update task completion")

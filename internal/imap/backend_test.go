@@ -1,6 +1,7 @@
 package imap
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/security/phishing"
 )
 
 // mockUserService for IMAP backend tests
@@ -124,6 +126,22 @@ func (m *mockMessageService) GetByMailbox(mailboxID int64, offset, limit int) ([
 }
 
 func (m *mockMessageService) Delete(id int64) error {
+	return nil
+}
+
+func (m *mockMessageService) Update(message *domain.Message) error {
+	return nil
+}
+
+func (m *mockMessageService) UpdateFlags(ctx context.Context, messageID, userID int, flags []string, action string) error {
+	return nil
+}
+
+func (m *mockMessageService) UpdateTaskCompleted(ctx context.Context, messageID int64, completed bool) error {
+	return nil
+}
+
+func (m *mockMessageService) StorePhishingResult(ctx context.Context, messageID int64, result *phishing.PhishingResult) error {
 	return nil
 }
 

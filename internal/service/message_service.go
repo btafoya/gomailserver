@@ -209,6 +209,11 @@ func (s *MessageService) GetByMailbox(mailboxID int64, offset, limit int) ([]*do
 	return s.repo.GetByMailbox(mailboxID, offset, limit)
 }
 
+// Update updates an existing message
+func (s *MessageService) Update(message *domain.Message) error {
+	return s.repo.Update(message)
+}
+
 // Delete deletes a message and its file if it exists
 func (s *MessageService) Delete(id int64) error {
 	msg, err := s.repo.GetByID(id)
@@ -313,14 +318,10 @@ func (s *MessageService) normalizeMessageID(msgID string) string {
 }
 
 // UpdateTaskCompleted handles task completion status updates
-func (s *MessageService) UpdateTaskCompleted(ctx context.Context, messageID, userID int, completed bool) error {
-	msg, err := s.GetByID(int64(messageID))
+func (s *MessageService) UpdateTaskCompleted(ctx context.Context, messageID int64, completed bool) error {
+	msg, err := s.GetByID(messageID)
 	if err != nil {
 		return err
-	}
-
-	if msg.UserID != int64(userID) {
-		return fmt.Errorf("access denied: message does not belong to user")
 	}
 
 	msg.TaskCompleted = completed

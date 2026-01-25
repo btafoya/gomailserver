@@ -313,7 +313,7 @@ func run(cmd *cobra.Command, args []string) error {
 	var webdavServer *webdav.Server
 	if cfg.WebDAV.Enabled {
 		// Create CalDAV handler
-		caldavHandler := caldav.NewHandler(logger, calendarSvc, eventSvc)
+		caldavHandler := caldav.NewHandler(logger, calendarSvc, eventSvc, userSvc)
 
 		// Create CardDAV handler
 		carddavHandler := carddav.NewHandler(logger, addressbookSvc, contactSvc)

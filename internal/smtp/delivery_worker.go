@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
-	"net/mail"
+	netmail "net/smtp"
 	"net/smtp"
-	"net/textproto"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-message"
@@ -133,9 +135,9 @@ func (w *DeliveryWorker) processItem(ctx context.Context, item *domain.QueueItem
 	}
 
 	// Get recipients from stored JSON
-	recipients, err := w.parseRecipients(item.Recipients)
-	if err != nil {
-		return fmt.Errorf("failed to parse recipients: %w", err)
+	recipients := w.parseRecipients(item.Recipients)
+	if len(recipients) == 0 {
+		return fmt.Errorf("no recipients in queue item")
 	}
 
 	// For each recipient domain, attempt delivery
@@ -286,197 +288,23 @@ func (w *DeliveryWorker) createSMTPClient(mx string) (*netmail.Client, error) {
 			InsecureSkipVerify: w.config.InsecureTLS,
 			ServerName:         mx,
 		}
-		return netmail.DialTLS(mx + ":465", tlsConfig)
+		// Dial with TLS for implicit TLS (port 465)
+		conn, err := tls.Dial("tcp", mx+":465", tlsConfig)
+		if err != nil {
+			return nil, fmt.Errorf("TLS dial failed: %w", err)
+		}
+		return netmail.NewClient(conn, mx)
 	case "starttls":
 		client, err := netmail.Dial(mx + ":587")
 		if err != nil {
 			return nil, err
 		}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
-	// Enable STARTTLS if available
-	if ok, _ := client.Extension("STARTTLS"); ok {
-		if err := client.StartTLS(tlsConfig); err != nil {
-			client.Close()
-			return nil, fmt.Errorf("STARTTLS failed: %w", err)
-		}
-	}
 
-	return client, nil
-	default:
-		return nil, fmt.Errorf("unknown TLS mode: %s", w.config.TLSMode)
-	}
-
-	// Check for SIZE extension and enforce message size limits
-	if ok, _ := client.Extension("SIZE"); ok {
-		if msg.Size != nil {
-			sizeStr := fmt.Sprintf("%d", *msg.Size)
-			if err := client.Mail(sizeStr); err != nil {
-				w.logger.Warn("SIZE command failed, message may be rejected", zap.Error(err))
-			} else {
-				w.logger.Debug("SIZE extension enabled", zap.Int64("size", *msg.Size))
-			}
-		}
-	}
-
-	// Check for 8BITMIME extension to support binary content
-	if ok, _ := client.Extension("8BITMIME"); ok {
-		if err := client.Binary(); err != nil {
-			w.logger.Warn("8BITMIME enable failed", zap.Error(err))
-		} else {
-			w.logger.Debug("8BITMIME extension enabled")
-		}
-	}
-
-	// Check for CHUNKING extension to support efficient message transmission
-	if ok, _ := client.Extension("CHUNKING"); ok {
-		if err := client.Chunking(); err != nil {
-			w.logger.Warn("CHUNKING enable failed", zap.Error(err))
-		} else {
-			w.logger.Debug("CHUNKING extension enabled")
-		}
-	}
-
-	// Enhanced authentication - check for and enable common auth mechanisms
-	if ok, _ := client.Extension("AUTH"); ok {
-		if w.config.Username != "" && w.config.Password != "" {
-			auth := smtp.PlainAuth("", w.config.Username, w.config.Password)
-			if err := client.Auth(auth); err != nil {
-				w.logger.Warn("PLAIN authentication failed", zap.Error(err))
-			} else {
-				w.logger.Info("PLAIN authentication successful")
-			}
-		}
-	}
-	}
-
-	// Enable STARTTLS if available
-	if ok, _ := client.Extension("STARTTLS"); ok {
-		if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-	}
-
-	return client, nil
-}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-		return client, nil
-	default:
-		return nil, fmt.Errorf("unknown TLS mode: %s", w.config.TLSMode)
-	}
-}
-		return netmail.DialTLS(mx + ":465", tlsConfig)
-	default:
-		return nil, fmt.Errorf("unknown TLS mode: %s", w.config.TLSMode)
-	}
-}
-		return netmail.DialTLS(mx + ":465", tlsConfig)
-	case "starttls":
-		client, err := netmail.Dial(mx + ":587")
-		if err != nil {
-			return nil, err
-		}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-		return client, nil
-	default:
-		return nil, fmt.Errorf("unknown TLS mode: %s", w.config.TLSMode)
-	}
-}
-		return netmail.DialTLS(mx + ":465", tlsConfig)
-	case "starttls":
-		client, err := netmail.Dial(mx + ":587")
-		if err != nil {
-			return nil, err
-		}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-		return client, nil
-	default:
-		return nil, fmt.Errorf("unknown TLS mode: %s", w.config.TLSMode)
-	}
-}
-		return netmail.DialTLS(mx + ":465", tlsConfig)
-	case "starttls":
-		client, err := netmail.Dial(mx + ":587")
-		if err != nil {
-			return nil, err
-		}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-		return client, nil
-	}
-		
 		tlsConfig := &tls.Config{
 			InsecureSkipVerify: w.config.InsecureTLS,
 			ServerName:         mx,
 		}
 
-		if ok, _ := client.Extension("STARTTLS"); ok {
-			if err := client.StartTLS(tlsConfig); err != nil {
-				client.Close()
-				return nil, fmt.Errorf("STARTTLS failed: %w", err)
-			}
-		}
-		return client, nil
-	case "starttls":
-		client, err := netmail.Dial(mx + ":587")
-		if err != nil {
-			return nil, err
-		}
-		
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: w.config.InsecureTLS,
-			ServerName:         mx,
-		}
-		
 		if ok, _ := client.Extension("STARTTLS"); ok {
 			if err := client.StartTLS(tlsConfig); err != nil {
 				client.Close()
@@ -539,17 +367,38 @@ func (w *DeliveryWorker) sendWithClient(client *netmail.Client, msg *message.Ent
 
 // readMessage reads message from file
 func (w *DeliveryWorker) readMessage(path string) (*message.Entity, error) {
-	// TODO: Read from filesystem based on path
-	// For now, return empty message
-	reader := strings.NewReader("")
-	return message.Read(reader), nil
+	if path == "" {
+		return nil, fmt.Errorf("empty message path")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read message file: %w", err)
+	}
+
+	reader := strings.NewReader(string(data))
+	msg, err := message.Read(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse message: %w", err)
+	}
+	return msg, nil
 }
 
 // parseRecipients parses recipient list from JSON string
-func (w *DeliveryWorker) parseRecipients(recipientsJSON string) ([]string, error) {
-	// TODO: Parse the JSON-encoded recipients
-	// For now, return empty slice
-	return []string{}, nil
+func (w *DeliveryWorker) parseRecipients(recipientsJSON string) []string {
+	if recipientsJSON == "" {
+		return []string{}
+	}
+
+	var recipients []string
+	if err := json.Unmarshal([]byte(recipientsJSON), &recipients); err != nil {
+		w.logger.Warn("failed to parse recipients JSON",
+			zap.Error(err),
+			zap.String("json", recipientsJSON),
+		)
+		return []string{}
+	}
+	return recipients
 }
 
 // isLocalDomain checks if domain is configured as local
@@ -607,7 +456,7 @@ func (w *DeliveryWorker) handlePermanentFailure(ctx context.Context, item *domai
 
 	// Record bounce telemetry
 	if w.telemetryService != nil {
-		recipients, _ := w.parseRecipients(item.Recipients)
+		recipients := w.parseRecipients(item.Recipients)
 		for _, recipient := range recipients {
 			recipientDomain := extractDomain(recipient)
 			senderDomain := extractDomain(item.Sender)
@@ -664,38 +513,42 @@ func (w *DeliveryWorker) generateBounce(ctx context.Context, item *domain.QueueI
 		return fmt.Errorf("failed to read original message for bounce: %w", err)
 	}
 
-	// Create bounce message using enmime DSN functionality
-	bounce := &enmime.DeliveryStatus{}
-	bounce.ReportingMUA = "gomailserver v1.0"
-	bounce.OriginalMessageID = originalMsg.Header.Get("Message-ID")
-	bounce.FinalRecipient = textproto.MIMEHeader{}
-	bounce.FinalRecipient.Set("Final-Recipient", item.Sender) // Bounce back to sender
+	// Build a simple DSN bounce message
+	originalMessageID := originalMsg.Header.Get("Message-ID")
+	originalSubject := originalMsg.Header.Get("Subject")
 
-	// Set failure details
-	actionHeader := textproto.MIMEHeader{}
-	actionHeader.Set("Action", "failed")
-	bounce.RecipientDSNs = []textproto.MIMEHeader{actionHeader}
+	bounceBody := fmt.Sprintf(`This is an automatically generated Delivery Status Notification.
 
-	statusHeader := textproto.MIMEHeader{}
-	statusHeader.Set("Status", "5.0.0")
-	bounce.RecipientDSNs = append(bounce.RecipientDSNs, statusHeader)
+Delivery to the following recipients failed:
 
-	// Generate bounce MIME message
-	bounceMsg, err := enmime.BuildDSN(bounce)
-	if err != nil {
-		return fmt.Errorf("failed to build DSN message: %w", err)
-	}
+    %s
 
-	// Create bounce queue item
-	recipients := w.parseRecipients(item.Recipients)
-	if len(recipients) == 0 {
-		recipients = []string{item.Sender} // Bounce to original sender
-	}
+Reason: %s
+
+--- Original Message Headers ---
+Message-ID: %s
+Subject: %s
+`, item.Recipients, deliveryErr.Error(), originalMessageID, originalSubject)
+
+	// Build RFC5322 message
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("From: mailer-daemon@%s\r\n", w.config.Hostname))
+	buf.WriteString(fmt.Sprintf("To: %s\r\n", item.Sender))
+	buf.WriteString(fmt.Sprintf("Subject: Delivery Status Notification (Failure)\r\n"))
+	buf.WriteString(fmt.Sprintf("Date: %s\r\n", time.Now().Format(time.RFC1123Z)))
+	buf.WriteString(fmt.Sprintf("Message-ID: <%d.%d.bounce@%s>\r\n", item.ID, time.Now().Unix(), w.config.Hostname))
+	buf.WriteString("MIME-Version: 1.0\r\n")
+	buf.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
+	buf.WriteString("\r\n")
+	buf.WriteString(bounceBody)
+
+	// Queue the bounce message
+	recipients := []string{item.Sender}
 
 	messageID, err := w.queueService.Enqueue(
 		"mailer-daemon@"+w.config.Hostname,
 		recipients,
-		bounceMsg,
+		buf.Bytes(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to queue bounce message: %w", err)
@@ -703,7 +556,7 @@ func (w *DeliveryWorker) generateBounce(ctx context.Context, item *domain.QueueI
 
 	w.logger.Info("bounce message generated",
 		zap.String("bounce_message_id", messageID),
-		zap.String("original_id", item.ID),
+		zap.Int64("original_id", item.ID),
 	)
 
 	return nil

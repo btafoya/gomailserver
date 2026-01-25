@@ -23,7 +23,7 @@ type UserServiceInterface interface {
 type MessageServiceInterface interface {
 	Store(userID, mailboxID, uid int64, messageData []byte) (*domain.Message, error)
 	GetByID(id int64) (*domain.Message, error)
-	GetByMailbox(mailboxID int64) ([]*domain.Message, error)
+	GetByMailbox(mailboxID int64, offset, limit int) ([]*domain.Message, error)
 	Delete(id int64) error
 	Update(message *domain.Message) error
 	UpdateFlags(ctx context.Context, messageID, userID int, flags []string, action string) error
