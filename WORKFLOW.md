@@ -110,15 +110,6 @@ docker pull ghcr.io/btafoya/gomailserver:1.0.0
 docker pull ghcr.io/btafoya/gomailserver:latest
 ```
 
-### Homebrew
-
-macOS users can install via Homebrew:
-
-```bash
-brew tap btafoya/tap
-brew install gomailserver
-```
-
 ---
 
 ## CI/CD Pipeline
@@ -133,7 +124,6 @@ push tag v* ─────► Release Workflow
                         ├── Build Linux packages (deb/rpm/apk)
                         ├── Build Docker images (amd64/arm64)
                         ├── Push to GHCR
-                        ├── Update Homebrew tap
                         └── Create GitHub Release
 ```
 
@@ -160,13 +150,6 @@ Configure these in repository Settings > Secrets and variables > Actions:
 | Secret | Purpose | Required |
 |--------|---------|----------|
 | `GITHUB_TOKEN` | Release creation, GHCR push | Auto-provided |
-| `HOMEBREW_TAP_TOKEN` | Push to homebrew-tap repo | Yes |
-
-#### Creating HOMEBREW_TAP_TOKEN
-
-1. Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
-2. Generate new token with `repo` scope
-3. Add as secret `HOMEBREW_TAP_TOKEN` in the gomailserver repository
 
 ### Workflow Jobs
 
@@ -294,22 +277,15 @@ This triggers the full release workflow but marks it as a pre-release.
 
 ### Initial Setup Checklist
 
-1. **Create Homebrew tap repository**
-   - Create `btafoya/homebrew-tap` repository on GitHub
-   - Initialize with README
-
-2. **Configure secrets**
-   - Add `HOMEBREW_TAP_TOKEN` with `repo` scope
-
-3. **Verify workflows**
+1. **Verify workflows**
    - Check `.github/workflows/release.yml` exists
    - Run `make release-check`
 
-4. **Test with snapshot**
+2. **Test with snapshot**
    - Run `make release-snapshot`
    - Verify all artifacts build
 
-5. **Create initial release**
+3. **Create initial release**
    - Tag `v0.1.0` or `v1.0.0`
    - Monitor workflow
    - Verify artifacts
@@ -361,17 +337,6 @@ Error: unauthorized: authentication required
 ```
 
 **Solution**: Verify `GITHUB_TOKEN` has `packages:write` permission.
-
-#### Homebrew tap not updated
-
-```
-Error: could not push to homebrew-tap
-```
-
-**Solutions**:
-1. Verify `HOMEBREW_TAP_TOKEN` is set and has `repo` scope
-2. Ensure `btafoya/homebrew-tap` repository exists
-3. Check token hasn't expired
 
 #### nfpm packaging fails
 
@@ -453,5 +418,4 @@ docker run --rm ghcr.io/btafoya/gomailserver:latest version
 
 - **GoReleaser**: https://goreleaser.com/
 - **nfpm**: https://nfpm.goreleaser.com/
-- **Homebrew Tap**: https://github.com/btafoya/homebrew-tap
 - **Container Registry**: https://ghcr.io/btafoya/gomailserver

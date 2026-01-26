@@ -180,23 +180,6 @@ docker_manifests:
       - "ghcr.io/btafoya/gomailserver:latest-amd64"
       - "ghcr.io/btafoya/gomailserver:latest-arm64"
 
-brews:
-  - name: gomailserver
-    repository:
-      owner: btafoya
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    homepage: https://github.com/btafoya/gomailserver
-    description: A modern, all-in-one mail server written in Go
-    license: MIT
-    install: |
-      bin.install "gomailserver"
-    test: |
-      system "#{bin}/gomailserver", "version"
-    extra_install: |
-      (share/"gomailserver").install "gomailserver.example.yaml"
-
 checksum:
   name_template: "checksums.txt"
   algorithm: sha256
@@ -254,12 +237,6 @@ release:
     ### Linux (rpm-based)
     ```bash
     sudo rpm -i gomailserver_{{ .Version }}_x86_64.rpm
-    ```
-
-    ### macOS (Homebrew)
-    ```bash
-    brew tap btafoya/tap
-    brew install gomailserver
     ```
 
     ### Docker
