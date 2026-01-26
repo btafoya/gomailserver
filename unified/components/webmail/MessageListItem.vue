@@ -39,29 +39,30 @@
           ]"
           :fill="message.starred"
         />
-       </UButton>
-       
-       <!-- Task Completion -->
-       <div class="mr-3 flex items-center">
-         <UButton
-           variant="ghost"
-           size="sm"
-           icon
-           @click.stop="toggleTaskCompletion"
-         >
-           <CheckSquare
-             :class="[
-               'h-4 w-4 transition-colors',
-               message.task_completed
-                 ? 'fill-green-400 text-green-400'
-                 : 'text-muted-foreground hover:text-green-400'
-             ]"
-             :fill="message.task_completed"
-           />
-         </UButton>
-       </div>
+      </UButton>
+    </div>
 
-     <!-- Sender Avatar -->
+    <!-- Task Completion -->
+    <div class="mr-3 flex items-center">
+      <UButton
+        variant="ghost"
+        size="sm"
+        icon
+        @click.stop="toggleTaskCompletion"
+      >
+        <CheckSquare
+          :class="[
+            'h-4 w-4 transition-colors',
+            message.task_completed
+              ? 'fill-green-400 text-green-400'
+              : 'text-muted-foreground hover:text-green-400'
+          ]"
+          :fill="message.task_completed"
+        />
+      </UButton>
+    </div>
+
+    <!-- Sender Avatar -->
     <div class="mr-3 flex items-center">
       <UAvatar
         :src="senderAvatar"
@@ -122,7 +123,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Star, Paperclip, CheckSquare } from 'lucide-vue-next'
 import { useWebmailStore } from '~/stores/webmail'
 import { useWebmailApi } from '~/composables/useWebmailApi'

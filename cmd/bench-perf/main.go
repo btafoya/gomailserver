@@ -133,7 +133,7 @@ func benchmarkSMTP(config *BenchmarkConfig) *SMTPResults {
 
 func sendSMTPMessage(config *BenchmarkConfig, workerID, messageID int) error {
 	// Connect to SMTP server
-	addr := fmt.Sprintf("%s:%d", config.Host, config.SMTPPort)
+	addr := net.JoinHostPort(config.Host, strconv.Itoa(config.SMTPPort))
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)

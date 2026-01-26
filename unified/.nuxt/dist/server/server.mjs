@@ -406,11 +406,26 @@ const unhead_ZPj3kp79W0Tkt3OY3tqr9telkzYAWiW44ZW3MeLFEnc = /* @__PURE__ */ defin
 function toArray(value) {
   return Array.isArray(value) ? value : [value];
 }
-const __nuxt_page_meta$9 = {
+const __nuxt_page_meta$e = {
   layout: "portal"
 };
-const __nuxt_page_meta$8 = {
+const __nuxt_page_meta$d = {
   layout: "webmail"
+};
+const __nuxt_page_meta$c = {
+  layout: "admin"
+};
+const __nuxt_page_meta$b = {
+  layout: "admin"
+};
+const __nuxt_page_meta$a = {
+  layout: "admin"
+};
+const __nuxt_page_meta$9 = {
+  layout: "admin"
+};
+const __nuxt_page_meta$8 = {
+  layout: "admin"
 };
 const __nuxt_page_meta$7 = {
   layout: "admin"
@@ -440,42 +455,48 @@ const _routes = [
   {
     name: "login",
     path: "/login",
-    component: () => import("./_nuxt/login-C1o5X52K.js")
+    component: () => import("./_nuxt/login-DlbVVaWP.js")
   },
   {
     name: "admin",
     path: "/admin",
-    component: () => import("./_nuxt/index-GcTMRGpf.js")
+    component: () => import("./_nuxt/index-BxZTwQic.js")
   },
   {
     name: "portal",
     path: "/portal",
-    meta: { ...__nuxt_page_meta$9 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-CsE5hge4.js")
+    meta: { ...__nuxt_page_meta$e || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-NcjZUQpM.js")
   },
   {
     name: "webmail",
     path: "/webmail",
-    meta: { ...__nuxt_page_meta$8 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-CuJjea5r.js")
+    meta: { ...__nuxt_page_meta$d || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-Cd8dkjQp.js")
   },
   {
     name: "admin-settings",
     path: "/admin/settings",
-    meta: { ...__nuxt_page_meta$7 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/settings-D5Zr9Hpd.js")
+    meta: { ...__nuxt_page_meta$c || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/settings-DP8xTuFO.js")
+  },
+  {
+    name: "admin-logs",
+    path: "/admin/logs",
+    meta: { ...__nuxt_page_meta$b || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-BFgUlUZI.js")
   },
   {
     name: "admin-users-id",
     path: "/admin/users/:id()",
-    meta: { ...__nuxt_page_meta$6 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/_id_-DprnqJbY.js")
+    meta: { ...__nuxt_page_meta$a || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/_id_-DKS7Ye2R.js")
   },
   {
     name: "admin-queue",
     path: "/admin/queue",
-    meta: { ...__nuxt_page_meta$5 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-CsiHervb.js")
+    meta: { ...__nuxt_page_meta$9 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-lwxpBPQ3.js")
   },
   {
     name: "admin-setup",
@@ -485,77 +506,101 @@ const _routes = [
   {
     name: "admin-users",
     path: "/admin/users",
-    meta: { ...__nuxt_page_meta$4 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-D05XuuLx.js")
+    meta: { ...__nuxt_page_meta$8 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-DcRT1TUA.js")
+  },
+  {
+    name: "admin-backup",
+    path: "/admin/backup",
+    meta: { ...__nuxt_page_meta$7 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-BWvs-17C.js")
   },
   {
     name: "admin-domains-id",
     path: "/admin/domains/:id()",
-    meta: { ...__nuxt_page_meta$3 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/_id_-f2kttBgk.js")
+    meta: { ...__nuxt_page_meta$6 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/_id_-CFN3RyZ9.js")
   },
   {
     name: "admin-aliases",
     path: "/admin/aliases",
-    meta: { ...__nuxt_page_meta$2 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-CptAV6WD.js")
+    meta: { ...__nuxt_page_meta$5 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-zOmFP9kq.js")
   },
   {
     name: "admin-domains",
     path: "/admin/domains",
-    meta: { ...__nuxt_page_meta$1 || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/index-CJYDacVp.js")
+    meta: { ...__nuxt_page_meta$4 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-C0nZF5WL.js")
+  },
+  {
+    name: "admin-mailbox",
+    path: "/admin/mailbox",
+    meta: { ...__nuxt_page_meta$3 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-9VjcOFpB.js")
   },
   {
     name: "admin-domains-create",
     path: "/admin/domains/create",
-    meta: { ...__nuxt_page_meta || {}, ...{ "middleware": "auth" } },
-    component: () => import("./_nuxt/create-Cs-57im9.js")
+    meta: { ...__nuxt_page_meta$2 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/create-CDI75ag1.js")
+  },
+  {
+    name: "admin-blacklist",
+    path: "/admin/blacklist",
+    meta: { ...__nuxt_page_meta$1 || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-B5kOEZAQ.js")
   },
   {
     name: "admin-reputation",
     path: "/admin/reputation",
-    component: () => import("./_nuxt/index-BTBB3sSX.js")
+    component: () => import("./_nuxt/index-D4QHYwjG.js")
+  },
+  {
+    name: "admin-rate-limits",
+    path: "/admin/rate-limits",
+    meta: { ...__nuxt_page_meta || {}, ...{ "middleware": "auth" } },
+    component: () => import("./_nuxt/index-BiUewXp7.js")
   },
   {
     name: "admin-reputation-audit",
     path: "/admin/reputation/audit",
-    component: () => import("./_nuxt/index-DK-LMrvr.js")
+    component: () => import("./_nuxt/index-DVKtFRRd.js")
   },
   {
     name: "admin-reputation-warmup",
     path: "/admin/reputation/warmup",
-    component: () => import("./_nuxt/index-IMsPnu0G.js")
+    component: () => import("./_nuxt/index-B48kwNMT.js")
   },
   {
     name: "admin-reputation-predictions",
     path: "/admin/reputation/predictions",
-    component: () => import("./_nuxt/index-DstnjmiU.js")
+    component: () => import("./_nuxt/index-BlMV5mv4.js")
   },
   {
     name: "admin-reputation-dmarc-reports",
     path: "/admin/reputation/dmarc-reports",
-    component: () => import("./_nuxt/index-C6Es3UGK.js")
+    component: () => import("./_nuxt/index-BKJsfc97.js")
   },
   {
     name: "admin-reputation-provider-limits",
     path: "/admin/reputation/provider-limits",
-    component: () => import("./_nuxt/index-D92YrDPC.js")
+    component: () => import("./_nuxt/index-DPf1mOei.js")
   },
   {
     name: "admin-reputation-circuit-breakers",
     path: "/admin/reputation/circuit-breakers",
-    component: () => import("./_nuxt/index-ihQtOUHT.js")
+    component: () => import("./_nuxt/index-C3pIIebQ.js")
   },
   {
     name: "admin-reputation-external-metrics",
     path: "/admin/reputation/external-metrics",
-    component: () => import("./_nuxt/index-xY2OtdyF.js")
+    component: () => import("./_nuxt/index-BHwLvXsX.js")
   },
   {
     name: "admin-reputation-warmup-scheduler",
     path: "/admin/reputation/warmup-scheduler",
-    component: () => import("./_nuxt/index-VqhKgXc_.js")
+    component: () => import("./_nuxt/index-Ch9x4qSU.js")
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -1205,7 +1250,7 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
     }
   }
 });
-const LazyIcon = defineAsyncComponent(() => import("./_nuxt/index-DacSMpSH.js").then((r) => r["default"] || r.default || r));
+const LazyIcon = defineAsyncComponent(() => import("./_nuxt/index-DXz-VtbY.js").then((r) => r["default"] || r.default || r));
 const lazyGlobalComponents = [
   ["Icon", LazyIcon]
 ];
@@ -5578,7 +5623,7 @@ const plugins = [
   plugin_P4zXSwqw_d470LL6MrEpRI3PI9g_trMjoHkDHU0bNdA
 ];
 const layouts = {
-  admin: defineAsyncComponent(() => import("./_nuxt/admin-C3yLknQR.js").then((m) => m.default || m)),
+  admin: defineAsyncComponent(() => import("./_nuxt/admin-DfawSjzj.js").then((m) => m.default || m)),
   portal: defineAsyncComponent(() => import("./_nuxt/portal-BHYlo2u2.js").then((m) => m.default || m)),
   webmail: defineAsyncComponent(() => import("./_nuxt/webmail-Bu8Sq2vb.js").then((m) => m.default || m))
 };
@@ -5840,7 +5885,7 @@ const _sfc_main$1 = {
     const statusMessage = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import("./_nuxt/error-404-DxXUdTnu.js"));
+    const _Error404 = defineAsyncComponent(() => import("./_nuxt/error-404-DmDdK-X4.js"));
     const _Error = defineAsyncComponent(() => import("./_nuxt/error-500-YBLvWfLz.js"));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
@@ -5925,13 +5970,13 @@ export {
   Icon as I,
   _export_sfc as _,
   appConfig as a,
-  useRoute as b,
-  useRouter as c,
-  useNuxtApp as d,
+  twJoin as b,
+  useRoute as c,
+  useRouter as d,
   entry_default as default,
-  useRuntimeConfig as e,
-  nuxtLinkDefaults as f,
-  twJoin as g,
+  useNuxtApp as e,
+  useRuntimeConfig as f,
+  nuxtLinkDefaults as g,
   useAppConfig as h,
   get as i,
   asyncDataDefaults as j,

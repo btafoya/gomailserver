@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -244,8 +245,8 @@ func (c *PortAvailabilityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 		imapPort = 143
 	}
 
-	smtpAddress := fmt.Sprintf("%s:%d", cfg.SMTPHost, smtpPort)
-	imapAddress := fmt.Sprintf("%s:%d", cfg.IMAPHost, imapPort)
+	smtpAddress := net.JoinHostPort(cfg.SMTPHost, strconv.Itoa(smtpPort))
+	imapAddress := net.JoinHostPort(cfg.IMAPHost, strconv.Itoa(imapPort))
 
 	smtpConn, err := net.DialTimeout("tcp", smtpAddress, timeout)
 	result.Details["smtp_port"] = smtpPort

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func (c *SMTPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	if smtpPort == 0 {
 		smtpPort = 587
 	}
-	smtpAddress := fmt.Sprintf("%s:%d", cfg.SMTPHost, smtpPort)
+	smtpAddress := net.JoinHostPort(cfg.SMTPHost, strconv.Itoa(smtpPort))
 
 	conn, err := net.DialTimeout("tcp", smtpAddress, timeout)
 	if err != nil {
@@ -117,7 +118,7 @@ func (c *SMTPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	if smtpPort == 0 {
 		smtpPort = 587
 	}
-	smtpAddress := fmt.Sprintf("%s:%d", cfg.SMTPHost, smtpPort)
+	smtpAddress := net.JoinHostPort(cfg.SMTPHost, strconv.Itoa(smtpPort))
 
 	if cfg.TestUser == "" || cfg.TestPass == "" {
 		result.Status = types.StatusWarning
@@ -241,7 +242,7 @@ func (c *IMAPConnectivityCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	if imapPort == 0 {
 		imapPort = 143
 	}
-	imapAddress := fmt.Sprintf("%s:%d", cfg.IMAPHost, imapPort)
+	imapAddress := net.JoinHostPort(cfg.IMAPHost, strconv.Itoa(imapPort))
 
 	conn, err := net.DialTimeout("tcp", imapAddress, timeout)
 	if err != nil {
@@ -314,7 +315,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 	if imapPort == 0 {
 		imapPort = 143
 	}
-	imapAddress := fmt.Sprintf("%s:%d", cfg.IMAPHost, imapPort)
+	imapAddress := net.JoinHostPort(cfg.IMAPHost, strconv.Itoa(imapPort))
 
 	if cfg.TestUser == "" || cfg.TestPass == "" {
 		result.Status = types.StatusWarning
@@ -351,7 +352,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 		return result, nil
 	}
 
-	login := fmt.Sprintf("%s LOGIN %s %s\r\n", cfg.TestUser, cfg.TestPass)
+	login := fmt.Sprintf("A001 LOGIN %s %s\r\n", cfg.TestUser, cfg.TestPass)
 	_, err = conn.Write([]byte(login))
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to write LOGIN: %v", err)
@@ -377,7 +378,7 @@ func (c *IMAPAuthenticationCheck) Run(ctx context.Context, cfg *types.ServerConf
 		return result, nil
 	}
 
-	logout := "LOGOUT\r\n"
+	logout := "A002 LOGOUT\r\n"
 	_, err = conn.Write([]byte(logout))
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to write LOGOUT: %v", err)
@@ -444,11 +445,11 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 
 	fromAddr := cfg.TestUser
 	toAddr := cfg.TestUser
-	subject := fmt.Sprintf("[MAILTEST] Health Check %d", testID)
-	body := fmt.Sprintf("GoMailTest Health Check\r\nTest ID: %d\r\nTimestamp: %s\r\nThis is an automated test message.\r\n",
+	subject := fmt.Sprintf("[MAILTEST] Health Check %s", testID)
+	body := fmt.Sprintf("GoMailTest Health Check\r\nTest ID: %s\r\nTimestamp: %s\r\nThis is an automated test message.\r\n",
 		testID, time.Now().Format(time.RFC1123))
 
-	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nX-GoMailTest: true\r\nX-GoMailTest-ID: %d\r\nX-GoMailTest-Timestamp: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
+	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nX-GoMailTest: true\r\nX-GoMailTest-ID: %s\r\nX-GoMailTest-Timestamp: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
 		fromAddr, toAddr, subject, testID, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC1123), body)
 
 	result.Details["test_id"] = testID
@@ -459,7 +460,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	if smtpPort == 0 {
 		smtpPort = 587
 	}
-	smtpAddress := fmt.Sprintf("%s:%d", cfg.SMTPHost, smtpPort)
+	smtpAddress := net.JoinHostPort(cfg.SMTPHost, strconv.Itoa(smtpPort))
 
 	smtpConn, err := net.DialTimeout("tcp", smtpAddress, 10*time.Second)
 	if err != nil {
@@ -611,7 +612,7 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	if imapPort == 0 {
 		imapPort = 143
 	}
-	imapAddress := fmt.Sprintf("%s:%d", cfg.IMAPHost, imapPort)
+	imapAddress := net.JoinHostPort(cfg.IMAPHost, strconv.Itoa(imapPort))
 
 	imapConn, err := net.DialTimeout("tcp", imapAddress, 10*time.Second)
 	if err != nil {
@@ -635,12 +636,12 @@ func (c *MailFlowEndToEndCheck) Run(ctx context.Context, cfg *types.ServerConfig
 	response := string(data)
 	if !strings.HasPrefix(response, "* OK") {
 		result.Message = fmt.Sprintf("Unexpected IMAP greeting: %s", response)
-		result.Details["imap_error"] = err.Error()
+		result.Details["imap_error"] = response
 		result.Duration = int64(time.Since(startTime).Milliseconds())
 		return result, nil
 	}
 
-	login := fmt.Sprintf("%s LOGIN %s %s\r\n", cfg.TestUser, cfg.TestPass)
+	login := fmt.Sprintf("A001 LOGIN %s %s\r\n", cfg.TestUser, cfg.TestPass)
 	_, err = imapConn.Write([]byte(login))
 	if err != nil {
 		result.Message = fmt.Sprintf("Failed to write LOGIN: %v", err)

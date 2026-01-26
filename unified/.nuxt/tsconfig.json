@@ -119,7 +119,7 @@
         "./tailwind/expose"
       ],
       "#app-manifest": [
-        "./manifest/meta/c9584c7d-6e52-4404-9eca-6f649e3794ed.json"
+        "./manifest/meta/bf289b67-3b45-49bf-bf41-f2979062801f.json"
       ],
       "#components": [
         "./components"

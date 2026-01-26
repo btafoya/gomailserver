@@ -39,60 +39,58 @@
 
       <!-- Filters -->
       <UCard class="mb-6">
-        <UCardContent>
-          <div class="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
-            <div>
-              <label class="text-sm font-medium">Log Level</label>
-              <select v-model="filters.level" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
-                <option value="">All Levels</option>
-                <option value="debug">Debug</option>
-                <option value="info">Info</option>
-                <option value="warn">Warning</option>
-                <option value="error">Error</option>
-              </select>
-            </div>
+        <div class="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
+          <div>
+            <label class="text-sm font-medium">Log Level</label>
+            <select v-model="filters.level" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
+              <option value="">All Levels</option>
+              <option value="debug">Debug</option>
+              <option value="info">Info</option>
+              <option value="warn">Warning</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
 
-            <div>
-              <label class="text-sm font-medium">Service</label>
-              <select v-model="filters.service" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
-                <option value="">All Services</option>
-                <option v-for="service in availableServices" :key="service" :value="service">
-                  {{ service }}
-                </option>
-              </select>
-            </div>
+          <div>
+            <label class="text-sm font-medium">Service</label>
+            <select v-model="filters.service" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
+              <option value="">All Services</option>
+              <option v-for="service in availableServices" :key="service" :value="service">
+                {{ service }}
+              </option>
+            </select>
+          </div>
 
-            <div>
-              <label class="text-sm font-medium">User</label>
-              <select v-model="filters.user_id" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
-                <option value="">All Users</option>
-                <option v-for="user in availableUsers" :key="user.id" :value="user.id">
-                  {{ user.name || user.email }}
-                </option>
-              </select>
-            </div>
+          <div>
+            <label class="text-sm font-medium">User</label>
+            <select v-model="filters.user_id" @change="loadLogs" class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground">
+              <option value="">All Users</option>
+              <option v-for="user in availableUsers" :key="user.id" :value="user.id">
+                {{ user.name || user.email }}
+              </option>
+            </select>
+          </div>
 
-            <div>
-              <label class="text-sm font-medium">IP Address</label>
-              <input
-                v-model="filters.ip_address"
-                type="text"
-                @change="loadLogs"
-                placeholder="192.168.1.1"
-                class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground"
-              />
-            </div>
+          <div>
+            <label class="text-sm font-medium">IP Address</label>
+            <input
+              v-model="filters.ip_address"
+              type="text"
+              @change="loadLogs"
+              placeholder="192.168.1.1"
+              class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground"
+            />
+          </div>
 
-            <div>
-              <label class="text-sm font-medium">Search</label>
-              <input
-                v-model="filters.search"
-                type="text"
-                @input="debounceSearch"
-                placeholder="Search log messages..."
-                class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground"
-              />
-            </div>
+          <div>
+            <label class="text-sm font-medium">Search</label>
+            <input
+              v-model="filters.search"
+              type="text"
+              @input="debounceSearch"
+              placeholder="Search log messages..."
+              class="w-full mt-1 px-3 py-2 border rounded-md bg-background text-foreground"
+            />
           </div>
 
           <div class="flex items-end space-x-2 md:col-span-2 lg:col-span-2">
@@ -116,7 +114,6 @@
             </div>
           </div>
         </div>
-        </UCardContent>
       </UCard>
 
       <!-- Real-time indicator -->
@@ -242,42 +239,42 @@
     <!-- Statistics Modal -->
     <UModal v-model="showStatsModal" :ui="{ width: 'sm:max-w-2xl' }">
       <UCard>
-        <UCardHeader>
-          <UCardTitle>Log Statistics</UCardTitle>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="showStatsModal = false" />
-        </UCardHeader>
-        
-        <UCardContent>
-          <div v-if="stats.loading" class="text-center py-8">
-            <p>Loading statistics...</p>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Log Statistics</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="showStatsModal = false" />
           </div>
-          <div v-else-if="stats.data" class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-3">
-              <div class="bg-muted/50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-muted-foreground">Total Logs</h3>
-                <p class="text-2xl font-bold">{{ stats.data.total_logs || 0 }}</p>
-              </div>
-              <div class="bg-muted/50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-muted-foreground">Error Logs</h3>
-                <p class="text-2xl font-bold text-red-600">{{ stats.data.error_logs || 0 }}</p>
-              </div>
-              <div class="bg-muted/50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-muted-foreground">Warning Logs</h3>
-                <p class="text-2xl font-bold text-yellow-600">{{ stats.data.warning_logs || 0 }}</p>
-              </div>
+        </template>
+
+        <div v-if="stats.loading" class="text-center py-8">
+          <p>Loading statistics...</p>
+        </div>
+        <div v-else-if="stats.data" class="space-y-4">
+          <div class="grid gap-4 md:grid-cols-3">
+            <div class="bg-muted/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-muted-foreground">Total Logs</h3>
+              <p class="text-2xl font-bold">{{ stats.data.total_logs || 0 }}</p>
             </div>
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="bg-muted/50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-muted-foreground">Time Range</h3>
-                <p class="text-lg">{{ stats.data.time_range || 'All time' }}</p>
-              </div>
-              <div class="bg-muted/50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-muted-foreground">Most Active Service</h3>
-                <p class="text-lg">{{ stats.data.most_active_service || 'Unknown' }}</p>
-              </div>
+            <div class="bg-muted/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-muted-foreground">Error Logs</h3>
+              <p class="text-2xl font-bold text-red-600">{{ stats.data.error_logs || 0 }}</p>
+            </div>
+            <div class="bg-muted/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-muted-foreground">Warning Logs</h3>
+              <p class="text-2xl font-bold text-yellow-600">{{ stats.data.warning_logs || 0 }}</p>
             </div>
           </div>
-        </UCardContent>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="bg-muted/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-muted-foreground">Time Range</h3>
+              <p class="text-lg">{{ stats.data.time_range || 'All time' }}</p>
+            </div>
+            <div class="bg-muted/50 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-muted-foreground">Most Active Service</h3>
+              <p class="text-lg">{{ stats.data.most_active_service || 'Unknown' }}</p>
+            </div>
+          </div>
+        </div>
       </UCard>
     </UModal>
   </div>

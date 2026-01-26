@@ -44,7 +44,7 @@ func NewSpamAssassin(host string, port int) *SpamAssassin {
 
 // Scan sends a message to SpamAssassin for analysis
 func (s *SpamAssassin) Scan(message []byte) (*ScanResult, error) {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
+	conn, err := net.Dial("tcp", net.JoinHostPort(s.host, strconv.Itoa(s.port)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to spamd: %w", err)
 	}

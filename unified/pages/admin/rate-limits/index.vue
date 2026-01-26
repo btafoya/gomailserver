@@ -315,12 +315,12 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
-const { 
-  getRateLimits, 
-  createRateLimit, 
-  updateRateLimit, 
+const {
+  getRateLimits,
+  createRateLimit: createRateLimitApi,
+  updateRateLimit: updateRateLimitApi,
   deleteRateLimit: deleteRateLimitApi,
-  toggleRateLimit, 
+  toggleRateLimit: toggleRateLimitApi,
   getRateLimitStats,
   getGlobalStats,
   resetRateLimit: resetRateLimitApi
@@ -467,7 +467,7 @@ const viewStats = async (limit) => {
 
 const toggleRateLimit = async (limit) => {
   try {
-    await toggleRateLimit(limit.id, !limit.enabled)
+    await toggleRateLimitApi(limit.id, !limit.enabled)
     limit.enabled = !limit.enabled
   } catch (err) {
     error.value = err.message
@@ -502,16 +502,16 @@ const deleteRateLimit = async (limit) => {
 
 const saveRateLimit = async () => {
   saving.value = true
-  
+
   try {
     if (editingRateLimit.value) {
-      const updated = await updateRateLimit(editingRateLimit.value.id, rateLimitForm.value)
+      const updated = await updateRateLimitApi(editingRateLimit.value.id, rateLimitForm.value)
       const index = rateLimits.value.findIndex(l => l.id === editingRateLimit.value.id)
       if (index !== -1) {
         rateLimits.value[index] = { ...updated, ...rateLimitForm.value }
       }
     } else {
-      const created = await createRateLimit(rateLimitForm.value)
+      const created = await createRateLimitApi(rateLimitForm.value)
       rateLimits.value.push(created)
     }
     closeModal()

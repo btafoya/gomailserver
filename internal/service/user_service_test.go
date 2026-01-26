@@ -7,17 +7,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/btafoya/gomailserver/internal/domain"
+	"github.com/btafoya/gomailserver/internal/repository"
 )
 
 // mockUserRepository is a test double for UserRepository
 type mockUserRepository struct {
-	createFunc        func(*domain.User) error
-	getByEmailFunc    func(string) (*domain.User, error)
-	getByIDFunc       func(int64) (*domain.User, error)
-	updateFunc        func(*domain.User) error
-	deleteFunc        func(int64) error
-	listFunc          func(int64, int, int) ([]*domain.User, error)
-	updateQuotaFunc   func(int64, int64) error
+	createFunc         func(*domain.User) error
+	getByEmailFunc     func(string) (*domain.User, error)
+	getByIDFunc        func(int64) (*domain.User, error)
+	updateFunc         func(*domain.User) error
+	deleteFunc         func(int64) error
+	listFunc           func(int64, int, int) ([]*domain.User, error)
+	updateQuotaFunc    func(int64, int64) error
 	updatePasswordFunc func(int64, string) error
 }
 
@@ -86,17 +87,37 @@ func (m *mockUserRepository) ListAll() ([]*domain.User, error) {
 	return nil, nil
 }
 
+func (m *mockUserRepository) ListPaginated(offset, limit int) ([]*domain.User, error) {
+	return []*domain.User{}, nil
+}
+
+func (m *mockUserRepository) Count() (int64, error) {
+	return 0, nil
+}
+
+func (m *mockUserRepository) CountByDomain(domainID int64) (int64, error) {
+	return 0, nil
+}
+
 // mockDomainRepository is a test double for DomainRepository
 type mockDomainRepository struct{}
 
-func (m *mockDomainRepository) Create(domain *domain.Domain) error          { return nil }
-func (m *mockDomainRepository) GetByID(id int64) (*domain.Domain, error)    { return nil, nil }
-func (m *mockDomainRepository) GetByName(name string) (*domain.Domain, error) { return nil, nil }
-func (m *mockDomainRepository) Update(domain *domain.Domain) error          { return nil }
-func (m *mockDomainRepository) Delete(id int64) error                       { return nil }
+func (m *mockDomainRepository) Create(domain *domain.Domain) error               { return nil }
+func (m *mockDomainRepository) GetByID(id int64) (*domain.Domain, error)         { return nil, nil }
+func (m *mockDomainRepository) GetByName(name string) (*domain.Domain, error)    { return nil, nil }
+func (m *mockDomainRepository) Update(domain *domain.Domain) error               { return nil }
+func (m *mockDomainRepository) Delete(id int64) error                            { return nil }
 func (m *mockDomainRepository) List(offset, limit int) ([]*domain.Domain, error) { return nil, nil }
-func (m *mockDomainRepository) CreateTemplate(template *domain.Domain) error { return nil }
-func (m *mockDomainRepository) GetDefaultTemplate() (*domain.Domain, error) { return nil, nil }
+func (m *mockDomainRepository) CreateTemplate(template *domain.Domain) error     { return nil }
+func (m *mockDomainRepository) GetDefaultTemplate() (*domain.Domain, error)      { return nil, nil }
+
+// helper to create repositories struct
+func createRepos(userRepo *mockUserRepository, domainRepo *mockDomainRepository) *repository.Repositories {
+	return &repository.Repositories{
+		User:   userRepo,
+		Domain: domainRepo,
+	}
+}
 
 func TestUserService_Create(t *testing.T) {
 	logger := zap.NewNop()
@@ -104,7 +125,8 @@ func TestUserService_Create(t *testing.T) {
 
 	t.Run("creates user with hashed password", func(t *testing.T) {
 		repo := &mockUserRepository{}
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 
 		user := &domain.User{
 			Email:    "test@example.com",
@@ -137,7 +159,8 @@ func TestUserService_Create(t *testing.T) {
 				return errors.New("database error")
 			},
 		}
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 
 		user := &domain.User{Email: "test@example.com"}
 		err := svc.Create(user, "password")
@@ -154,7 +177,8 @@ func TestUserService_Authenticate(t *testing.T) {
 
 	t.Run("authenticates user with correct password", func(t *testing.T) {
 		// Create a user with a known password hash
-		svc := NewUserService(&mockUserRepository{}, domainRepo, logger)
+		repos := createRepos(&mockUserRepository{}, domainRepo)
+		svc := NewUserService(repos, logger)
 		testUser := &domain.User{
 			ID:       1,
 			Email:    "test@example.com",
@@ -176,7 +200,8 @@ func TestUserService_Authenticate(t *testing.T) {
 			},
 		}
 
-		svc = NewUserService(repo, domainRepo, logger)
+		repos = createRepos(repo, domainRepo)
+		svc = NewUserService(repos, logger)
 		user, err := svc.Authenticate("test@example.com", "correctpassword")
 
 		if err != nil {
@@ -193,7 +218,8 @@ func TestUserService_Authenticate(t *testing.T) {
 	})
 
 	t.Run("fails authentication with incorrect password", func(t *testing.T) {
-		svc := NewUserService(&mockUserRepository{}, domainRepo, logger)
+		repos := createRepos(&mockUserRepository{}, domainRepo)
+		svc := NewUserService(repos, logger)
 		testUser := &domain.User{
 			ID:     1,
 			Email:  "test@example.com",
@@ -210,7 +236,8 @@ func TestUserService_Authenticate(t *testing.T) {
 			},
 		}
 
-		svc = NewUserService(repo, domainRepo, logger)
+		repos = createRepos(repo, domainRepo)
+		svc = NewUserService(repos, logger)
 		user, err := svc.Authenticate("test@example.com", "wrongpassword")
 
 		if err == nil {
@@ -229,7 +256,8 @@ func TestUserService_Authenticate(t *testing.T) {
 			},
 		}
 
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 		user, err := svc.Authenticate("nonexistent@example.com", "password")
 
 		if err == nil {
@@ -242,7 +270,8 @@ func TestUserService_Authenticate(t *testing.T) {
 	})
 
 	t.Run("fails authentication for disabled user", func(t *testing.T) {
-		svc := NewUserService(&mockUserRepository{}, domainRepo, logger)
+		repos := createRepos(&mockUserRepository{}, domainRepo)
+		svc := NewUserService(repos, logger)
 		testUser := &domain.User{
 			ID:     1,
 			Email:  "test@example.com",
@@ -259,7 +288,8 @@ func TestUserService_Authenticate(t *testing.T) {
 			},
 		}
 
-		svc = NewUserService(repo, domainRepo, logger)
+		repos = createRepos(repo, domainRepo)
+		svc = NewUserService(repos, logger)
 		user, err := svc.Authenticate("test@example.com", "password")
 
 		if err == nil {
@@ -291,7 +321,8 @@ func TestUserService_GetByEmail(t *testing.T) {
 			},
 		}
 
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 		user, err := svc.GetByEmail("test@example.com")
 
 		if err != nil {
@@ -310,7 +341,8 @@ func TestUserService_GetByEmail(t *testing.T) {
 			},
 		}
 
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 		user, err := svc.GetByEmail("nonexistent@example.com")
 
 		if err == nil {
@@ -336,7 +368,8 @@ func TestUserService_UpdatePassword(t *testing.T) {
 			},
 		}
 
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 		err := svc.UpdatePassword(1, "newpassword")
 
 		if err != nil {
@@ -364,7 +397,8 @@ func TestUserService_UpdatePassword(t *testing.T) {
 			},
 		}
 
-		svc := NewUserService(repo, domainRepo, logger)
+		repos := createRepos(repo, domainRepo)
+		svc := NewUserService(repos, logger)
 		err := svc.UpdatePassword(1, "newpassword")
 
 		if err == nil {

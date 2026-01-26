@@ -366,6 +366,7 @@ const viewMenuItems = [
     icon: sidebarCollapsed.value ? 'i-heroicons-bars-3' : 'i-heroicons-bars-2',
     click: toggleSidebar
   }]
+]
 
 // Methods
 const getMailboxIcon = (type) => {

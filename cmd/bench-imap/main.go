@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -126,7 +127,7 @@ func main() {
 }
 
 func processMessage(ctx context.Context, logger *zap.Logger, number int) error {
-	imapAddr := fmt.Sprintf("%s:%d", *host, *port)
+	imapAddr := net.JoinHostPort(*host, strconv.Itoa(*port))
 
 	client, err := net.Dial("tcp", imapAddr)
 	if err != nil {

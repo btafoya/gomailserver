@@ -36,38 +36,38 @@
       <!-- Stats Cards -->
       <div v-if="!loading && !error" class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <UCard>
-          <UCardContent class="text-center">
+          <div class="text-center p-4">
             <div class="text-2xl font-bold text-blue-600">{{ stats.total_backups || 0 }}</div>
             <div class="text-sm text-muted-foreground">Total Backups</div>
-          </UCardContent>
+          </div>
         </UCard>
         
         <UCard>
-          <UCardContent class="text-center">
+          <div class="text-center p-4">
             <div class="text-2xl font-bold text-green-600">{{ stats.completed_backups || 0 }}</div>
             <div class="text-sm text-muted-foreground">Completed</div>
-          </UCardContent>
+          </div>
         </UCard>
         
         <UCard>
-          <UCardContent class="text-center">
+          <div class="text-center p-4">
             <div class="text-2xl font-bold text-yellow-600">{{ stats.in_progress_backups || 0 }}</div>
             <div class="text-sm text-muted-foreground">In Progress</div>
-          </UCardContent>
+          </div>
         </UCard>
         
         <UCard>
-          <UCardContent class="text-center">
+          <div class="text-center p-4">
             <div class="text-2xl font-bold text-red-600">{{ stats.failed_backups || 0 }}</div>
             <div class="text-sm text-muted-foreground">Failed</div>
-          </UCardContent>
+          </div>
         </UCard>
         
         <UCard>
-          <UCardContent class="text-center">
+          <div class="text-center p-4">
             <div class="text-2xl font-bold">{{ formatBytes(stats.total_storage || 0) }}</div>
             <div class="text-sm text-muted-foreground">Total Storage</div>
-          </UCardContent>
+          </div>
         </UCard>
       </div>
 
@@ -135,12 +135,14 @@
     <!-- Create/Edit Modal -->
     <UModal v-model="showCreateModal" :ui="{ width: 'sm:max-w-2xl' }">
       <UCard>
-        <UCardHeader>
-          <UCardTitle>Create New Backup</UCardTitle>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="closeCreateModal" />
-        </UCardHeader>
-        
-        <UCardContent>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Create New Backup</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="closeCreateModal" />
+          </div>
+        </template>
+
+        <div>
           <form @submit.prevent="createBackup" class="space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
               <div>
@@ -211,19 +213,21 @@
               </UButton>
             </div>
           </form>
-        </UCardContent>
+        </div>
       </UCard>
     </UModal>
 
     <!-- Schedule Modal -->
     <UModal v-model="showScheduleModal" :ui="{ width: 'sm:max-w-2xl' }">
       <UCard>
-        <UCardHeader>
-          <UCardTitle>Schedule Backup</UCardTitle>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="closeScheduleModal" />
-        </UCardHeader>
-        
-        <UCardContent>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Schedule Backup</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="closeScheduleModal" />
+          </div>
+        </template>
+
+        <div>
           <form @submit.prevent="scheduleBackup" class="space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
               <div>
@@ -316,19 +320,21 @@
               </UButton>
             </div>
           </form>
-        </UCardContent>
+        </div>
       </UCard>
     </UModal>
 
     <!-- Restore Status Modal -->
     <UModal v-model="showRestoreModal" :ui="{ width: 'sm:max-w-xl' }">
       <UCard>
-        <UCardHeader>
-          <UCardTitle>Restore Status</UCardTitle>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="showRestoreModal = false" />
-        </UCardHeader>
-        
-        <UCardContent>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Restore Status</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="showRestoreModal = false" />
+          </div>
+        </template>
+
+        <div>
           <div v-if="restoreStatus.loading" class="text-center py-8">
             <p>Loading restore status...</p>
           </div>
@@ -368,7 +374,7 @@
               <p class="text-sm text-green-600">{{ formatDate(restoreStatus.data.completed_at) }}</p>
             </div>
           </div>
-        </UCardContent>
+        </div>
       </UCard>
     </UModal>
   </div>
@@ -386,12 +392,12 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
-const { 
+const {
   getBackups,
-  createBackup,
-  deleteBackup,
-  downloadBackup,
-  restoreBackup,
+  createBackup: createBackupApi,
+  deleteBackup: deleteBackupApi,
+  downloadBackup: downloadBackupApi,
+  restoreBackup: restoreBackupApi,
   getRestoreStatus,
   getBackupStats,
   cleanupBackups,
@@ -510,7 +516,7 @@ const deleteBackup = async (backup) => {
   }
 
   try {
-    await deleteBackup(backup.id)
+    await deleteBackupApi(backup.id)
     backups.value = backups.value.filter(b => b.id !== backup.id)
   } catch (err) {
     error.value = err.message
@@ -519,7 +525,7 @@ const deleteBackup = async (backup) => {
 
 const downloadBackup = async (backup) => {
   try {
-    const blob = await downloadBackup(backup.id)
+    const blob = await downloadBackupApi(backup.id)
     
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -540,7 +546,7 @@ const restoreBackup = async (backup) => {
   }
 
   try {
-    const result = await restoreBackup(backup.id)
+    const result = await restoreBackupApi(backup.id)
     
     // Show restore status modal
     showRestoreModal.value = true
@@ -573,9 +579,9 @@ const restoreBackup = async (backup) => {
 
 const createBackup = async () => {
   creating.value = true
-  
+
   try {
-    await createBackup(backupForm.value)
+    await createBackupApi(backupForm.value)
     await loadBackups()
     closeCreateModal()
   } catch (err) {

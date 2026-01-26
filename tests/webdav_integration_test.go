@@ -27,7 +27,7 @@ func TestWebDAV_FullIntegration(t *testing.T) {
 
 	// Test CalDAV handler
 	t.Run("CalDAV OPTIONS", func(t *testing.T) {
-		handler := caldav.NewHandler(logger, calendarService, eventService)
+		handler := caldav.NewHandler(logger, calendarService, eventService, nil)
 		req := httptest.NewRequest("OPTIONS", "/caldav/", nil)
 		w := httptest.NewRecorder()
 
@@ -70,7 +70,7 @@ func TestWebDAV_FullIntegration(t *testing.T) {
 		}
 
 		// Create server with nil user repo (simple integration test)
-		server := webdav.NewServer(cfg, caldav.NewHandler(logger, calendarService, eventService), carddav.NewHandler(logger, addressbookService, contactService), nil, logger)
+		_ = webdav.NewServer(cfg, caldav.NewHandler(logger, calendarService, eventService, nil), carddav.NewHandler(logger, addressbookService, contactService), nil, logger)
 
 		req := httptest.NewRequest("GET", "/.well-known/caldav", nil)
 		w := httptest.NewRecorder()
@@ -141,6 +141,30 @@ func (m *mockCalendarService) GenerateSyncToken(id int64) (string, error) {
 	return "sync-token-123", nil
 }
 
+func (m *mockCalendarService) ShareCalendar(calendarID int64, readUsers, writeUsers, adminUsers []int64, readAll bool) error {
+	return nil
+}
+
+func (m *mockCalendarService) UnshareCalendar(calendarID int64, userID int64) error {
+	return nil
+}
+
+func (m *mockCalendarService) HasReadAccess(userID, calendarID int64) bool {
+	return true
+}
+
+func (m *mockCalendarService) HasWriteAccess(userID, calendarID int64) bool {
+	return true
+}
+
+func (m *mockCalendarService) HasAdminAccess(userID, calendarID int64) bool {
+	return true
+}
+
+func (m *mockCalendarService) GetSharedCalendars(userID int64) ([]*calendardomain.Calendar, error) {
+	return nil, nil
+}
+
 type mockEventService struct {
 	events []*calendardomain.Event
 }
@@ -161,7 +185,7 @@ func (m *mockEventService) GetEvent(id int64) (*calendardomain.Event, error) {
 			return event, nil
 		}
 	}
-	return nil, &calendardomain.Event{}
+	return nil, errors.New("event not found")
 }
 
 func (m *mockEventService) GetCalendarEvents(calendarID int64) ([]*calendardomain.Event, error) {
@@ -216,7 +240,7 @@ func (m *mockAddressbookService) GetAddressbook(id int64) (*contactdomain.Addres
 			return ab, nil
 		}
 	}
-	return nil, &contactdomain.Addressbook{}
+	return nil, errors.New("addressbook not found")
 }
 
 func (m *mockAddressbookService) GetUserAddressbooks(userID int64) ([]*contactdomain.Addressbook, error) {
@@ -261,7 +285,7 @@ func (m *mockContactService) GetContact(id int64) (*contactdomain.Contact, error
 			return contact, nil
 		}
 	}
-	return nil, &contactdomain.Contact{}
+	return nil, errors.New("contact not found")
 }
 
 func (m *mockContactService) GetContactByUID(addressbookID int64, uid string) (*contactdomain.Contact, error) {
@@ -270,7 +294,7 @@ func (m *mockContactService) GetContactByUID(addressbookID int64, uid string) (*
 			return contact, nil
 		}
 	}
-	return nil, &contactdomain.Contact{}
+	return nil, errors.New("contact not found")
 }
 
 func (m *mockContactService) GetAddressbookContacts(addressbookID int64) ([]*contactdomain.Contact, error) {

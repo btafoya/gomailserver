@@ -24,6 +24,9 @@ interface _GlobalComponents {
   'AdminSetupStep2Domain': typeof import("../../components/admin/setup/Step2Domain.vue").default
   'AdminSetupStep3Admin': typeof import("../../components/admin/setup/Step3Admin.vue").default
   'AdminSetupStep4Review': typeof import("../../components/admin/setup/Step4Review.vue").default
+  'WebmailComposeModal': typeof import("../../components/webmail/ComposeModal.vue").default
+  'WebmailMessageListItem': typeof import("../../components/webmail/MessageListItem.vue").default
+  'WebmailMessagePreview': typeof import("../../components/webmail/MessagePreview.vue").default
   'UAccordion': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue").default
   'UAlert': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue").default
   'UAvatar': typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue").default
@@ -108,6 +111,9 @@ interface _GlobalComponents {
   'LazyAdminSetupStep2Domain': LazyComponent<typeof import("../../components/admin/setup/Step2Domain.vue").default>
   'LazyAdminSetupStep3Admin': LazyComponent<typeof import("../../components/admin/setup/Step3Admin.vue").default>
   'LazyAdminSetupStep4Review': LazyComponent<typeof import("../../components/admin/setup/Step4Review.vue").default>
+  'LazyWebmailComposeModal': LazyComponent<typeof import("../../components/webmail/ComposeModal.vue").default>
+  'LazyWebmailMessageListItem': LazyComponent<typeof import("../../components/webmail/MessageListItem.vue").default>
+  'LazyWebmailMessagePreview': LazyComponent<typeof import("../../components/webmail/MessagePreview.vue").default>
   'LazyUAccordion': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Accordion.vue").default>
   'LazyUAlert': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Alert.vue").default>
   'LazyUAvatar': LazyComponent<typeof import("../../node_modules/.pnpm/@nuxt+ui@2.22.3_axios@1.13.2_magicast@0.5.1_vite@7.3.0_jiti@1.21.7_terser@5.44.1_yaml@2.8.2__vue@3.5.26_yaml@2.8.2/node_modules/@nuxt/ui/dist/runtime/components/elements/Avatar.vue").default>

@@ -162,7 +162,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {
   Star,
   MoreVertical,
@@ -175,7 +175,6 @@ import {
   Download,
   Trash2,
   Archive,
-  MarkEmail,
   Printer,
   ExternalLink
 } from 'lucide-vue-next'
@@ -309,6 +308,7 @@ const moreActions = [
     icon: 'i-heroicons-printer',
     click: () => printMessage()
   }]
+]
 
 // Methods
 const extractNameFromEmail = (email) => {
