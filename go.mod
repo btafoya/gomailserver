@@ -1,6 +1,6 @@
 module github.com/btafoya/gomailserver
 
-go 1.25.1
+go 1.25.4
 
 require (
 	github.com/arran4/golang-ical v0.3.2

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.23.5', '1.24']
+        go-version: ['1.24', '1.25']
 
     steps:
     - name: Checkout code
@@ -37,10 +37,11 @@ jobs:
       run: go mod download
 
     - name: Run tests
-      run: make test
+      run: go test -v -race ./...
 
     - name: Upload coverage
       uses: codecov/codecov-action@v4
+      if: matrix.go-version == '1.25'
       with:
         files: ./coverage.out
         flags: unittests
@@ -57,7 +58,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23.5'
+        go-version: '1.25'
 
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v6
@@ -76,12 +77,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23.5'
+        go-version: '1.25'
+
+    - name: Install gosec
+      run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
     - name: Run Gosec Security Scanner
-      uses: securecodewarrior/github-action-gosec@master
-      with:
-        args: ./...
+      run: gosec -exclude-generated ./...
 
   docker-build:
     name: Docker Build
@@ -115,7 +117,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23.5'
+        go-version: '1.25'
 
     - name: Build binary
       run: make build
