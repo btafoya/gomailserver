@@ -1,0 +1,54 @@
+# Dockerfile for GoReleaser builds
+# This Dockerfile accepts the pre-built binary from GoReleaser
+
+FROM alpine:3.19
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    && update-ca-certificates \
+    && mkdir -p /var/lib/gomailserver /var/log/gomailserver /etc/gomailserver \
+    && addgroup -g 1000 -S gomailserver \
+    && adduser -u 1000 -S gomailserver -G gomailserver \
+    && chown -R gomailserver:gomailserver /var/lib/gomailserver /var/log/gomailserver
+
+# Copy the pre-built binary from GoReleaser
+COPY gomailserver /usr/local/bin/gomailserver
+
+# Copy default configuration
+COPY gomailserver.example.yaml /etc/gomailserver/gomailserver.yaml
+
+# Set proper permissions
+RUN chmod 755 /usr/local/bin/gomailserver \
+    && chmod 644 /etc/gomailserver/gomailserver.yaml
+
+# Create volume mount points
+VOLUME ["/var/lib/gomailserver", "/var/log/gomailserver", "/etc/gomailserver"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8980/api/v1/health || exit 1
+
+# Expose ports
+# SMTP submission
+EXPOSE 25/tcp
+# SMTP submission with STARTTLS
+EXPOSE 587/tcp
+# SMTPS (implicit TLS)
+EXPOSE 465/tcp
+# IMAP
+EXPOSE 143/tcp
+# IMAPS (implicit TLS)
+EXPOSE 993/tcp
+# API/Web interface
+EXPOSE 8980/tcp
+
+# Switch to non-root user
+USER gomailserver:gomailserver
+
+# Set working directory
+WORKDIR /var/lib/gomailserver
+
+# Default command
+CMD ["/usr/local/bin/gomailserver", "run", "--config", "/etc/gomailserver/gomailserver.yaml"]

@@ -1,0 +1,277 @@
+# GoReleaser configuration for gomailserver
+# Documentation: https://goreleaser.com
+
+version: 2
+
+project_name: gomailserver
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: gomailserver
+    main: ./cmd/gomailserver
+    binary: gomailserver
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+      - gomailserver.example.yaml
+
+nfpms:
+  - id: packages
+    package_name: gomailserver
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
+    vendor: Brian Tafoya
+    homepage: https://github.com/btafoya/gomailserver
+    maintainer: Brian Tafoya <btafoya@briantafoya.com>
+    description: A modern, all-in-one mail server written in Go
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    section: mail
+    priority: optional
+
+    dependencies:
+      - ca-certificates
+
+    recommends:
+      - clamav
+      - spamassassin
+
+    contents:
+      # Binary is installed automatically by nfpm
+
+      # Example configuration
+      - src: gomailserver.example.yaml
+        dst: /usr/share/gomailserver/gomailserver.example.yaml
+        file_info:
+          mode: 0644
+
+      # Systemd service file
+      - src: scripts/gomailserver.service
+        dst: /lib/systemd/system/gomailserver.service
+        file_info:
+          mode: 0644
+
+      # Create directories
+      - dst: /var/lib/gomailserver
+        type: dir
+        file_info:
+          mode: 0750
+          owner: gomailserver
+          group: gomailserver
+
+      - dst: /var/log/gomailserver
+        type: dir
+        file_info:
+          mode: 0750
+          owner: gomailserver
+          group: gomailserver
+
+      - dst: /etc/gomailserver
+        type: dir
+        file_info:
+          mode: 0750
+          owner: root
+          group: gomailserver
+
+    scripts:
+      postinstall: debian/postinst
+      preremove: debian/prerm
+      postremove: debian/postrm
+
+    overrides:
+      deb:
+        dependencies:
+          - ca-certificates
+      rpm:
+        dependencies:
+          - ca-certificates
+      apk:
+        dependencies:
+          - ca-certificates
+
+dockers:
+  - id: amd64
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile.goreleaser
+    image_templates:
+      - "ghcr.io/btafoya/gomailserver:{{ .Version }}-amd64"
+      - "ghcr.io/btafoya/gomailserver:latest-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A modern, all-in-one mail server written in Go"
+      - "--label=org.opencontainers.image.url=https://github.com/btafoya/gomailserver"
+      - "--label=org.opencontainers.image.source=https://github.com/btafoya/gomailserver"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+    extra_files:
+      - gomailserver.example.yaml
+
+  - id: arm64
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile.goreleaser
+    image_templates:
+      - "ghcr.io/btafoya/gomailserver:{{ .Version }}-arm64"
+      - "ghcr.io/btafoya/gomailserver:latest-arm64"
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A modern, all-in-one mail server written in Go"
+      - "--label=org.opencontainers.image.url=https://github.com/btafoya/gomailserver"
+      - "--label=org.opencontainers.image.source=https://github.com/btafoya/gomailserver"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+    extra_files:
+      - gomailserver.example.yaml
+
+docker_manifests:
+  - name_template: "ghcr.io/btafoya/gomailserver:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/btafoya/gomailserver:{{ .Version }}-amd64"
+      - "ghcr.io/btafoya/gomailserver:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/btafoya/gomailserver:latest"
+    image_templates:
+      - "ghcr.io/btafoya/gomailserver:latest-amd64"
+      - "ghcr.io/btafoya/gomailserver:latest-arm64"
+
+brews:
+  - name: gomailserver
+    repository:
+      owner: btafoya
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/btafoya/gomailserver
+    description: A modern, all-in-one mail server written in Go
+    license: MIT
+    install: |
+      bin.install "gomailserver"
+    test: |
+      system "#{bin}/gomailserver", "version"
+    extra_install: |
+      (share/"gomailserver").install "gomailserver.example.yaml"
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Documentation
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^chore:"
+      - "^test:"
+      - "^ci:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+
+release:
+  github:
+    owner: btafoya
+    name: gomailserver
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## gomailserver {{ .Version }}
+
+    Welcome to this release of gomailserver!
+  footer: |
+    ## Installation
+
+    ### Linux (deb-based)
+    ```bash
+    sudo dpkg -i gomailserver_{{ .Version }}_amd64.deb
+    ```
+
+    ### Linux (rpm-based)
+    ```bash
+    sudo rpm -i gomailserver_{{ .Version }}_x86_64.rpm
+    ```
+
+    ### macOS (Homebrew)
+    ```bash
+    brew tap btafoya/tap
+    brew install gomailserver
+    ```
+
+    ### Docker
+    ```bash
+    docker pull ghcr.io/btafoya/gomailserver:{{ .Version }}
+    ```
+
+    ### Binary Downloads
+    Download the appropriate archive for your platform from the assets below.
+
+    ---
+    **Full Changelog**: https://github.com/btafoya/gomailserver/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+announce:
+  skip: true

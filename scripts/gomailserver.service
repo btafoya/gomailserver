@@ -11,7 +11,7 @@ User=gomailserver
 Group=gomailserver
 
 # Binary and configuration
-ExecStart=/usr/local/bin/gomailserver run --config /etc/gomailserver/gomailserver.yaml
+ExecStart=/usr/bin/gomailserver run --config /etc/gomailserver/gomailserver.yaml
 ExecReload=/bin/kill -HUP $MAINPID
 
 # Pre/post commands

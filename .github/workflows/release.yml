@@ -1,0 +1,105 @@
+# Release workflow using GoReleaser
+# Triggers on version tags (v*)
+# Builds binaries, packages, and Docker images
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/*
+          retention-days: 5
+
+  # Optional: Publish to APT repository
+  # Uncomment and configure if you have APT repository infrastructure
+  # publish-apt:
+  #   name: Publish to APT Repository
+  #   runs-on: ubuntu-latest
+  #   needs: release
+  #   steps:
+  #     - name: Download release artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: release-artifacts
+  #         path: dist
+  #
+  #     - name: Publish to APT repository
+  #       run: |
+  #         # Add your APT repository publishing logic here
+  #         echo "Publishing DEBs to APT repository..."
+  #       env:
+  #         APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+  #         APT_SIGNING_KEY_PASSPHRASE: ${{ secrets.APT_SIGNING_KEY_PASSPHRASE }}
+
+  verify:
+    name: Verify Release
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist
+
+      - name: List artifacts
+        run: |
+          echo "Release artifacts:"
+          ls -la dist/
+          echo ""
+          echo "Checksums:"
+          cat dist/checksums.txt
+
+      - name: Verify checksums
+        run: |
+          cd dist
+          sha256sum -c checksums.txt --ignore-missing

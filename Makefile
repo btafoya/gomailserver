@@ -9,7 +9,7 @@ BINARY_NAME ?= gomailserver
 DOCKER_IMAGE ?= gomailserver:latest
 DOCKER_TAG ?= gomailserver:test
 
-.PHONY: build build-static test test-coverage lint clean docker-build docker-run deps bench-perf
+.PHONY: build build-static test test-coverage lint clean docker-build docker-run deps bench-perf release-snapshot release-check
 
 # Default target
 all: build test
@@ -106,6 +106,16 @@ dev: build
 	@echo "Starting development server..."
 	./$(BUILD_DIR)/$(BINARY_NAME) run --config gomailserver.yaml
 
+# GoReleaser targets
+release-snapshot:
+	@echo "Building snapshot release (no publish)..."
+	goreleaser release --snapshot --clean
+	@echo "Snapshot built in ./dist/"
+
+release-check:
+	@echo "Checking GoReleaser configuration..."
+	goreleaser check
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -123,4 +133,6 @@ help:
 	@echo "  bench-perf    - Build performance benchmark"
 	@echo "  install       - Install binary system-wide"
 	@echo "  dev           - Start development server"
+	@echo "  release-snapshot - Build snapshot release (no publish)"
+	@echo "  release-check    - Check GoReleaser configuration"
 	@echo "  help          - Show this help"
