@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/btafoya/gomailserver/internal/admin"
 	"github.com/btafoya/gomailserver/internal/api/handlers"
 	"github.com/btafoya/gomailserver/internal/api/middleware"
 	calendarService "github.com/btafoya/gomailserver/internal/calendar/service"
@@ -425,6 +426,17 @@ func NewRouter(config RouterConfig) *Router {
 	// PostmarkApp API compatibility endpoints
 	// Mount at root level for PostmarkApp client compatibility
 	r.Mount("/", postmark.NewRouter(config.DB, config.QueueService, config.Logger))
+
+	// Mount Unified Web UI (Admin Panel, Webmail, Portal)
+	// This serves the embedded static files from the Nuxt build
+	if config.WebUIConfig != nil && config.WebUIConfig.Enabled {
+		unifiedHandler := admin.UnifiedHandler(config.Logger, config.WebUIConfig)
+		r.Handle("/admin/*", unifiedHandler)
+		r.Handle("/portal/*", unifiedHandler)
+		r.Handle("/webmail/*", unifiedHandler)
+		// Serve root for SPA routing
+		r.Handle("/*", unifiedHandler)
+	}
 
 	return r
 }

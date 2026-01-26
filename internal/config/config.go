@@ -2,7 +2,10 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -144,6 +147,9 @@ type SpamAssassinConfig struct {
 
 // Load loads configuration from file and environment variables
 func Load(configPath string) (*Config, error) {
+	// Load .env file if it exists (from current directory or config directory)
+	loadDotEnv(configPath)
+
 	v := viper.New()
 
 	// Set config file path
@@ -251,6 +257,39 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("tls.acme.enabled", false)
 	v.SetDefault("tls.acme.provider", "cloudflare")
 	v.SetDefault("tls.acme.cache_dir", "./data/acme")
+}
+
+// loadDotEnv attempts to load .env file from various locations
+func loadDotEnv(configPath string) {
+	// Try loading from config directory first
+	if configPath != "" {
+		configDir := filepath.Dir(configPath)
+		envPath := filepath.Join(configDir, ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			_ = godotenv.Load(envPath)
+			return
+		}
+	}
+
+	// Try current directory
+	if _, err := os.Stat(".env"); err == nil {
+		_ = godotenv.Load(".env")
+		return
+	}
+
+	// Try /etc/gomailserver/.env
+	if _, err := os.Stat("/etc/gomailserver/.env"); err == nil {
+		_ = godotenv.Load("/etc/gomailserver/.env")
+		return
+	}
+
+	// Try $HOME/.gomailserver/.env
+	if home, err := os.UserHomeDir(); err == nil {
+		envPath := filepath.Join(home, ".gomailserver", ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			_ = godotenv.Load(envPath)
+		}
+	}
 }
 
 // ValidateSecurityConfig validates external security service connection settings

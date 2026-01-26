@@ -6,7 +6,7 @@ import type { Defu } from 'defu'
 declare const inlineConfig = {
   "nuxt": {},
   "icon": {
-    "provider": "server",
+    "provider": "iconify",
     "class": "",
     "aliases": {},
     "iconifyApiEndpoint": "https://api.iconify.design",

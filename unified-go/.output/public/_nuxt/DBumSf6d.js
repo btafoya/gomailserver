@@ -1,1 +1,0 @@
-import{ag as o,J as r}from"./tDkIVumu.js";import{u as a}from"./BTosPlTG.js";import"./vkYvzIJb.js";const s=o(t=>{const e=a();if(t.meta.requiresAuth&&!e.isLoggedIn)return r("/login");if(t.path==="/login"&&e.isLoggedIn)return r("/portal");if(t.path==="/"&&e.isLoggedIn)return r("/portal")});export{s as default};
