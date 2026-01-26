@@ -176,11 +176,11 @@ Configure these in repository Settings > Secrets and variables > Actions:
 Install GoReleaser:
 
 ```bash
-# macOS
-brew install goreleaser
-
 # Linux (snap)
 sudo snap install --classic goreleaser
+
+# Linux (deb) - download from GitHub releases
+curl -sfL https://goreleaser.com/static/run | bash
 
 # Go install
 go install github.com/goreleaser/goreleaser/v2@latest
