@@ -4,11 +4,14 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
 
-# Install build dependencies
+# Install build dependencies including CGO requirements for go-sqlite3
 RUN apk add --no-cache \
     git \
     ca-certificates \
     tzdata \
+    gcc \
+    musl-dev \
+    sqlite-dev \
     && update-ca-certificates
 
 # Set working directory
@@ -19,12 +22,11 @@ COPY . .
 
 RUN go mod download
 
-# Build the application with security flags
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+# Build the application with CGO enabled for go-sqlite3
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
     go build \
-    -ldflags='-w -s -extldflags "-static"' \
+    -ldflags='-w -s -linkmode external -extldflags "-static"' \
     -a \
-    -installsuffix cgo \
     -o gomailserver \
     ./cmd/gomailserver
 
@@ -34,10 +36,11 @@ RUN ./gomailserver version
 # Runtime stage
 FROM alpine:latest
 
-# Install runtime dependencies
+# Install runtime dependencies (including sqlite for go-sqlite3)
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
+    sqlite-libs \
     clamav \
     clamav-daemon \
     spamassassin \
