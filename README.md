@@ -112,19 +112,18 @@ sudo make install
 
 ## Quick Start
 
-1. **Edit the configuration file**
+1. **Copy and edit the configuration file**
 
    ```bash
-   sudo cp /usr/share/gomailserver/gomailserver.example.yaml /etc/gomailserver/gomailserver.yaml
-   sudo nano /etc/gomailserver/gomailserver.yaml
+   sudo cp /usr/share/gomailserver/.env.example /etc/gomailserver/.env
+   sudo nano /etc/gomailserver/.env
    ```
 
 2. **Configure your domain**
 
-   ```yaml
-   server:
-     hostname: mail.example.com
-     domain: example.com
+   ```bash
+   SERVER_HOSTNAME=mail.example.com
+   SERVER_DOMAIN=example.com
    ```
 
 3. **Start the service**
@@ -178,33 +177,36 @@ sudo make install
 
 ## Configuration
 
-See [`gomailserver.example.yaml`](gomailserver.example.yaml) for a complete configuration reference.
+See [`.env.example`](.env.example) for a complete configuration reference.
 
-Key configuration sections:
+Key environment variables:
 
-```yaml
-server:
-  hostname: mail.example.com
-  domain: example.com
+```bash
+# Server
+SERVER_HOSTNAME=mail.example.com
+SERVER_DOMAIN=example.com
 
-database:
-  driver: sqlite3  # or "postgres"
-  sqlite:
-    path: /var/lib/gomailserver/mailserver.db
+# Database (SQLite or PostgreSQL)
+DB_DRIVER=sqlite3
+DB_SQLITE_PATH=/var/lib/gomailserver/mailserver.db
 
-smtp:
-  submission_port: 587
-  relay_port: 25
-  smtps_port: 465
+# SMTP
+SMTP_SUBMISSION_PORT=587
+SMTP_RELAY_PORT=25
+SMTPS_PORT=465
 
-imap:
-  port: 143
-  imaps_port: 993
+# IMAP
+IMAP_PORT=143
+IMAPS_PORT=993
 
-tls:
-  acme:
-    enabled: true
-    email: admin@example.com
+# TLS / Let's Encrypt
+ACME_ENABLED=true
+ACME_EMAIL=admin@example.com
+
+# Web UI & API
+WEBUI_ENABLED=true
+WEBUI_PORT=8080
+API_PORT=8980
 ```
 
 ---
